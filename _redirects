@@ -1,0 +1,6 @@
+# Cloudflare Pages Redirects
+# SPA fallback - all routes should serve index.html for client-side routing
+/*    /index.html   200
+
+# API routes redirect to 404 (no backend on static deployment)
+/api/*  /404.html  404
