@@ -1,0 +1,78 @@
+// 📄 src/components/EraserTool.tsx
+import React, { useRef, useState, useEffect, MouseEvent } from "react";
+
+type EraserToolProps = {
+  isActive: boolean;
+  canvasRef: React.RefObject<HTMLCanvasElement>;
+  brushSize: number;
+};
+
+export default function EraserTool({
+  isActive,
+  canvasRef,
+  brushSize,
+}: EraserToolProps): JSX.Element {
+  const eraserCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [isErasing, setIsErasing] = useState(false);
+
+  useEffect(() => {
+    const baseCanvas = canvasRef.current;
+    const overlayCanvas = eraserCanvasRef.current;
+
+    if (baseCanvas && overlayCanvas) {
+      overlayCanvas.width = baseCanvas.width;
+      overlayCanvas.height = baseCanvas.height;
+
+      overlayCanvas.style.position = "absolute";
+      overlayCanvas.style.left = baseCanvas.offsetLeft + "px";
+      overlayCanvas.style.top = baseCanvas.offsetTop + "px";
+      overlayCanvas.style.pointerEvents = isActive ? "auto" : "none";
+    }
+  }, [isActive, canvasRef]);
+
+  const draw = (e: MouseEvent<HTMLCanvasElement>) => {
+    const canvas = eraserCanvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    ctx.fillStyle = "white";
+    ctx.beginPath();
+    ctx.arc(x, y, brushSize / 2, 0, 2 * Math.PI);
+    ctx.fill();
+  };
+
+  const handleMouseDown = (e: MouseEvent<HTMLCanvasElement>) => {
+    if (!isActive) return;
+    setIsErasing(true);
+    draw(e);
+  };
+
+  const handleMouseMove = (e: MouseEvent<HTMLCanvasElement>) => {
+    if (!isActive || !isErasing) return;
+    draw(e);
+  };
+
+  const handleMouseUp = () => {
+    setIsErasing(false);
+  };
+
+  return (
+    <canvas
+      ref={eraserCanvasRef}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      style={{
+        zIndex: 3,
+        cursor: isActive ? "crosshair" : "default",
+      }}
+    />
+  );
+}

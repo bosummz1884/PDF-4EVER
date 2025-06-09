@@ -1,0 +1,142 @@
+📁 FILE 26: src/components/WhiteoutLayer.tsx
+tsx
+Copy
+Edit
+// 📄 src/components/WhiteoutLayer.tsx
+import React, { useState } from "react";
+import { Rnd } from "react-rnd";
+import { HexColorPicker } from "react-colorful";
+import { nanoid } from "nanoid";
+
+type WhiteoutBlock = {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  color: string;
+};
+
+type WhiteoutLayerProps = {
+  isActive: boolean;
+  canvasRef: React.RefObject<HTMLCanvasElement>;
+};
+
+export default function WhiteoutLayer({ isActive, canvasRef }: WhiteoutLayerProps): JSX.Element {
+  const [blocks, setBlocks] = useState<WhiteoutBlock[]>([]);
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+
+  const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isActive) return;
+
+    const rect = canvasRef.current!.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const newBlock: WhiteoutBlock = {
+      id: nanoid(),
+      x,
+      y,
+      width: 100,
+      height: 60,
+      color: "#ffffff"
+    };
+
+    setBlocks((prev) => [...prev, newBlock]);
+  };
+
+  const updateBlock = (id: string, updates: Partial<WhiteoutBlock>) => {
+    setBlocks((prev) =>
+      prev.map((block) => (block.id === id ? { ...block, ...updates } : block))
+    );
+  };
+
+  const removeBlock = (id: string) => {
+    setBlocks((prev) => prev.filter((b) => b.id !== id));
+  };
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        width: canvasRef.current?.width || 0,
+        height: canvasRef.current?.height || 0,
+        top: 0,
+        left: 0
+      }}
+      onClick={handleCanvasClick}
+    >
+      {blocks.map((block) => (
+        <Rnd
+          key={block.id}
+          size={{ width: block.width, height: block.height }}
+          position={{ x: block.x, y: block.y }}
+          bounds="parent"
+          onDragStop={(_, d) => updateBlock(block.id, { x: d.x, y: d.y })}
+          onResizeStop={(_, __, ref, ____, pos) =>
+            updateBlock(block.id, {
+              width: parseInt(ref.style.width, 10),
+              height: parseInt(ref.style.height, 10),
+              x: pos.x,
+              y: pos.y
+            })
+          }
+          onClick={() => setSelectedBlockId(block.id)}
+        >
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              backgroundColor: block.color,
+              border: selectedBlockId === block.id ? "2px dashed blue" : "none",
+              boxSizing: "border-box",
+              position: "relative"
+            }}
+          >
+            {selectedBlockId === block.id && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "-140px",
+                  right: 0,
+                  background: "#fff",
+                  padding: "6px",
+                  boxShadow: "0 0 5px rgba(0,0,0,0.2)",
+                  zIndex: 20
+                }}
+              >
+                <HexColorPicker
+                  color={block.color}
+                  onChange={(color) => updateBlock(block.id, { color })}
+                />
+                <button
+                  style={{ marginTop: "6px", width: "100%", fontSize: "12px" }}
+                  onClick={() => removeBlock(block.id)}
+                >
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
+        </Rnd>
+      ))}
+    </div>
+  );
+}
+✅ Toolbar Integration Example
+In your toolbar UI (e.g., top nav):
+
+tsx
+Copy
+Edit
+const [whiteoutMode, setWhiteoutMode] = useState(false);
+
+<button onClick={() => setWhiteoutMode((prev) => !prev)}>
+  {whiteoutMode ? "Whiteout (On)" : "Whiteout"}
+</button>
+Then pass it in:
+
+tsx
+Copy
+Edit
+<WhiteoutLayer isActive={whiteoutMode} canvasRef={canvasRef} />

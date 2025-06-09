@@ -1,0 +1,75 @@
+// 📄 src/utils/saveFilledFormFields.ts
+import { PDFDocument } from "pdf-lib";
+
+export type FilledField = {
+  id: string;
+  fieldName: string;
+  fieldType: string;
+  rect: number[];
+  value: string;
+  options?: string[];
+  radioGroup?: string;
+  page: number;
+};
+
+/**
+ * Save AcroForm field values into a PDF and flatten them.
+ * Supports: Text, Checkbox, Radio, Dropdown, Signature.
+ */
+export async function saveFilledFormFields(originalFile: File, fields: FilledField[]) {
+  const buffer = await originalFile.arrayBuffer();
+  const pdfDoc = await PDFDocument.load(buffer);
+  const form = pdfDoc.getForm();
+
+  for (const field of fields) {
+    try {
+      const pdfField = form.getFieldMaybe(field.fieldName);
+
+      if (!pdfField) {
+        console.warn(`No matching field for ${field.fieldName}`);
+        continue;
+      }
+
+      switch (field.fieldType) {
+        case "Tx":
+          pdfField.setText(field.value);
+          break;
+
+        case "Btn":
+          if (field.radioGroup) {
+            // Radio button group logic
+            const radioValue = field.value;
+            form.getRadioGroup(field.radioGroup)?.select(radioValue);
+          } else {
+            field.value === "Yes" ? pdfField.check() : pdfField.uncheck();
+          }
+          break;
+
+        case "Ch":
+          pdfField.select(field.value);
+          break;
+
+        case "Sig":
+          pdfField.setText(field.value); // Basic text-based signature fallback
+          break;
+      }
+    } catch (err) {
+      console.warn(`Field write error for "${field.fieldName}":`, err);
+    }
+  }
+
+  form.flatten(); // Make all fields static in the final output
+
+  const pdfBytes = await pdfDoc.save();
+  downloadBlob(pdfBytes, "filled-form.pdf");
+}
+
+function downloadBlob(bytes: Uint8Array, filename: string) {
+  const blob = new Blob([bytes], { type: "application/pdf" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}

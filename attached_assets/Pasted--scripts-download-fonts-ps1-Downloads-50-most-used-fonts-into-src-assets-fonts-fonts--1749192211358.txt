@@ -1,0 +1,69 @@
+# 📄 scripts/download-fonts.ps1
+# Downloads 50 most-used fonts into src/assets/fonts/
+
+$fonts = @{
+    "arial"              = "https://fonts.cdnfonts.com/s/11051/Arial.woff"
+    "helvetica"          = "https://github.com/ctrlcctrlv/TTF2EOT/blob/master/helvetica.ttf?raw=true"
+    "times-new-roman"    = "https://fonts.cdnfonts.com/s/15099/Times%20New%20Roman.woff"
+    "courier-new"        = "https://github.com/ctrlcctrlv/TTF2EOT/blob/master/courier.ttf?raw=true"
+    "verdana"            = "https://fonts.cdnfonts.com/s/10593/Verdana.woff"
+    "georgia"            = "https://fonts.cdnfonts.com/s/10615/Georgia.woff"
+    "trebuchet-ms"       = "https://fonts.cdnfonts.com/s/10774/Trebuchet%20MS.woff"
+    "tahoma"             = "https://fonts.cdnfonts.com/s/10592/Tahoma.woff"
+    "impact"             = "https://fonts.cdnfonts.com/s/10776/Impact.woff"
+    "comic-sans-ms"      = "https://fonts.cdnfonts.com/s/12020/ComicSansMS3.woff"
+    "roboto"             = "https://github.com/google/fonts/raw/main/apache/roboto/Roboto-Regular.ttf"
+    "open-sans"          = "https://github.com/google/fonts/raw/main/apache/opensans/OpenSans-Regular.ttf"
+    "lato"               = "https://github.com/google/fonts/raw/main/ofl/lato/Lato-Regular.ttf"
+    "montserrat"         = "https://github.com/google/fonts/raw/main/ofl/montserrat/Montserrat-Regular.ttf"
+    "oswald"             = "https://github.com/google/fonts/raw/main/ofl/oswald/Oswald-Regular.ttf"
+    "raleway"            = "https://github.com/google/fonts/raw/main/ofl/raleway/Raleway-Regular.ttf"
+    "pt-sans"            = "https://github.com/google/fonts/raw/main/ofl/ptsans/PTSans-Regular.ttf"
+    "source-sans-pro"    = "https://github.com/adobe-fonts/source-sans/raw/release/TTF/SourceSans3-Regular.ttf"
+    "merriweather"       = "https://github.com/google/fonts/raw/main/ofl/merriweather/Merriweather-Regular.ttf"
+    "noto-sans"          = "https://github.com/google/fonts/raw/main/ofl/notosans/NotoSans-Regular.ttf"
+    "ubuntu"             = "https://github.com/google/fonts/raw/main/ufl/ubuntu/Ubuntu-R.ttf"
+    "nunito"             = "https://github.com/google/fonts/raw/main/ofl/nunito/Nunito-Regular.ttf"
+    "work-sans"          = "https://github.com/google/fonts/raw/main/ofl/worksans/WorkSans-Regular.ttf"
+    "rubik"              = "https://github.com/google/fonts/raw/main/ofl/rubik/Rubik-Regular.ttf"
+    "poppins"            = "https://github.com/google/fonts/raw/main/ofl/poppins/Poppins-Regular.ttf"
+    "inter"              = "https://github.com/rsms/inter/raw/master/docs/font-files/Inter-Regular.ttf"
+    "fira-sans"          = "https://github.com/mozilla/Fira/blob/master/ttf/FiraSans-Regular.ttf?raw=true"
+    "cabin"              = "https://github.com/google/fonts/raw/main/ofl/cabin/Cabin-Regular.ttf"
+    "playfair-display"   = "https://github.com/google/fonts/raw/main/ofl/playfairdisplay/PlayfairDisplay-Regular.ttf"
+    "titillium-web"      = "https://github.com/google/fonts/raw/main/ofl/titilliumweb/TitilliumWeb-Regular.ttf"
+    "inconsolata"        = "https://github.com/google/fonts/raw/main/ofl/inconsolata/Inconsolata-Regular.ttf"
+    "ibm-plex-sans"      = "https://github.com/IBM/plex/raw/master/IBM-Plex-Sans/fonts/complete/ttf/IBMPlexSans-Regular.ttf"
+    "quicksand"          = "https://github.com/google/fonts/raw/main/ofl/quicksand/Quicksand-Regular.ttf"
+    "assistant"          = "https://github.com/google/fonts/raw/main/ofl/assistant/Assistant-Regular.ttf"
+    "mukta"              = "https://github.com/google/fonts/raw/main/ofl/mukta/Mukta-Regular.ttf"
+    "arimo"              = "https://github.com/google/fonts/raw/main/ofl/arimo/Arimo-Regular.ttf"
+    "karla"              = "https://github.com/google/fonts/raw/main/ofl/karla/Karla-Regular.ttf"
+    "josefin-sans"       = "https://github.com/google/fonts/raw/main/ofl/josefinsans/JosefinSans-Regular.ttf"
+    "manrope"            = "https://github.com/sharanda/manrope/blob/master/fonts/ttf/Manrope-Regular.ttf?raw=true"
+    "zilla-slab"         = "https://github.com/google/fonts/raw/main/ofl/zillaslab/ZillaSlab-Regular.ttf"
+    "space-grotesk"      = "https://github.com/floriankarsten/space-grotesk/raw/master/fonts/otf/SpaceGrotesk-Regular.otf"
+    "barlow"             = "https://github.com/google/fonts/raw/main/ofl/barlow/Barlow-Regular.ttf"
+    "cairo"              = "https://github.com/google/fonts/raw/main/ofl/cairo/Cairo-Regular.ttf"
+    "dm-sans"            = "https://github.com/google/fonts/raw/main/ofl/dmsans/DMSans-Regular.ttf"
+    "mulish"             = "https://github.com/google/fonts/raw/main/ofl/mulish/Mulish-Regular.ttf"
+    "heebo"              = "https://github.com/google/fonts/raw/main/ofl/heebo/Heebo-Regular.ttf"
+    "exo-2"              = "https://github.com/google/fonts/raw/main/ofl/exo2/Exo2-Regular.ttf"
+    "be-vietnam-pro"     = "https://github.com/google/fonts/raw/main/ofl/bevietnampro/BeVietnamPro-Regular.ttf"
+    "anton"              = "https://github.com/google/fonts/raw/main/ofl/anton/Anton-Regular.ttf"
+}
+
+$targetFolder = "src/assets/fonts"
+if (!(Test-Path -Path $targetFolder)) {
+    New-Item -ItemType Directory -Force -Path $targetFolder
+}
+
+foreach ($key in $fonts.Keys) {
+    $url = $fonts[$key]
+    $ext = if ($url.EndsWith(".otf")) { ".otf" } else { ".ttf" }
+    $filePath = "$targetFolder/$key$ext"
+    Write-Output "Downloading $key..."
+    Invoke-WebRequest -Uri $url -OutFile $filePath -UseBasicParsing
+}
+
+Write-Output "✅ All fonts downloaded to $targetFolder"

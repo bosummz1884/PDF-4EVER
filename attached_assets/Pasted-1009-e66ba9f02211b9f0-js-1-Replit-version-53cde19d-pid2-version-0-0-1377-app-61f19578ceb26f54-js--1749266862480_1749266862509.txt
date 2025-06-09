@@ -1,0 +1,98 @@
+1009-e66ba9f02211b9f0.js:1 Replit version 53cde19d, pid2 version 0.0.1377
+_app-61f19578ceb26f54.js:37 
+      /////////////////////
+   ///////////////////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////        Curious and driven?
+  ///////////////@@@@@@@///////        Work with us!
+  ///////////////@@@@@@@///////
+  ///////////////@@@@@@@///////        https://join.replit.com/hack.with.us
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@#//////////////
+   ///////////////////////////
+      /////////////////////
+      
+_app-61f19578ceb26f54.js:37 [LaunchDarkly] LaunchDarkly client initialized
+stallwart.build.js:1 stallwart: failed ping 1
+PdfEditorPro:1 Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.
+framework-e1da276d31eec737.js:1 Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+_ @ framework-e1da276d31eec737.js:1
+framework-e1da276d31eec737.js:1 Unrecognized feature: 'ambient-light-sensor'.
+_ @ framework-e1da276d31eec737.js:1
+framework-e1da276d31eec737.js:1 Unrecognized feature: 'battery'.
+_ @ framework-e1da276d31eec737.js:1
+framework-e1da276d31eec737.js:1 Unrecognized feature: 'execution-while-not-rendered'.
+_ @ framework-e1da276d31eec737.js:1
+framework-e1da276d31eec737.js:1 Unrecognized feature: 'execution-while-out-of-viewport'.
+_ @ framework-e1da276d31eec737.js:1
+framework-e1da276d31eec737.js:1 Unrecognized feature: 'layout-animations'.
+_ @ framework-e1da276d31eec737.js:1
+framework-e1da276d31eec737.js:1 Unrecognized feature: 'legacy-image-formats'.
+_ @ framework-e1da276d31eec737.js:1
+framework-e1da276d31eec737.js:1 Unrecognized feature: 'navigation-override'.
+_ @ framework-e1da276d31eec737.js:1
+framework-e1da276d31eec737.js:1 Unrecognized feature: 'oversized-images'.
+_ @ framework-e1da276d31eec737.js:1
+framework-e1da276d31eec737.js:1 Unrecognized feature: 'publickey-credentials'.
+_ @ framework-e1da276d31eec737.js:1
+framework-e1da276d31eec737.js:1 Unrecognized feature: 'speaker-selection'.
+_ @ framework-e1da276d31eec737.js:1
+framework-e1da276d31eec737.js:1 Unrecognized feature: 'unoptimized-images'.
+_ @ framework-e1da276d31eec737.js:1
+framework-e1da276d31eec737.js:1 Unrecognized feature: 'unsized-media'.
+_ @ framework-e1da276d31eec737.js:1
+framework-e1da276d31eec737.js:1 Unrecognized feature: 'pointer-lock'.
+_ @ framework-e1da276d31eec737.js:1
+framework-e1da276d31eec737.js:1 Allow attribute will take precedence over 'allowfullscreen'.
+_ @ framework-e1da276d31eec737.js:1
+framework-e1da276d31eec737.js:1 Allow attribute will take precedence over 'allowpaymentrequest'.
+_ @ framework-e1da276d31eec737.js:1
+stallwart.build.js:1 stallwart: failed ping 1
+workspace_iframe.html:32 Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+workspace_iframe.html:32 Unrecognized feature: 'ambient-light-sensor'.
+workspace_iframe.html:32 Unrecognized feature: 'battery'.
+workspace_iframe.html:32 Unrecognized feature: 'execution-while-not-rendered'.
+workspace_iframe.html:32 Unrecognized feature: 'execution-while-out-of-viewport'.
+workspace_iframe.html:32 Unrecognized feature: 'layout-animations'.
+workspace_iframe.html:32 Unrecognized feature: 'legacy-image-formats'.
+workspace_iframe.html:32 Unrecognized feature: 'navigation-override'.
+workspace_iframe.html:32 Unrecognized feature: 'oversized-images'.
+workspace_iframe.html:32 Unrecognized feature: 'publickey-credentials'.
+workspace_iframe.html:32 Unrecognized feature: 'speaker-selection'.
+workspace_iframe.html:32 Unrecognized feature: 'unoptimized-images'.
+workspace_iframe.html:32 Unrecognized feature: 'unsized-media'.
+workspace_iframe.html:32 Allow attribute will take precedence over 'allowfullscreen'.
+workspace_iframe.html:32 Allow attribute will take precedence over 'allowpaymentrequest'.
+stallwart.build.js:1 stallwart: failed ping 2
+Console.js:61 [vite] connecting...
+Console.js:61 [vite] connected.
+stallwart.build.js:1 stallwart: failed ping 1
+Console.js:61 PDF.js worker initialized with source: /pdf.worker.js
+stallwart.build.js:1 stallwart: failed ping 1
+stallwart.build.js:1 stallwart: failed ping 2
+stallwart.build.js:1 stallwart: failed ping 3
+stallwart.build.js:1 stallwart: failed ping 4
+stallwart.build.js:1 stallwart: failed ping 1
+Console.js:61 Loading progress: 100%
+Console.js:61 PDF.js loaded successfully, pages: 6
+Console.js:61 Rendering page 1...
+Console.js:61 Starting render for page 1 - Canvas: 611x791
+Console.js:61 Page 1 rendered successfully
+Console.js:61 Detected form fields: Array(23)
+Console.js:61 Successfully rendered page 1
+stallwart.build.js:1 stallwart: failed ping 1
+stallwart.build.js:1 stallwart: failed ping 1
+stallwart.build.js:1 stallwart: failed ping 2
+stallwart.build.js:1 stallwart: failed ping 3
+stallwart.build.js:1 stallwart: failed ping 4
+stallwart.build.js:1 stallwart: failed ping 5
+stallwart.build.js:1 stallwart: session stalled
+_app-61f19578ceb26f54.js:37 [Violation] 'setTimeout' handler took 80ms
+controller-with-preconnect-d6f39e3e66c431c76c6b824a9880ad84.js:1 [Violation] 'message' handler took 2395ms
+[Violation] 'requestIdleCallback' handler took 64ms
+[Violation] Forced reflow while executing JavaScript took 61ms
+[Violation] Forced reflow while executing JavaScript took 37ms
+_app-61f19578ceb26f54.js:37 [Violation] 'setTimeout' handler took 108ms
+_app-61f19578ceb26f54.js:1 [Violation] 'setInterval' handler took 62ms

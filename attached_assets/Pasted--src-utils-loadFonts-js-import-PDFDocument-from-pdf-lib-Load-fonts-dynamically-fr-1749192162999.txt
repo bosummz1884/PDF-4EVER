@@ -1,0 +1,79 @@
+// 📄 src/utils/loadFonts.js
+import { PDFDocument } from "pdf-lib";
+
+// Load fonts dynamically from assets folder
+const fontPaths = {
+  "Arial": "src/assets/fonts/arial.ttf",
+  "Helvetica": "src/assets/fonts/helvetica.ttf",
+  "Times New Roman": "src/assets/fonts/times-new-roman.ttf",
+  "Courier New": "src/assets/fonts/courier-new.ttf",
+  "Verdana": "src/assets/fonts/verdana.ttf",
+  "Georgia": "src/assets/fonts/georgia.ttf",
+  "Trebuchet MS": "src/assets/fonts/trebuchet-ms.ttf",
+  "Tahoma": "src/assets/fonts/tahoma.ttf",
+  "Impact": "src/assets/fonts/impact.ttf",
+  "Comic Sans MS": "src/assets/fonts/comic-sans-ms.ttf",
+  "Roboto": "src/assets/fonts/roboto.ttf",
+  "Open Sans": "src/assets/fonts/open-sans.ttf",
+  "Lato": "src/assets/fonts/lato.ttf",
+  "Montserrat": "src/assets/fonts/montserrat.ttf",
+  "Oswald": "src/assets/fonts/oswald.ttf",
+  "Raleway": "src/assets/fonts/raleway.ttf",
+  "PT Sans": "src/assets/fonts/pt-sans.ttf",
+  "Source Sans Pro": "src/assets/fonts/source-sans-pro.ttf",
+  "Merriweather": "src/assets/fonts/merriweather.ttf",
+  "Noto Sans": "src/assets/fonts/noto-sans.ttf",
+  "Ubuntu": "src/assets/fonts/ubuntu.ttf",
+  "Nunito": "src/assets/fonts/nunito.ttf",
+  "Work Sans": "src/assets/fonts/work-sans.ttf",
+  "Rubik": "src/assets/fonts/rubik.ttf",
+  "Poppins": "src/assets/fonts/poppins.ttf",
+  "Inter": "src/assets/fonts/inter.ttf",
+  "Fira Sans": "src/assets/fonts/fira-sans.ttf",
+  "Cabin": "src/assets/fonts/cabin.ttf",
+  "Playfair Display": "src/assets/fonts/playfair-display.ttf",
+  "Titillium Web": "src/assets/fonts/titillium-web.ttf",
+  "Inconsolata": "src/assets/fonts/inconsolata.ttf",
+  "IBM Plex Sans": "src/assets/fonts/ibm-plex-sans.ttf",
+  "Quicksand": "src/assets/fonts/quicksand.ttf",
+  "Assistant": "src/assets/fonts/assistant.ttf",
+  "Mukta": "src/assets/fonts/mukta.ttf",
+  "Arimo": "src/assets/fonts/arimo.ttf",
+  "Karla": "src/assets/fonts/karla.ttf",
+  "Josefin Sans": "src/assets/fonts/josefin-sans.ttf",
+  "Manrope": "src/assets/fonts/manrope.ttf",
+  "Zilla Slab": "src/assets/fonts/zilla-slab.ttf",
+  "Space Grotesk": "src/assets/fonts/space-grotesk.ttf",
+  "Barlow": "src/assets/fonts/barlow.ttf",
+  "Cairo": "src/assets/fonts/cairo.ttf",
+  "DM Sans": "src/assets/fonts/dm-sans.ttf",
+  "Mulish": "src/assets/fonts/mulish.ttf",
+  "Heebo": "src/assets/fonts/heebo.ttf",
+  "Exo 2": "src/assets/fonts/exo-2.ttf",
+  "Be Vietnam Pro": "src/assets/fonts/be-vietnam-pro.ttf",
+  "Anton": "src/assets/fonts/anton.ttf"
+};
+
+/**
+ * Preloads font files and embeds them into the given PDF document.
+ * Returns a map of fontName → embeddedFont.
+ *
+ * @param {PDFDocument} pdfDoc
+ * @returns {Promise<Object>} fontMap
+ */
+export async function loadFonts(pdfDoc) {
+  const fontMap = {};
+
+  for (const [fontName, path] of Object.entries(fontPaths)) {
+    try {
+      const response = await fetch(path);
+      const fontBytes = await response.arrayBuffer();
+      const embeddedFont = await pdfDoc.embedFont(fontBytes);
+      fontMap[fontName] = embeddedFont;
+    } catch (err) {
+      console.warn(`Font load failed: ${fontName} from ${path}`, err);
+    }
+  }
+
+  return fontMap;
+}

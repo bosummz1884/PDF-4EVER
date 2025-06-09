@@ -1,0 +1,186 @@
+⬅️➡️ Navigate through all pages of the PDF
+
+🖊 Insert editable, draggable text per page
+
+💾 Export all edits across all pages
+
+✅ Key Features Added:
+Renders current page to canvas
+
+Stores editable text by page number
+
+Ensures accurate export of all edited pages
+
+📁 FILE 9: Updated src/components/PDFTextEditor.jsx
+This is a fully integrated, multi-page-compatible version — drop-in ready.
+
+jsx
+Copy
+Edit
+// 📄 src/components/PDFTextEditor.jsx
+import React, { useRef, useState, useEffect } from "react";
+import { pdfjs } from "pdfjs-dist";
+import Draggable from "react-draggable";
+import FontSelector from "./FontSelector";
+import TextStyleToolbar from "./TextStyleToolbar";
+import { savePdfWithText } from "../utils/savePdfWithText";
+import "pdfjs-dist/web/pdf_viewer.css";
+
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+
+export default function PDFTextEditor({ file }) {
+  const canvasRef = useRef(null);
+  const [pdfDoc, setPdfDoc] = useState(null);
+  const [pageNum, setPageNum] = useState(1);
+  const [page, setPage] = useState(null);
+  const [editableTexts, setEditableTexts] = useState({}); // { 1: [texts], 2: [texts] }
+  const [selectedFont, setSelectedFont] = useState("Helvetica");
+  const [fontSize, setFontSize] = useState(16);
+  const [fontColor, setFontColor] = useState("#000000");
+
+  useEffect(() => {
+    if (file) loadPDF(file);
+  }, [file]);
+
+  useEffect(() => {
+    if (pdfDoc) loadPage(pageNum);
+  }, [pageNum, pdfDoc]);
+
+  async function loadPDF(file) {
+    const arrayBuffer = await file.arrayBuffer();
+    const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+    const loaded = await loadingTask.promise;
+    setPdfDoc(loaded);
+    setPageNum(1); // reset to first page
+  }
+
+  async function loadPage(num) {
+    const page = await pdfDoc.getPage(num);
+    setPage(page);
+    renderPage(page);
+  }
+
+  async function renderPage(page) {
+    const viewport = page.getViewport({ scale: 1.5 });
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+
+    await page.render({ canvasContext: context, viewport }).promise;
+  }
+
+  const handleCanvasClick = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const newText = {
+      id: Date.now(),
+      x,
+      y,
+      value: "Edit me",
+      font: selectedFont,
+      size: fontSize,
+      color: fontColor,
+    };
+
+    setEditableTexts((prev) => {
+      const current = prev[pageNum] || [];
+      return { ...prev, [pageNum]: [...current, newText] };
+    });
+  };
+
+  const updateText = (id, newValue) => {
+    setEditableTexts((prev) => {
+      const updated = (prev[pageNum] || []).map((item) =>
+        item.id === id ? { ...item, value: newValue } : item
+      );
+      return { ...prev, [pageNum]: updated };
+    });
+  };
+
+  const updatePosition = (id, x, y) => {
+    setEditableTexts((prev) => {
+      const updated = (prev[pageNum] || []).map((item) =>
+        item.id === id ? { ...item, x, y } : item
+      );
+      return { ...prev, [pageNum]: updated };
+    });
+  };
+
+  const handleSave = () => {
+    if (file && canvasRef.current) {
+      savePdfWithText(file, editableTexts, canvasRef.current);
+    }
+  };
+
+  return (
+    <div style={{ position: "relative", paddingBottom: "1rem" }}>
+      <FontSelector currentFont={selectedFont} onChange={setSelectedFont} />
+      <TextStyleToolbar
+        fontSize={fontSize}
+        setFontSize={setFontSize}
+        fontColor={fontColor}
+        setFontColor={setFontColor}
+      />
+      <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
+        <button onClick={() => setPageNum((p) => Math.max(p - 1, 1))} disabled={pageNum === 1}>
+          ◀ Prev
+        </button>
+        <div>Page {pageNum} of {pdfDoc?.numPages || "?"}</div>
+        <button
+          onClick={() => setPageNum((p) => Math.min(p + 1, pdfDoc.numPages))}
+          disabled={pageNum === pdfDoc?.numPages}
+        >
+          Next ▶
+        </button>
+        <button onClick={handleSave}>Save Edited PDF</button>
+      </div>
+
+      <div style={{ position: "relative" }}>
+        <canvas
+          ref={canvasRef}
+          onClick={handleCanvasClick}
+          style={{ border: "1px solid #ccc", cursor: "text" }}
+        />
+        {(editableTexts[pageNum] || []).map((text) => (
+          <Draggable
+            key={text.id}
+            position={{ x: text.x, y: text.y }}
+            onStop={(_, data) => updatePosition(text.id, data.x, data.y)}
+          >
+            <div
+              contentEditable
+              suppressContentEditableWarning
+              style={{
+                position: "absolute",
+                color: text.color || "#000",
+                fontFamily: text.font,
+                fontSize: text.size || 16,
+                backgroundColor: "rgba(255,255,255,0.6)",
+                padding: "2px 4px",
+                minWidth: "50px",
+                minHeight: "20px",
+                outline: "none",
+                cursor: "move",
+              }}
+              onBlur={(e) => updateText(text.id, e.target.innerText)}
+            >
+              {text.value}
+            </div>
+          </Draggable>
+        ))}
+      </div>
+    </div>
+  );
+}
+✅ Update to savePdfWithText.js
+You must update savePdfWithText.js to handle all pages:
+
+Loop over textObjects[pageNum]
+
+Render text on each matching page
+
+Let me send that now unless you’ve already e

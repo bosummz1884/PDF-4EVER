@@ -1,0 +1,122 @@
+// 📄 src/components/DraggableTextBox.jsx
+import React from "react";
+import { Rnd } from "react-rnd";
+
+export default function DraggableTextBox({
+  text,
+  onTextChange,
+  onPositionChange
+}) {
+  const handleBlur = (e) => {
+    onTextChange(text.id, e.target.innerText);
+  };
+
+  const handleResizeStop = (e, direction, ref, delta, position) => {
+    onPositionChange(text.id, {
+      x: position.x,
+      y: position.y,
+      width: parseInt(ref.style.width, 10),
+      height: parseInt(ref.style.height, 10)
+    });
+  };
+
+  const handleDragStop = (e, data) => {
+    onPositionChange(text.id, {
+      x: data.x,
+      y: data.y,
+      width: text.width,
+      height: text.height
+    });
+  };
+
+  return (
+    <Rnd
+      default={{
+        x: text.x || 50,
+        y: text.y || 50,
+        width: text.width || 160,
+        height: text.height || 40
+      }}
+      position={{ x: text.x, y: text.y }}
+      size={{ width: text.width, height: text.height }}
+      onDragStop={handleDragStop}
+      onResizeStop={handleResizeStop}
+      bounds="parent"
+      enableResizing={{
+        bottomRight: true,
+        right: true,
+        bottom: true
+      }}
+      style={{
+        position: "absolute",
+        zIndex: 10
+      }}
+    >
+      <div
+        contentEditable
+        suppressContentEditableWarning
+        onBlur={handleBlur}
+        style={{
+          width: "100%",
+          height: "100%",
+          backgroundColor: "rgba(255,255,255,0.75)",
+          color: text.color || "#000",
+          fontSize: text.size || 16,
+          fontFamily: text.font || "Helvetica",
+          padding: "6px",
+          outline: "none",
+          overflow: "hidden",
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
+          display: "block",
+          boxSizing: "border-box",
+          cursor: "move"
+        }}
+      >
+        {text.value}
+      </div>
+    </Rnd>
+  );
+}
+✅ How to Use This in PDFTextEditor.jsx
+Import it:
+
+jsx
+Copy
+Edit
+import DraggableTextBox from "./DraggableTextBox";
+Replace the inline <Rnd> mapping with:
+
+jsx
+Copy
+Edit
+{(editableTexts[pageNum] || []).map((text) => (
+  <DraggableTextBox
+    key={text.id}
+    text={text}
+    onTextChange={updateText}
+    onPositionChange={updateSizeAndPosition}
+  />
+))}
+Make sure you have these two update handlers:
+
+js
+Copy
+Edit
+const updateText = (id, newValue) => {
+  setEditableTexts((prev) => {
+    const updated = (prev[pageNum] || []).map((item) =>
+      item.id === id ? { ...item, value: newValue } : item
+    );
+    return { ...prev, [pageNum]: updated };
+  });
+};
+
+const updateSizeAndPosition = (id, updates) => {
+  setEditableTexts((prev) => {
+    const updated = (prev[pageNum] || []).map((item) =>
+      item.id === id ? { ...item, ...updates } : item
+    );
+    return { ...prev, [pageNum]: updated };
+  });
+};

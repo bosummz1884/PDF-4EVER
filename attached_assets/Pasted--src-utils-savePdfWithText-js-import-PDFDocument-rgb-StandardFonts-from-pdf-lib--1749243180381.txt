@@ -1,0 +1,96 @@
+// 📄 src/utils/savePdfWithText.js
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+
+/**
+ * Embeds all inline text edits into the correct pages of the original PDF,
+ * including support for font size, color, position, and wrapping based on width.
+ *
+ * @param {File} originalFile - Original uploaded PDF
+ * @param {Object} textObjects - { 1: [...], 2: [...] } - editableTexts by page
+ * @param {HTMLCanvasElement} canvas - Canvas used to determine coordinate space
+ */
+export async function savePdfWithText(originalFile, textObjects, canvas) {
+  const arrayBuffer = await originalFile.arrayBuffer();
+  const pdfDoc = await PDFDocument.load(arrayBuffer);
+  const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+  const canvasHeight = canvas.height;
+
+  for (const [pageNumStr, edits] of Object.entries(textObjects)) {
+    const pageNum = parseInt(pageNumStr, 10);
+    const page = pdfDoc.getPage(pageNum - 1); // zero-indexed
+
+    for (const text of edits) {
+      const value = text.value.trim();
+      if (!value) continue;
+
+      const fontSize = text.size || 16;
+      const fontColor = text.color || "#000000";
+      const { r, g, b } = hexToRgb(fontColor);
+      const x = text.x || 0;
+      const y = text.y || 0;
+      const width = text.width || 200;
+
+      const pdfY = canvasHeight - y;
+
+      const wrapLimit = estimateCharLimit(width, fontSize);
+
+      const wrappedLines = wrapText(value, wrapLimit);
+
+      wrappedLines.forEach((line, i) => {
+        page.drawText(line, {
+          x,
+          y: pdfY - i * (fontSize + 4),
+          size: fontSize,
+          font: helveticaFont,
+          color: rgb(r / 255, g / 255, b / 255),
+        });
+      });
+    }
+  }
+
+  const pdfBytes = await pdfDoc.save();
+  triggerDownload(pdfBytes, "edited.pdf");
+}
+
+function triggerDownload(bytes, filename) {
+  const blob = new Blob([bytes], { type: "application/pdf" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function hexToRgb(hex) {
+  const bigint = parseInt(hex.replace("#", ""), 16);
+  return {
+    r: (bigint >> 16) & 255,
+    g: (bigint >> 8) & 255,
+    b: bigint & 255,
+  };
+}
+
+function estimateCharLimit(pixelWidth, fontSize) {
+  const avgCharWidth = fontSize * 0.6; // approx width per character
+  return Math.floor(pixelWidth / avgCharWidth);
+}
+
+function wrapText(text, limit) {
+  const words = text.split(" ");
+  const lines = [];
+  let line = "";
+
+  for (const word of words) {
+    if ((line + word).length <= limit) {
+      line += (line ? " " : "") + word;
+    } else {
+      if (line) lines.push(line);
+      line = word;
+    }
+  }
+
+  if (line) lines.push(line);
+  return lines;
+}

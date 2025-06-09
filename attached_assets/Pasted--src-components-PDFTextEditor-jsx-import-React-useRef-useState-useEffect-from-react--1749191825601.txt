@@ -1,0 +1,109 @@
+// 📄 src/components/PDFTextEditor.jsx
+import React, { useRef, useState, useEffect } from "react";
+import { PDFDocument } from "pdf-lib";
+import { pdfjs } from "pdfjs-dist";
+import "pdfjs-dist/web/pdf_viewer.css";
+
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+
+const FALLBACK_FONT = "Helvetica"; // fallback if font detection fails
+
+export default function PDFTextEditor({ file }) {
+  const canvasRef = useRef(null);
+  const textLayerRef = useRef(null);
+  const [pdfDoc, setPdfDoc] = useState(null);
+  const [page, setPage] = useState(null);
+  const [editableTexts, setEditableTexts] = useState([]);
+
+  useEffect(() => {
+    if (file) loadPDF(file);
+  }, [file]);
+
+  async function loadPDF(file) {
+    const arrayBuffer = await file.arrayBuffer();
+    const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+    const loaded = await loadingTask.promise;
+    setPdfDoc(loaded);
+    const page = await loaded.getPage(1);
+    setPage(page);
+    renderPage(page);
+  }
+
+  async function renderPage(page) {
+    const viewport = page.getViewport({ scale: 1.5 });
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+
+    const renderContext = {
+      canvasContext: context,
+      viewport: viewport,
+    };
+
+    await page.render(renderContext).promise;
+  }
+
+  const handleCanvasClick = async (e) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const textContent = await page.getTextContent();
+    const items = textContent.items;
+    let selectedFont = FALLBACK_FONT;
+
+    if (items.length > 0 && items[0].fontName) {
+      selectedFont = items[0].fontName;
+    }
+
+    setEditableTexts([
+      ...editableTexts,
+      {
+        id: Date.now(),
+        x,
+        y,
+        value: "",
+        font: selectedFont,
+      },
+    ]);
+  };
+
+  const updateText = (id, newText) => {
+    setEditableTexts((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, value: newText } : item))
+    );
+  };
+
+  return (
+    <div style={{ position: "relative" }}>
+      <canvas ref={canvasRef} onClick={handleCanvasClick} style={{ cursor: "text" }} />
+      <div ref={textLayerRef} style={{ position: "absolute", top: 0, left: 0 }}>
+        {editableTexts.map((text) => (
+          <div
+            key={text.id}
+            contentEditable
+            suppressContentEditableWarning
+            style={{
+              position: "absolute",
+              top: text.y,
+              left: text.x,
+              color: "black",
+              fontSize: "16px",
+              fontFamily: text.font || FALLBACK_FONT,
+              outline: "none",
+              minWidth: "50px",
+              minHeight: "20px",
+              backgroundColor: "rgba(255,255,255,0.6)",
+            }}
+            onBlur={(e) => updateText(text.id, e.target.innerText)}
+          >
+            {text.value}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

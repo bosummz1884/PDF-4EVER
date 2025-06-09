@@ -1,0 +1,133 @@
+// 📄 src/components/FillablePDFViewer.tsx
+import React, { useEffect, useRef, useState } from "react";
+import { pdfjs } from "pdfjs-dist";
+import "pdfjs-dist/web/pdf_viewer.css";
+
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+
+type FieldEntry = {
+  id: string;
+  fieldName: string;
+  fieldType: string;
+  rect: number[];
+  value: string;
+  page: number;
+};
+
+type FillablePDFViewerProps = {
+  file: File;
+};
+
+export default function FillablePDFViewer({ file }: FillablePDFViewerProps): JSX.Element {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [pdfDoc, setPdfDoc] = useState<any>(null);
+  const [pageNum, setPageNum] = useState(1);
+  const [fields, setFields] = useState<FieldEntry[]>([]);
+
+  useEffect(() => {
+    if (file) loadPDF(file);
+  }, [file]);
+
+  const loadPDF = async (file: File) => {
+    const buffer = await file.arrayBuffer();
+    const doc = await pdfjs.getDocument({ data: buffer }).promise;
+    setPdfDoc(doc);
+    setPageNum(1);
+    await renderPage(doc, 1);
+    await detectFields(doc, 1);
+  };
+
+  const renderPage = async (doc: any, num: number) => {
+    const page = await doc.getPage(num);
+    const viewport = page.getViewport({ scale: 1.5 });
+    const canvas = canvasRef.current!;
+    const ctx = canvas.getContext("2d")!;
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+
+    await page.render({ canvasContext: ctx, viewport }).promise;
+  };
+
+  const detectFields = async (doc: any, pageNum: number) => {
+    const page = await doc.getPage(pageNum);
+    const annotations = await page.getAnnotations();
+    const formFields = annotations
+      .filter((a: any) => a.subtype === "Widget")
+      .map((a: any) => ({
+        id: a.id,
+        fieldName: a.fieldName,
+        fieldType: a.fieldType,
+        rect: a.rect,
+        value: a.fieldValue || "",
+        page: pageNum
+      }));
+
+    setFields(formFields);
+  };
+
+  const updateFieldValue = (id: string, value: string) => {
+    setFields((prev) =>
+      prev.map((field) => (field.id === id ? { ...field, value } : field))
+    );
+  };
+
+  const renderInput = (field: FieldEntry) => {
+    const [x1, y1, x2, y2] = field.rect;
+    const width = x2 - x1;
+    const height = y2 - y1;
+
+    const top = canvasRef.current!.height - y2;
+
+    if (field.fieldType === "Tx") {
+      return (
+        <input
+          key={field.id}
+          value={field.value}
+          onChange={(e) => updateFieldValue(field.id, e.target.value)}
+          style={{
+            position: "absolute",
+            left: x1,
+            top,
+            width,
+            height,
+            fontSize: "14px",
+            padding: "2px",
+            boxSizing: "border-box",
+            border: "1px solid #888",
+            zIndex: 10
+          }}
+        />
+      );
+    }
+
+    if (field.fieldType === "Btn") {
+      return (
+        <input
+          key={field.id}
+          type="checkbox"
+          checked={field.value === "Yes"}
+          onChange={(e) =>
+            updateFieldValue(field.id, e.target.checked ? "Yes" : "Off")
+          }
+          style={{
+            position: "absolute",
+            left: x1,
+            top,
+            width,
+            height,
+            zIndex: 10
+          }}
+        />
+      );
+    }
+
+    return null;
+  };
+
+  return (
+    <div style={{ position: "relative", width: "fit-content" }}>
+      <canvas ref={canvasRef} />
+      {fields.map(renderInput)}
+    </div>
+  );
+}

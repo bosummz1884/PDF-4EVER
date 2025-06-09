@@ -1,0 +1,123 @@
+// 📄 src/components/PDFTextEditor.jsx
+import React, { useRef, useState, useEffect } from "react";
+import { pdfjs } from "pdfjs-dist";
+import Draggable from "react-draggable";
+import FontSelector from "./FontSelector";
+import { savePdfWithText } from "../utils/savePdfWithText";
+import "pdfjs-dist/web/pdf_viewer.css";
+
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+
+export default function PDFTextEditor({ file }) {
+  const canvasRef = useRef(null);
+  const [pdfDoc, setPdfDoc] = useState(null);
+  const [page, setPage] = useState(null);
+  const [editableTexts, setEditableTexts] = useState([]);
+  const [selectedFont, setSelectedFont] = useState("Helvetica");
+
+  useEffect(() => {
+    if (file) loadPDF(file);
+  }, [file]);
+
+  async function loadPDF(file) {
+    const arrayBuffer = await file.arrayBuffer();
+    const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+    const loaded = await loadingTask.promise;
+    setPdfDoc(loaded);
+    const page = await loaded.getPage(1);
+    setPage(page);
+    renderPage(page);
+  }
+
+  async function renderPage(page) {
+    const viewport = page.getViewport({ scale: 1.5 });
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+
+    await page.render({
+      canvasContext: context,
+      viewport: viewport,
+    }).promise;
+  }
+
+  const handleCanvasClick = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const newText = {
+      id: Date.now(),
+      x,
+      y,
+      value: "Edit me",
+      font: selectedFont,
+    };
+
+    setEditableTexts((prev) => [...prev, newText]);
+  };
+
+  const updateText = (id, newValue) => {
+    setEditableTexts((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, value: newValue } : item))
+    );
+  };
+
+  const updatePosition = (id, x, y) => {
+    setEditableTexts((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, x, y } : item))
+    );
+  };
+
+  const handleSave = () => {
+    if (file && canvasRef.current) {
+      savePdfWithText(file, editableTexts, canvasRef.current);
+    }
+  };
+
+  return (
+    <div style={{ position: "relative", paddingBottom: "1rem" }}>
+      <FontSelector currentFont={selectedFont} onChange={setSelectedFont} />
+      <button onClick={handleSave} style={{ marginBottom: "1rem", padding: "6px 12px", borderRadius: "6px" }}>
+        Save Edited PDF
+      </button>
+
+      <div style={{ position: "relative" }}>
+        <canvas
+          ref={canvasRef}
+          onClick={handleCanvasClick}
+          style={{ border: "1px solid #ccc", cursor: "text" }}
+        />
+        {editableTexts.map((text) => (
+          <Draggable
+            key={text.id}
+            position={{ x: text.x, y: text.y }}
+            onStop={(_, data) => updatePosition(text.id, data.x, data.y)}
+          >
+            <div
+              contentEditable
+              suppressContentEditableWarning
+              style={{
+                position: "absolute",
+                color: "#000",
+                fontFamily: text.font,
+                fontSize: "16px",
+                backgroundColor: "rgba(255,255,255,0.6)",
+                padding: "2px 4px",
+                minWidth: "50px",
+                minHeight: "20px",
+                outline: "none",
+                cursor: "move",
+              }}
+              onBlur={(e) => updateText(text.id, e.target.innerText)}
+            >
+              {text.value}
+            </div>
+          </Draggable>
+        ))}
+      </div>
+    </div>
+  );
+}
