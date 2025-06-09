@@ -3,7 +3,6 @@ import Landing from "./landing";
 import { AdvancedPDFEditor } from "@/components/AdvancedPDFEditor";
 import { Button } from "@/components/ui/button";
 import { LogOut, User } from "lucide-react";
-import logoImage from "@assets/70x70logo.png";
 
 function AuthenticatedHome() {
   const { user, logout } = useAuth();
@@ -13,11 +12,11 @@ function AuthenticatedHome() {
       {/* Minimal Header */}
       <header className="border-b bg-white dark:bg-gray-900 px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center space-x-3">
-          <img 
-            src={logoImage} 
+           <img 
+            src="/assets/70x70logo.png" 
             alt="PDF4EVER Logo" 
             className="h-8 w-8"
-          />
+            />
           <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-orange-500 bg-clip-text text-transparent">
             PDF4EVER
           </span>
