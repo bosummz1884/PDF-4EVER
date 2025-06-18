@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
-import logoImage from "@assets/70x70logo.png";
+
 
 export default function PrivacyPolicy() {
   return (
@@ -12,7 +12,7 @@ export default function PrivacyPolicy() {
           <Link href="/">
             <div className="flex items-center space-x-3 cursor-pointer">
               <img 
-                src={logoImage} 
+                src="/70x70logo.png"  
                 alt="PDF4EVER Logo" 
                 className="h-10 w-10"
               />

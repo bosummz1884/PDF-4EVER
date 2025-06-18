@@ -5,7 +5,7 @@ import { LoginDialog } from "@/components/LoginDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { FileText, Shield, Users, Zap, Download, Edit3, Lock } from "lucide-react";
-import logoImage from "@assets/70x70logo.png";
+
 
 export default function Landing() {
   const [showSignup, setShowSignup] = useState(false);
@@ -213,7 +213,7 @@ export default function Landing() {
         <div className="container mx-auto px-4 text-center">
           <div className="flex items-center justify-center space-x-3 mb-4">
             <img 
-              src={logoImage} 
+              src="/70x70logo.png" 
               alt="PDF4EVER Logo" 
               className="h-8 w-8"
             />
