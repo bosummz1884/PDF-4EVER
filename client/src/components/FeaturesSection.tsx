@@ -1,5 +1,12 @@
 import { Button } from "@/components/ui/button";
-import { Camera, Type, FileSignature, Layers, ScanText, Receipt } from "lucide-react";
+import {
+  Camera,
+  Type,
+  FileSignature,
+  Layers,
+  ScanText,
+  Receipt,
+} from "lucide-react";
 
 export default function FeaturesSection() {
   const handleCameraToPDF = () => {
@@ -30,7 +37,8 @@ export default function FeaturesSection() {
     {
       icon: Camera,
       title: "Camera to PDF",
-      description: "Scan documents with your camera and instantly convert them to high-quality PDFs.",
+      description:
+        "Scan documents with your camera and instantly convert them to high-quality PDFs.",
       buttonText: "Try Camera Scan",
       buttonColor: "bg-primary hover:bg-secondary",
       iconBg: "bg-primary/10 dark:bg-primary/20",
@@ -40,7 +48,8 @@ export default function FeaturesSection() {
     {
       icon: Type,
       title: "Font Matching & Text Editing",
-      description: "Seamlessly edit text within PDFs while automatically matching existing fonts and formatting.",
+      description:
+        "Seamlessly edit text within PDFs while automatically matching existing fonts and formatting.",
       buttonText: "Edit Text",
       buttonColor: "bg-primary hover:bg-secondary",
       iconBg: "bg-primary/10 dark:bg-primary/20",
@@ -50,7 +59,8 @@ export default function FeaturesSection() {
     {
       icon: FileSignature,
       title: "Sign Documents",
-      description: "Create digital signatures and sign documents securely with legally binding e-signatures.",
+      description:
+        "Create digital signatures and sign documents securely with legally binding e-signatures.",
       buttonText: "Add Signature",
       buttonColor: "bg-primary hover:bg-secondary",
       iconBg: "bg-primary/10 dark:bg-primary/20",
@@ -60,7 +70,8 @@ export default function FeaturesSection() {
     {
       icon: Layers,
       title: "Merge & Reorder Pages",
-      description: "Combine multiple PDFs and reorder pages with intuitive drag-and-drop functionality.",
+      description:
+        "Combine multiple PDFs and reorder pages with intuitive drag-and-drop functionality.",
       buttonText: "Merge PDFs",
       buttonColor: "bg-primary hover:bg-secondary",
       iconBg: "bg-primary/10 dark:bg-primary/20",
@@ -70,7 +81,8 @@ export default function FeaturesSection() {
     {
       icon: ScanText,
       title: "OCR Text Extraction",
-      description: "Extract text from scanned documents and images with advanced optical character recognition technology.",
+      description:
+        "Extract text from scanned documents and images with advanced optical character recognition technology.",
       buttonText: "Extract Text",
       buttonColor: "bg-primary hover:bg-secondary",
       iconBg: "bg-primary/10 dark:bg-primary/20",
@@ -80,7 +92,8 @@ export default function FeaturesSection() {
     {
       icon: Receipt,
       title: "PDF Invoice Generator",
-      description: "Create professional invoices and business documents with customizable templates and branding options.",
+      description:
+        "Create professional invoices and business documents with customizable templates and branding options.",
       buttonText: "Generate Invoice",
       buttonColor: "bg-primary hover:bg-secondary",
       iconBg: "bg-primary/10 dark:bg-primary/20",
@@ -97,7 +110,8 @@ export default function FeaturesSection() {
             Everything You Need for PDF Editing
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Professional PDF tools at your fingertips. No software installation required.
+            Professional PDF tools at your fingertips. No software installation
+            required.
           </p>
         </div>
 
@@ -107,10 +121,14 @@ export default function FeaturesSection() {
               key={index}
               className="bg-card dark:bg-card rounded-2xl p-8 hover:shadow-lg transition-shadow duration-300 border border-border hover:border-primary/20 group"
             >
-              <div className={`w-16 h-16 ${feature.iconBg} rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-200`}>
+              <div
+                className={`w-16 h-16 ${feature.iconBg} rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-200`}
+              >
                 <feature.icon className={`h-8 w-8 ${feature.iconColor}`} />
               </div>
-              <h3 className="text-xl font-semibold text-foreground mb-3">{feature.title}</h3>
+              <h3 className="text-xl font-semibold text-foreground mb-3">
+                {feature.title}
+              </h3>
               <p className="text-muted-foreground mb-6 leading-relaxed">
                 {feature.description}
               </p>

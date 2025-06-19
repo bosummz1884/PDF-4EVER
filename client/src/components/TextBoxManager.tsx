@@ -3,10 +3,24 @@ import { Rnd } from "react-rnd";
 import { nanoid } from "nanoid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { Bold, Italic, Underline, Trash2, Plus, Type, Palette } from "lucide-react";
+import {
+  Bold,
+  Italic,
+  Underline,
+  Trash2,
+  Plus,
+  Type,
+  Palette,
+} from "lucide-react";
 
 export interface TextBox {
   id: string;
@@ -22,7 +36,7 @@ export interface TextBox {
   bold: boolean;
   italic: boolean;
   underline: boolean;
-  alignment: 'left' | 'center' | 'right';
+  alignment: "left" | "center" | "right";
   rotation: number;
 }
 
@@ -43,82 +57,113 @@ export default function TextBoxManager({
   onTextBoxesChange,
   onExport,
   showControls = true,
-  originalPdfData
+  originalPdfData,
 }: TextBoxManagerProps) {
   const [textBoxes, setTextBoxes] = useState<TextBox[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isAddMode, setIsAddMode] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  
+
   // Text properties
   const [selectedFont, setSelectedFont] = useState("Helvetica");
   const [fontSize, setFontSize] = useState(16);
   const [fontColor, setFontColor] = useState("#000000");
-  const [fontWeight, setFontWeight] = useState<'normal' | 'bold'>('normal');
-  const [fontStyle, setFontStyle] = useState<'normal' | 'italic'>('normal');
-  const [textAlign, setTextAlign] = useState<'left' | 'center' | 'right'>('left');
+  const [fontWeight, setFontWeight] = useState<"normal" | "bold">("normal");
+  const [fontStyle, setFontStyle] = useState<"normal" | "italic">("normal");
+  const [textAlign, setTextAlign] = useState<"left" | "center" | "right">(
+    "left",
+  );
 
-  const handleCanvasClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (isAddMode && e.target === e.currentTarget) {
-      const rect = canvasRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      
-      const x = (e.clientX - rect.left) / zoom;
-      const y = (e.clientY - rect.top) / zoom;
+  const handleCanvasClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (isAddMode && e.target === e.currentTarget) {
+        const rect = canvasRef.current?.getBoundingClientRect();
+        if (!rect) return;
 
-      const newBox: TextBox = {
-        id: nanoid(),
-        page: currentPage,
-        x,
-        y,
-        width: 200,
-        height: 50,
-        value: "Edit me",
-        font: selectedFont,
-        size: fontSize,
-        color: fontColor,
-        bold: fontWeight === 'bold',
-        italic: fontStyle === 'italic',
-        underline: false,
-        alignment: textAlign,
-        rotation: 0
-      };
+        const x = (e.clientX - rect.left) / zoom;
+        const y = (e.clientY - rect.top) / zoom;
 
-      const updatedBoxes = [...textBoxes, newBox];
+        const newBox: TextBox = {
+          id: nanoid(),
+          page: currentPage,
+          x,
+          y,
+          width: 200,
+          height: 50,
+          value: "Edit me",
+          font: selectedFont,
+          size: fontSize,
+          color: fontColor,
+          bold: fontWeight === "bold",
+          italic: fontStyle === "italic",
+          underline: false,
+          alignment: textAlign,
+          rotation: 0,
+        };
+
+        const updatedBoxes = [...textBoxes, newBox];
+        setTextBoxes(updatedBoxes);
+        onTextBoxesChange?.(updatedBoxes);
+        setIsAddMode(false);
+        setSelectedId(newBox.id);
+      }
+    },
+    [
+      isAddMode,
+      canvasRef,
+      zoom,
+      currentPage,
+      selectedFont,
+      fontSize,
+      fontColor,
+      fontWeight,
+      fontStyle,
+      textAlign,
+      textBoxes,
+      onTextBoxesChange,
+    ],
+  );
+
+  const updateTextBox = useCallback(
+    (id: string, updates: Partial<TextBox>) => {
+      const updatedBoxes = textBoxes.map((box) =>
+        box.id === id ? { ...box, ...updates } : box,
+      );
       setTextBoxes(updatedBoxes);
       onTextBoxesChange?.(updatedBoxes);
-      setIsAddMode(false);
-      setSelectedId(newBox.id);
-    }
-  }, [isAddMode, canvasRef, zoom, currentPage, selectedFont, fontSize, fontColor, fontWeight, fontStyle, textAlign, textBoxes, onTextBoxesChange]);
+    },
+    [textBoxes, onTextBoxesChange],
+  );
 
-  const updateTextBox = useCallback((id: string, updates: Partial<TextBox>) => {
-    const updatedBoxes = textBoxes.map(box => 
-      box.id === id ? { ...box, ...updates } : box
-    );
-    setTextBoxes(updatedBoxes);
-    onTextBoxesChange?.(updatedBoxes);
-  }, [textBoxes, onTextBoxesChange]);
+  const deleteTextBox = useCallback(
+    (id: string) => {
+      const updatedBoxes = textBoxes.filter((box) => box.id !== id);
+      setTextBoxes(updatedBoxes);
+      onTextBoxesChange?.(updatedBoxes);
+      if (selectedId === id) setSelectedId(null);
+    },
+    [textBoxes, selectedId, onTextBoxesChange],
+  );
 
-  const deleteTextBox = useCallback((id: string) => {
-    const updatedBoxes = textBoxes.filter(box => box.id !== id);
-    setTextBoxes(updatedBoxes);
-    onTextBoxesChange?.(updatedBoxes);
-    if (selectedId === id) setSelectedId(null);
-  }, [textBoxes, selectedId, onTextBoxesChange]);
+  const toggleStyle = useCallback(
+    (id: string, style: "bold" | "italic" | "underline") => {
+      updateTextBox(id, {
+        [style]: !textBoxes.find((box) => box.id === id)?.[style],
+      });
+    },
+    [textBoxes, updateTextBox],
+  );
 
-  const toggleStyle = useCallback((id: string, style: 'bold' | 'italic' | 'underline') => {
-    updateTextBox(id, { [style]: !textBoxes.find(box => box.id === id)?.[style] });
-  }, [textBoxes, updateTextBox]);
-
-  const currentPageTextBoxes = textBoxes.filter(box => box.page === currentPage);
-  const selectedBox = textBoxes.find(box => box.id === selectedId);
+  const currentPageTextBoxes = textBoxes.filter(
+    (box) => box.page === currentPage,
+  );
+  const selectedBox = textBoxes.find((box) => box.id === selectedId);
 
   const exportWithTextBoxes = async () => {
     if (!originalPdfData || !onExport) return;
-    
+
     try {
-      const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
+      const { PDFDocument, StandardFonts, rgb } = await import("pdf-lib");
       const pdfDoc = await PDFDocument.load(originalPdfData);
       const pages = pdfDoc.getPages();
 
@@ -128,9 +173,9 @@ export default function TextBoxManager({
 
         const { height: pageHeight } = page.getSize();
         const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-        
+
         // Convert hex color to RGB
-        const hex = textBox.color.replace('#', '');
+        const hex = textBox.color.replace("#", "");
         const r = parseInt(hex.substr(0, 2), 16) / 255;
         const g = parseInt(hex.substr(2, 2), 16) / 255;
         const b = parseInt(hex.substr(4, 2), 16) / 255;
@@ -147,7 +192,7 @@ export default function TextBoxManager({
       const pdfBytes = await pdfDoc.save();
       onExport(pdfBytes);
     } catch (error) {
-      console.error('Export error:', error);
+      console.error("Export error:", error);
     }
   };
 
@@ -198,21 +243,21 @@ export default function TextBoxManager({
               <Button
                 size="sm"
                 variant={selectedBox.bold ? "default" : "outline"}
-                onClick={() => toggleStyle(selectedBox.id, 'bold')}
+                onClick={() => toggleStyle(selectedBox.id, "bold")}
               >
                 <Bold className="h-3 w-3" />
               </Button>
               <Button
                 size="sm"
                 variant={selectedBox.italic ? "default" : "outline"}
-                onClick={() => toggleStyle(selectedBox.id, 'italic')}
+                onClick={() => toggleStyle(selectedBox.id, "italic")}
               >
                 <Italic className="h-3 w-3" />
               </Button>
               <Button
                 size="sm"
                 variant={selectedBox.underline ? "default" : "outline"}
-                onClick={() => toggleStyle(selectedBox.id, 'underline')}
+                onClick={() => toggleStyle(selectedBox.id, "underline")}
               >
                 <Underline className="h-3 w-3" />
               </Button>
@@ -246,26 +291,26 @@ export default function TextBoxManager({
           width: canvasRef.current?.width || "100%",
           height: canvasRef.current?.height || "100%",
           cursor: isAddMode ? "crosshair" : "default",
-          zIndex: 10
+          zIndex: 10,
         }}
         onClick={handleCanvasClick}
       >
         {currentPageTextBoxes.map((box) => (
           <Rnd
             key={box.id}
-            size={{ 
-              width: box.width * zoom, 
-              height: box.height * zoom 
+            size={{
+              width: box.width * zoom,
+              height: box.height * zoom,
             }}
-            position={{ 
-              x: box.x * zoom, 
-              y: box.y * zoom 
+            position={{
+              x: box.x * zoom,
+              y: box.y * zoom,
             }}
             bounds="parent"
             onDragStop={(_, d) =>
-              updateTextBox(box.id, { 
-                x: d.x / zoom, 
-                y: d.y / zoom 
+              updateTextBox(box.id, {
+                x: d.x / zoom,
+                y: d.y / zoom,
               })
             }
             onResizeStop={(_, __, ref, ____, pos) =>
@@ -273,7 +318,7 @@ export default function TextBoxManager({
                 width: parseInt(ref.style.width, 10) / zoom,
                 height: parseInt(ref.style.height, 10) / zoom,
                 x: pos.x / zoom,
-                y: pos.y / zoom
+                y: pos.y / zoom,
               })
             }
             onClick={(e: React.MouseEvent) => {
@@ -281,15 +326,17 @@ export default function TextBoxManager({
               setSelectedId(box.id);
             }}
           >
-            <div className={`group relative ${selectedId === box.id ? 'ring-2 ring-blue-500' : ''}`}>
+            <div
+              className={`group relative ${selectedId === box.id ? "ring-2 ring-blue-500" : ""}`}
+            >
               {/* Hover Controls */}
               <div className="absolute -top-8 left-0 hidden group-hover:flex gap-1 bg-white dark:bg-gray-800 border rounded p-1 shadow-lg z-20">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    toggleStyle(box.id, 'bold');
+                    toggleStyle(box.id, "bold");
                   }}
-                  className={`px-2 py-1 text-xs font-bold rounded ${box.bold ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+                  className={`px-2 py-1 text-xs font-bold rounded ${box.bold ? "bg-blue-500 text-white" : "bg-gray-200 dark:bg-gray-700"}`}
                   title="Bold"
                 >
                   B
@@ -297,9 +344,9 @@ export default function TextBoxManager({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    toggleStyle(box.id, 'italic');
+                    toggleStyle(box.id, "italic");
                   }}
-                  className={`px-2 py-1 text-xs italic rounded ${box.italic ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+                  className={`px-2 py-1 text-xs italic rounded ${box.italic ? "bg-blue-500 text-white" : "bg-gray-200 dark:bg-gray-700"}`}
                   title="Italic"
                 >
                   I
@@ -307,9 +354,9 @@ export default function TextBoxManager({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    toggleStyle(box.id, 'underline');
+                    toggleStyle(box.id, "underline");
                   }}
-                  className={`px-2 py-1 text-xs underline rounded ${box.underline ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+                  className={`px-2 py-1 text-xs underline rounded ${box.underline ? "bg-blue-500 text-white" : "bg-gray-200 dark:bg-gray-700"}`}
                   title="Underline"
                 >
                   U
@@ -339,16 +386,22 @@ export default function TextBoxManager({
                   fontStyle: box.italic ? "italic" : "normal",
                   textDecoration: box.underline ? "underline" : "none",
                   textAlign: box.alignment,
-                  background: selectedId === box.id ? "rgba(59, 130, 246, 0.1)" : "rgba(255,255,255,0.8)",
+                  background:
+                    selectedId === box.id
+                      ? "rgba(59, 130, 246, 0.1)"
+                      : "rgba(255,255,255,0.8)",
                   padding: "4px",
-                  outline: selectedId === box.id ? "2px solid #3b82f6" : "1px solid rgba(0,0,0,0.2)",
+                  outline:
+                    selectedId === box.id
+                      ? "2px solid #3b82f6"
+                      : "1px solid rgba(0,0,0,0.2)",
                   borderRadius: "3px",
                   overflow: "hidden",
                   whiteSpace: "pre-wrap",
                   wordBreak: "break-word",
                   boxSizing: "border-box",
                   cursor: "text",
-                  minHeight: "20px"
+                  minHeight: "20px",
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -361,7 +414,7 @@ export default function TextBoxManager({
                 }
                 onKeyDown={(e) => {
                   e.stopPropagation();
-                  if (e.key === 'Enter' && !e.shiftKey) {
+                  if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
                     e.currentTarget.blur();
                   }

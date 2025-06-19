@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { pdfjsLib } from '@/lib/pdfWorker';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Download, Save, FileText } from 'lucide-react';
-import { saveFilledFormFields } from '../utils/saveFilledFormFields';
+import { pdfjsLib } from "@/lib/pdfWorker";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Download, Save, FileText } from "lucide-react";
+import { saveFilledFormFields } from "../utils/saveFilledFormFields";
 
 type FieldEntry = {
   id: string;
@@ -27,13 +27,13 @@ interface FillablePDFViewerProps {
   className?: string;
 }
 
-export default function FillablePDFViewer({ 
-  file, 
+export default function FillablePDFViewer({
+  file,
   pdfDocument,
   currentPage: externalCurrentPage,
-  onFieldsDetected, 
-  onSave, 
-  className 
+  onFieldsDetected,
+  onSave,
+  className,
 }: FillablePDFViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -69,32 +69,32 @@ export default function FillablePDFViewer({
   const loadPDF = async (file: File) => {
     try {
       setIsLoading(true);
-      
+
       // Check if file has content
       if (file.size === 0) {
-        throw new Error('PDF file is empty');
+        throw new Error("PDF file is empty");
       }
-      
+
       const buffer = await file.arrayBuffer();
-      
+
       // Validate buffer has content
       if (buffer.byteLength === 0) {
-        throw new Error('PDF file has no content');
+        throw new Error("PDF file has no content");
       }
-      
-      const doc = await pdfjsLib.getDocument({ 
+
+      const doc = await pdfjsLib.getDocument({
         data: new Uint8Array(buffer),
-        verbosity: 0 // Reduce console noise
+        verbosity: 0, // Reduce console noise
       }).promise;
-      
+
       setPdfDoc(doc);
       setTotalPages(doc.numPages);
       setPageNum(1);
-      
+
       await renderPage(doc, 1);
       await detectAllFields(doc);
     } catch (error) {
-      console.error('Error loading PDF:', error);
+      console.error("Error loading PDF:", error);
       // Reset state on error
       setPdfDoc(null);
       setTotalPages(0);
@@ -106,21 +106,21 @@ export default function FillablePDFViewer({
 
   const renderPage = async (doc: any, num: number) => {
     if (!canvasRef.current) {
-      console.log('Canvas ref not available');
+      console.log("Canvas ref not available");
       return;
     }
-    
+
     try {
       const page = await doc.getPage(num);
       const viewport = page.getViewport({ scale });
       const canvas = canvasRef.current;
       const ctx = canvas.getContext("2d");
-      
+
       if (!ctx) {
-        console.log('Canvas context not available');
+        console.log("Canvas context not available");
         return;
       }
-      
+
       canvas.height = viewport.height;
       canvas.width = viewport.width;
 
@@ -133,17 +133,20 @@ export default function FillablePDFViewer({
 
   const detectAllFields = async (doc: any) => {
     const allFields: FieldEntry[] = [];
-    
+
     for (let pageNum = 1; pageNum <= doc.numPages; pageNum++) {
       const pageFields = await detectFieldsOnPage(doc, pageNum);
       allFields.push(...pageFields);
     }
-    
+
     setFields(allFields);
     onFieldsDetected(allFields);
   };
 
-  const detectFieldsOnPage = async (doc: any, pageNum: number): Promise<FieldEntry[]> => {
+  const detectFieldsOnPage = async (
+    doc: any,
+    pageNum: number,
+  ): Promise<FieldEntry[]> => {
     const page = await doc.getPage(pageNum);
     const annotations = await page.getAnnotations();
 
@@ -158,7 +161,7 @@ export default function FillablePDFViewer({
         options: a.options || [],
         radioGroup: a.radioButton ? a.fieldName : undefined,
         page: pageNum,
-        required: a.required || false
+        required: a.required || false,
       }));
 
     return formFields;
@@ -166,32 +169,35 @@ export default function FillablePDFViewer({
 
   const updateFieldValue = useCallback((id: string, value: string) => {
     setFields((prev) => {
-      const updated = prev.map((field) => 
-        field.id === id ? { ...field, value } : field
+      const updated = prev.map((field) =>
+        field.id === id ? { ...field, value } : field,
       );
       return updated;
     });
   }, []);
 
-  const handleRadioChange = useCallback((groupName: string, fieldId: string) => {
-    setFields((prev) => 
-      prev.map((field) => {
-        if (field.radioGroup === groupName) {
-          return { ...field, value: field.id === fieldId ? "Yes" : "Off" };
-        }
-        return field;
-      })
-    );
-  }, []);
+  const handleRadioChange = useCallback(
+    (groupName: string, fieldId: string) => {
+      setFields((prev) =>
+        prev.map((field) => {
+          if (field.radioGroup === groupName) {
+            return { ...field, value: field.id === fieldId ? "Yes" : "Off" };
+          }
+          return field;
+        }),
+      );
+    },
+    [],
+  );
 
   const renderFormField = (field: FieldEntry) => {
     if (field.page !== pageNum) return null;
-    
+
     const canvas = canvasRef.current;
     if (!canvas) return null;
-    
+
     const [x1, y1, x2, y2] = field.rect;
-    
+
     // Use simpler, more direct positioning calculation for better zoom compatibility
     const width = (x2 - x1) * scale;
     const height = (y2 - y1) * scale;
@@ -210,14 +216,14 @@ export default function FillablePDFViewer({
       borderRadius: "3px",
       backgroundColor: "rgba(59, 130, 246, 0.1)",
       color: "#1e40af",
-      fontWeight: "500"
+      fontWeight: "500",
     };
 
     switch (field.fieldType) {
       case "Tx": // Text field
         const isDateField = field.fieldName.toLowerCase().includes("date");
         const isEmailField = field.fieldName.toLowerCase().includes("email");
-        
+
         return (
           <input
             key={field.id}
@@ -230,7 +236,7 @@ export default function FillablePDFViewer({
               ...baseStyle,
               padding: "4px 6px",
               boxSizing: "border-box",
-              backgroundColor: "rgba(255, 255, 255, 0.9)"
+              backgroundColor: "rgba(255, 255, 255, 0.9)",
             }}
           />
         );
@@ -251,7 +257,7 @@ export default function FillablePDFViewer({
                 accentColor: "#3b82f6",
                 cursor: "pointer",
                 margin: "0",
-                transform: "scale(1.2)"
+                transform: "scale(1.2)",
               }}
             />
           );
@@ -271,7 +277,7 @@ export default function FillablePDFViewer({
                 accentColor: "#3b82f6",
                 cursor: "pointer",
                 margin: "0",
-                transform: "scale(1.2)"
+                transform: "scale(1.2)",
               }}
             />
           );
@@ -287,7 +293,7 @@ export default function FillablePDFViewer({
             style={{
               ...baseStyle,
               backgroundColor: "rgba(255, 255, 255, 0.9)",
-              padding: "2px"
+              padding: "2px",
             }}
           >
             <option value="">Select...</option>
@@ -317,7 +323,7 @@ export default function FillablePDFViewer({
               borderLeft: "none",
               borderRight: "none",
               backgroundColor: "transparent",
-              padding: "2px 4px"
+              padding: "2px 4px",
             }}
           />
         );
@@ -336,10 +342,14 @@ export default function FillablePDFViewer({
 
   const getFieldStats = () => {
     const total = fields.length;
-    const filled = fields.filter(f => f.value && f.value.trim() !== "").length;
-    const required = fields.filter(f => f.required).length;
-    const requiredFilled = fields.filter(f => f.required && f.value && f.value.trim() !== "").length;
-    
+    const filled = fields.filter(
+      (f) => f.value && f.value.trim() !== "",
+    ).length;
+    const required = fields.filter((f) => f.required).length;
+    const requiredFilled = fields.filter(
+      (f) => f.required && f.value && f.value.trim() !== "",
+    ).length;
+
     return { total, filled, required, requiredFilled };
   };
 
@@ -347,10 +357,15 @@ export default function FillablePDFViewer({
 
   if (!file && !pdfDocument) {
     return (
-      <div className={`flex items-center justify-center h-64 border-2 border-dashed border-gray-300 rounded-lg ${className}`}>
+      <div
+        className={`flex items-center justify-center h-64 border-2 border-dashed border-gray-300 rounded-lg ${className}`}
+      >
         <div className="text-center">
           <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-500">Upload a PDF to view fillable form fields</p>
+
+          <p className="text-gray-500">
+            Upload a PDF to view fillable form fields
+          </p>
         </div>
       </div>
     );
@@ -370,7 +385,13 @@ export default function FillablePDFViewer({
                 {stats.filled}/{stats.total} fields filled
               </Badge>
               {stats.required > 0 && (
-                <Badge variant={stats.requiredFilled === stats.required ? "default" : "destructive"}>
+                <Badge
+                  variant={
+                    stats.requiredFilled === stats.required
+                      ? "default"
+                      : "destructive"
+                  }
+                >
                   {stats.requiredFilled}/{stats.required} required
                 </Badge>
               )}
@@ -449,10 +470,10 @@ export default function FillablePDFViewer({
         )}
 
         {/* Canvas Container */}
-        <div 
+        <div
           ref={containerRef}
           className="relative bg-white overflow-auto"
-          style={{ maxHeight: '70vh' }}
+          style={{ maxHeight: "70vh" }}
         >
           {isLoading && (
             <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-20">
@@ -462,28 +483,31 @@ export default function FillablePDFViewer({
               </div>
             </div>
           )}
-          
-          <canvas 
-            ref={canvasRef} 
+
+          <canvas
+            ref={canvasRef}
             className="block"
-            style={{ maxWidth: '100%', height: 'auto' }}
+            style={{ maxWidth: "100%", height: "auto" }}
           />
-          
+
           {/* Form Fields Overlay */}
-          <div key={formFieldsKey}>
-            {fields.map(renderFormField)}
-          </div>
+          <div key={formFieldsKey}>{fields.map(renderFormField)}</div>
         </div>
       </div>
 
       {/* Field List for debugging */}
-      {process.env.NODE_ENV === 'development' && fields.length > 0 && (
+      {process.env.NODE_ENV === "development" && fields.length > 0 && (
         <details className="text-xs">
           <summary className="cursor-pointer text-gray-600">
-            Debug: Show detected fields ({fields.filter(f => f.page === pageNum).length} on current page)
+            Debug: Show detected fields (
+            {fields.filter((f) => f.page === pageNum).length} on current page)
           </summary>
           <pre className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto max-h-32">
-            {JSON.stringify(fields.filter(f => f.page === pageNum), null, 2)}
+            {JSON.stringify(
+              fields.filter((f) => f.page === pageNum),
+              null,
+              2,
+            )}
           </pre>
         </details>
       )}

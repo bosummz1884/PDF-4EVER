@@ -16,7 +16,9 @@ export default function CTASection() {
           Ready to Transform Your PDF Workflow?
         </h2>
         <p className="text-xl text-orange-100 mb-8 leading-relaxed">
-          Join thousands of users who trust <span className="text-orange-200">PDF</span><span className="text-white">4EVER</span> for their document needs.
+          Join thousands of users who trust{" "}
+          <span className="text-orange-200">PDF</span>
+          <span className="text-white">4EVER</span> for their document needs.
         </p>
         <div className="flex justify-center">
           <Button

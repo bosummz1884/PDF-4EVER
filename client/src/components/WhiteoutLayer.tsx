@@ -19,24 +19,26 @@ type WhiteoutLayerProps = {
   onBlocksChange?: (blocks: WhiteoutBlock[]) => void;
 };
 
-export default function WhiteoutLayer({ 
-  isActive, 
-  canvasRef, 
+export default function WhiteoutLayer({
+  isActive,
+  canvasRef,
   scale = 1,
-  onBlocksChange 
+  onBlocksChange,
 }: WhiteoutLayerProps): JSX.Element {
   const [blocks, setBlocks] = useState<WhiteoutBlock[]>([]);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawingBlock, setDrawingBlock] = useState<WhiteoutBlock | null>(null);
-  const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(null);
+  const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(
+    null,
+  );
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isActive) return;
 
     // Prevent creating blocks when clicking on existing blocks
     const target = e.target as HTMLElement;
-    if (target.closest('[data-rnd]')) return;
+    if (target.closest("[data-rnd]")) return;
 
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -53,7 +55,7 @@ export default function WhiteoutLayer({
       y,
       width: 1,
       height: 1,
-      color: "#ffffff"
+      color: "#ffffff",
     };
 
     setDrawingBlock(newBlock);
@@ -78,7 +80,7 @@ export default function WhiteoutLayer({
       x,
       y,
       width: Math.max(width, 5),
-      height: Math.max(height, 5)
+      height: Math.max(height, 5),
     });
   };
 
@@ -97,8 +99,8 @@ export default function WhiteoutLayer({
   };
 
   const updateBlock = (id: string, updates: Partial<WhiteoutBlock>) => {
-    const updatedBlocks = blocks.map((block) => 
-      block.id === id ? { ...block, ...updates } : block
+    const updatedBlocks = blocks.map((block) =>
+      block.id === id ? { ...block, ...updates } : block,
     );
     setBlocks(updatedBlocks);
     onBlocksChange?.(updatedBlocks);
@@ -126,7 +128,7 @@ export default function WhiteoutLayer({
         left: 0,
         pointerEvents: isActive ? "auto" : "none",
         zIndex: isActive ? 10 : 1,
-        cursor: isActive ? "crosshair" : "default"
+        cursor: isActive ? "crosshair" : "default",
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -145,7 +147,7 @@ export default function WhiteoutLayer({
             backgroundColor: "#ffffff",
             opacity: 0.8,
             pointerEvents: "none",
-            zIndex: 25
+            zIndex: 25,
           }}
         />
       )}
@@ -157,22 +159,24 @@ export default function WhiteoutLayer({
           size={{ width: block.width * scale, height: block.height * scale }}
           position={{ x: block.x * scale, y: block.y * scale }}
           bounds="parent"
-          onDragStop={(_, d) => updateBlock(block.id, { 
-            x: d.x / scale, 
-            y: d.y / scale 
-          })}
+          onDragStop={(_, d) =>
+            updateBlock(block.id, {
+              x: d.x / scale,
+              y: d.y / scale,
+            })
+          }
           onResizeStop={(_, __, ref, ____, pos) =>
             updateBlock(block.id, {
               width: parseInt(ref.style.width, 10) / scale,
               height: parseInt(ref.style.height, 10) / scale,
               x: pos.x / scale,
-              y: pos.y / scale
+              y: pos.y / scale,
             })
           }
           onClick={(e: any) => handleBlockClick(e, block.id)}
-          style={{ 
+          style={{
             zIndex: selectedBlockId === block.id ? 50 : 30,
-            position: "absolute"
+            position: "absolute",
           }}
         >
           <div
@@ -180,10 +184,11 @@ export default function WhiteoutLayer({
               width: "100%",
               height: "100%",
               backgroundColor: "#ffffff",
-              border: selectedBlockId === block.id ? "2px dashed #007acc" : "none",
+              border:
+                selectedBlockId === block.id ? "2px dashed #007acc" : "none",
               boxSizing: "border-box",
               position: "relative",
-              cursor: isActive ? "move" : "default"
+              cursor: isActive ? "move" : "default",
             }}
           >
             {selectedBlockId === block.id && (
@@ -197,11 +202,17 @@ export default function WhiteoutLayer({
                   boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
                   borderRadius: "4px",
                   zIndex: 20,
-                  minWidth: "200px"
+                  minWidth: "200px",
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <div style={{ marginBottom: "8px", fontSize: "12px", fontWeight: "bold" }}>
+                <div
+                  style={{
+                    marginBottom: "8px",
+                    fontSize: "12px",
+                    fontWeight: "bold",
+                  }}
+                >
                   Whiteout Color
                 </div>
                 <HexColorPicker
@@ -209,17 +220,18 @@ export default function WhiteoutLayer({
                   onChange={(color) => updateBlock(block.id, { color })}
                   style={{ width: "100%", height: "120px" }}
                 />
+
                 <button
-                  style={{ 
-                    marginTop: "8px", 
-                    width: "100%", 
+                  style={{
+                    marginTop: "8px",
+                    width: "100%",
                     fontSize: "12px",
                     padding: "6px",
                     backgroundColor: "#ff4444",
                     color: "white",
                     border: "none",
                     borderRadius: "3px",
-                    cursor: "pointer"
+                    cursor: "pointer",
                   }}
                   onClick={(e) => {
                     e.stopPropagation();

@@ -1,21 +1,42 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { 
-  Upload, Download, Split, Merge, RotateCw, FileText, 
-  Trash2, Plus, Copy, Save, FileDown, Scissors, Combine,
-  RefreshCw, Compress, Shield, Eye, Settings
-} from 'lucide-react';
-import { pdfCore } from '@/lib/pdfCore';
+import React, { useState, useCallback, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import {
+  Upload,
+  Download,
+  Split,
+  Merge,
+  RotateCw,
+  FileText,
+  Trash2,
+  Plus,
+  Copy,
+  Save,
+  FileDown,
+  Scissors,
+  Combine,
+  RefreshCw,
+  Compress,
+  Shield,
+  Eye,
+  Settings,
+} from "lucide-react";
+import { pdfCore } from "@/lib/pdfCore";
 
 interface PDFFile {
   id: string;
@@ -38,88 +59,94 @@ interface PDFToolkitProps {
   currentFile?: PDFFile;
 }
 
-export default function PDFToolkit({ onFileProcessed, currentFile }: PDFToolkitProps) {
+export default function PDFToolkit({
+  onFileProcessed,
+  currentFile,
+}: PDFToolkitProps) {
   const [files, setFiles] = useState<PDFFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [activeTab, setActiveTab] = useState('merge');
+  const [activeTab, setActiveTab] = useState("merge");
   const [splitRanges, setSplitRanges] = useState<SplitRange[]>([]);
   const [mergeOrder, setMergeOrder] = useState<string[]>([]);
-  const [compressionLevel, setCompressionLevel] = useState('medium');
+  const [compressionLevel, setCompressionLevel] = useState("medium");
   const [rotationAngle, setRotationAngle] = useState(90);
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mergeInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileUpload = useCallback(async (files: FileList, isMerge = false) => {
-    setIsProcessing(true);
-    setProgress(0);
-    
-    const uploadedFiles: PDFFile[] = [];
-    
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (file.type !== 'application/pdf') continue;
-      
-      setProgress((i / files.length) * 50);
-      
-      try {
-        const arrayBuffer = await file.arrayBuffer();
-        const pdfDoc = await pdfCore.loadPDF(arrayBuffer);
-        
-        const pdfFile: PDFFile = {
-          id: `pdf-${Date.now()}-${i}`,
-          name: file.name,
-          size: file.size,
-          data: arrayBuffer,
-          pageCount: pdfDoc.numPages
-        };
-        
-        uploadedFiles.push(pdfFile);
-        
-        if (!isMerge && i === 0) {
-          onFileProcessed?.(pdfFile);
+  const handleFileUpload = useCallback(
+    async (files: FileList, isMerge = false) => {
+      setIsProcessing(true);
+      setProgress(0);
+
+      const uploadedFiles: PDFFile[] = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.type !== "application/pdf") continue;
+
+        setProgress((i / files.length) * 50);
+
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const pdfDoc = await pdfCore.loadPDF(arrayBuffer);
+
+          const pdfFile: PDFFile = {
+            id: `pdf-${Date.now()}-${i}`,
+            name: file.name,
+            size: file.size,
+            data: arrayBuffer,
+            pageCount: pdfDoc.numPages,
+          };
+
+          uploadedFiles.push(pdfFile);
+
+          if (!isMerge && i === 0) {
+            onFileProcessed?.(pdfFile);
+          }
+        } catch (error) {
+          console.error(`Failed to load PDF: ${file.name}`, error);
         }
-      } catch (error) {
-        console.error(`Failed to load PDF: ${file.name}`, error);
       }
-    }
-    
-    if (isMerge) {
-      setFiles(prev => [...prev, ...uploadedFiles]);
-      setMergeOrder(prev => [...prev, ...uploadedFiles.map(f => f.id)]);
-    } else {
-      setFiles(uploadedFiles);
-    }
-    
-    setProgress(100);
-    setIsProcessing(false);
-  }, [onFileProcessed]);
+
+      if (isMerge) {
+        setFiles((prev) => [...prev, ...uploadedFiles]);
+        setMergeOrder((prev) => [...prev, ...uploadedFiles.map((f) => f.id)]);
+      } else {
+        setFiles(uploadedFiles);
+      }
+
+      setProgress(100);
+      setIsProcessing(false);
+    },
+    [onFileProcessed],
+  );
 
   const mergePDFs = useCallback(async () => {
     if (mergeOrder.length < 2) return;
-    
+
     setIsProcessing(true);
     setProgress(0);
-    
+
     try {
       const orderedFiles = mergeOrder
-        .map(id => files.find(f => f.id === id))
+        .map((id) => files.find((f) => f.id === id))
         .filter(Boolean) as PDFFile[];
-      
-      const pdfDataArray = orderedFiles.map(f => f.data);
+
+      const pdfDataArray = orderedFiles.map((f) => f.data);
       setProgress(50);
-      
+
       const mergedPdfBytes = await pdfCore.mergePDFs(pdfDataArray);
       setProgress(90);
-      
-      const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
-      pdfCore.downloadBlob(blob, 'merged-document.pdf');
-      
+
+      const blob = new Blob([mergedPdfBytes], { type: "application/pdf" });
+      pdfCore.downloadBlob(blob, "merged-document.pdf");
+
       setProgress(100);
     } catch (error) {
-      console.error('Merge failed:', error);
+      console.error("Merge failed:", error);
     } finally {
       setIsProcessing(false);
     }
@@ -127,78 +154,89 @@ export default function PDFToolkit({ onFileProcessed, currentFile }: PDFToolkitP
 
   const splitPDF = useCallback(async () => {
     if (!currentFile || splitRanges.length === 0) return;
-    
+
     setIsProcessing(true);
     setProgress(0);
-    
+
     try {
-      const pageRanges = splitRanges.map(range => {
+      const pageRanges = splitRanges.map((range) => {
         const pages = [];
         for (let i = range.start; i <= range.end; i++) {
           pages.push(i);
         }
         return pages;
       });
-      
+
       setProgress(30);
       const splitPdfs = await pdfCore.splitPDF(currentFile.data, pageRanges);
       setProgress(80);
-      
+
       splitPdfs.forEach((pdfBytes, index) => {
         const range = splitRanges[index];
-        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-        const filename = range.name || `${currentFile.name}-part-${index + 1}.pdf`;
+        const blob = new Blob([pdfBytes], { type: "application/pdf" });
+        const filename =
+          range.name || `${currentFile.name}-part-${index + 1}.pdf`;
         pdfCore.downloadBlob(blob, filename);
       });
-      
+
       setProgress(100);
     } catch (error) {
-      console.error('Split failed:', error);
+      console.error("Split failed:", error);
     } finally {
       setIsProcessing(false);
     }
   }, [currentFile, splitRanges]);
 
-  const rotatePDF = useCallback(async (pageNum?: number) => {
-    if (!currentFile) return;
-    
-    setIsProcessing(true);
-    
-    try {
-      const targetPage = pageNum || 1;
-      const rotatedPdfBytes = await pdfCore.rotatePDF(currentFile.data, targetPage, rotationAngle);
-      
-      const blob = new Blob([rotatedPdfBytes], { type: 'application/pdf' });
-      pdfCore.downloadBlob(blob, `${currentFile.name}-rotated.pdf`);
-    } catch (error) {
-      console.error('Rotation failed:', error);
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [currentFile, rotationAngle]);
+  const rotatePDF = useCallback(
+    async (pageNum?: number) => {
+      if (!currentFile) return;
+
+      setIsProcessing(true);
+
+      try {
+        const targetPage = pageNum || 1;
+        const rotatedPdfBytes = await pdfCore.rotatePDF(
+          currentFile.data,
+          targetPage,
+          rotationAngle,
+        );
+
+        const blob = new Blob([rotatedPdfBytes], { type: "application/pdf" });
+        pdfCore.downloadBlob(blob, `${currentFile.name}-rotated.pdf`);
+      } catch (error) {
+        console.error("Rotation failed:", error);
+      } finally {
+        setIsProcessing(false);
+      }
+    },
+    [currentFile, rotationAngle],
+  );
 
   const compressPDF = useCallback(async () => {
     if (!currentFile) return;
-    
+
     setIsProcessing(true);
     setProgress(0);
-    
+
     try {
       setProgress(50);
       const compressedPdfBytes = await pdfCore.compressPDF(currentFile.data);
       setProgress(90);
-      
+
       const originalSize = currentFile.size;
       const compressedSize = compressedPdfBytes.length;
-      const reduction = ((originalSize - compressedSize) / originalSize * 100).toFixed(1);
-      
-      const blob = new Blob([compressedPdfBytes], { type: 'application/pdf' });
+      const reduction = (
+        ((originalSize - compressedSize) / originalSize) *
+        100
+      ).toFixed(1);
+
+      const blob = new Blob([compressedPdfBytes], { type: "application/pdf" });
       pdfCore.downloadBlob(blob, `${currentFile.name}-compressed.pdf`);
-      
+
       alert(`Compression complete! Size reduced by ${reduction}%`);
       setProgress(100);
     } catch (error) {
-      console.error('Compression failed:', error);
+      console.error("Compression failed:", error);
     } finally {
       setIsProcessing(false);
     }
@@ -209,19 +247,21 @@ export default function PDFToolkit({ onFileProcessed, currentFile }: PDFToolkitP
       id: `range-${Date.now()}`,
       start: 1,
       end: currentFile?.pageCount || 1,
-      name: `Part ${splitRanges.length + 1}`
+      name: `Part ${splitRanges.length + 1}`,
     };
     setSplitRanges([...splitRanges, newRange]);
   };
 
   const updateSplitRange = (id: string, updates: Partial<SplitRange>) => {
-    setSplitRanges(ranges => ranges.map(range => 
-      range.id === id ? { ...range, ...updates } : range
-    ));
+    setSplitRanges((ranges) =>
+      ranges.map((range) =>
+        range.id === id ? { ...range, ...updates } : range,
+      ),
+    );
   };
 
   const removeSplitRange = (id: string) => {
-    setSplitRanges(ranges => ranges.filter(range => range.id !== id));
+    setSplitRanges((ranges) => ranges.filter((range) => range.id !== id));
   };
 
   const reorderMergeFiles = (fromIndex: number, toIndex: number) => {
@@ -232,11 +272,11 @@ export default function PDFToolkit({ onFileProcessed, currentFile }: PDFToolkitP
   };
 
   const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   return (
@@ -258,7 +298,7 @@ export default function PDFToolkit({ onFileProcessed, currentFile }: PDFToolkitP
               <Upload className="h-4 w-4 mr-2" />
               Upload PDF
             </Button>
-            
+
             <Button
               onClick={() => mergeInputRef.current?.click()}
               variant="outline"
@@ -266,7 +306,7 @@ export default function PDFToolkit({ onFileProcessed, currentFile }: PDFToolkitP
               <Plus className="h-4 w-4 mr-2" />
               Add for Merge
             </Button>
-            
+
             {currentFile && (
               <div className="flex items-center gap-2 ml-4">
                 <Badge variant="secondary">
@@ -278,7 +318,7 @@ export default function PDFToolkit({ onFileProcessed, currentFile }: PDFToolkitP
               </div>
             )}
           </div>
-          
+
           <input
             ref={fileInputRef}
             type="file"
@@ -287,13 +327,15 @@ export default function PDFToolkit({ onFileProcessed, currentFile }: PDFToolkitP
             onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
             className="hidden"
           />
-          
+
           <input
             ref={mergeInputRef}
             type="file"
             accept=".pdf"
             multiple
-            onChange={(e) => e.target.files && handleFileUpload(e.target.files, true)}
+            onChange={(e) =>
+              e.target.files && handleFileUpload(e.target.files, true)
+            }
             className="hidden"
           />
         </CardContent>
@@ -304,7 +346,9 @@ export default function PDFToolkit({ onFileProcessed, currentFile }: PDFToolkitP
         <Card>
           <CardContent className="pt-6">
             <Progress value={progress} className="w-full" />
-            <p className="text-sm text-center mt-2">Processing... {progress}%</p>
+            <p className="text-sm text-center mt-2">
+              Processing... {progress}%
+            </p>
           </CardContent>
         </Card>
       )}
@@ -346,21 +390,31 @@ export default function PDFToolkit({ onFileProcessed, currentFile }: PDFToolkitP
                   <ScrollArea className="h-48 border rounded p-4">
                     <div className="space-y-2">
                       {mergeOrder.map((fileId, index) => {
-                        const file = files.find(f => f.id === fileId);
+                        const file = files.find((f) => f.id === fileId);
                         if (!file) return null;
-                        
+
                         return (
-                          <div key={fileId} className="flex items-center justify-between p-2 border rounded">
+                          <div
+                            key={fileId}
+                            className="flex items-center justify-between p-2 border rounded"
+                          >
                             <div className="flex items-center gap-2">
                               <Badge variant="outline">{index + 1}</Badge>
                               <span className="text-sm">{file.name}</span>
-                              <Badge variant="secondary">{file.pageCount} pages</Badge>
+                              <Badge variant="secondary">
+                                {file.pageCount} pages
+                              </Badge>
                             </div>
                             <div className="flex gap-1">
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => reorderMergeFiles(index, Math.max(0, index - 1))}
+                                onClick={() =>
+                                  reorderMergeFiles(
+                                    index,
+                                    Math.max(0, index - 1),
+                                  )
+                                }
                                 disabled={index === 0}
                               >
                                 ↑
@@ -368,7 +422,12 @@ export default function PDFToolkit({ onFileProcessed, currentFile }: PDFToolkitP
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => reorderMergeFiles(index, Math.min(mergeOrder.length - 1, index + 1))}
+                                onClick={() =>
+                                  reorderMergeFiles(
+                                    index,
+                                    Math.min(mergeOrder.length - 1, index + 1),
+                                  )
+                                }
                                 disabled={index === mergeOrder.length - 1}
                               >
                                 ↓
@@ -377,8 +436,12 @@ export default function PDFToolkit({ onFileProcessed, currentFile }: PDFToolkitP
                                 size="sm"
                                 variant="destructive"
                                 onClick={() => {
-                                  setFiles(files.filter(f => f.id !== fileId));
-                                  setMergeOrder(mergeOrder.filter(id => id !== fileId));
+                                  setFiles(
+                                    files.filter((f) => f.id !== fileId),
+                                  );
+                                  setMergeOrder(
+                                    mergeOrder.filter((id) => id !== fileId),
+                                  );
                                 }}
                               >
                                 <Trash2 className="h-3 w-3" />
@@ -389,7 +452,7 @@ export default function PDFToolkit({ onFileProcessed, currentFile }: PDFToolkitP
                       })}
                     </div>
                   </ScrollArea>
-                  
+
                   <Button
                     onClick={mergePDFs}
                     disabled={mergeOrder.length < 2 || isProcessing}
@@ -425,32 +488,50 @@ export default function PDFToolkit({ onFileProcessed, currentFile }: PDFToolkitP
                         Add Range
                       </Button>
                     </div>
-                    
+
                     <ScrollArea className="h-48 border rounded p-4">
                       <div className="space-y-3">
                         {splitRanges.map((range) => (
-                          <div key={range.id} className="grid grid-cols-4 gap-2 items-center p-2 border rounded">
+                          <div
+                            key={range.id}
+                            className="grid grid-cols-4 gap-2 items-center p-2 border rounded"
+                          >
                             <Input
                               placeholder="Name"
                               value={range.name}
-                              onChange={(e) => updateSplitRange(range.id, { name: e.target.value })}
+                              onChange={(e) =>
+                                updateSplitRange(range.id, {
+                                  name: e.target.value,
+                                })
+                              }
                             />
+
                             <Input
                               type="number"
                               placeholder="Start"
                               min={1}
                               max={currentFile.pageCount}
                               value={range.start}
-                              onChange={(e) => updateSplitRange(range.id, { start: parseInt(e.target.value) })}
+                              onChange={(e) =>
+                                updateSplitRange(range.id, {
+                                  start: parseInt(e.target.value),
+                                })
+                              }
                             />
+
                             <Input
                               type="number"
                               placeholder="End"
                               min={1}
                               max={currentFile.pageCount}
                               value={range.end}
-                              onChange={(e) => updateSplitRange(range.id, { end: parseInt(e.target.value) })}
+                              onChange={(e) =>
+                                updateSplitRange(range.id, {
+                                  end: parseInt(e.target.value),
+                                })
+                              }
                             />
+
                             <Button
                               size="sm"
                               variant="destructive"
@@ -463,7 +544,7 @@ export default function PDFToolkit({ onFileProcessed, currentFile }: PDFToolkitP
                       </div>
                     </ScrollArea>
                   </div>
-                  
+
                   <Button
                     onClick={splitPDF}
                     disabled={splitRanges.length === 0 || isProcessing}
@@ -493,7 +574,12 @@ export default function PDFToolkit({ onFileProcessed, currentFile }: PDFToolkitP
                 <>
                   <div className="space-y-2">
                     <Label>Rotation Angle</Label>
-                    <Select value={rotationAngle.toString()} onValueChange={(value) => setRotationAngle(parseInt(value))}>
+                    <Select
+                      value={rotationAngle.toString()}
+                      onValueChange={(value) =>
+                        setRotationAngle(parseInt(value))
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -501,11 +587,13 @@ export default function PDFToolkit({ onFileProcessed, currentFile }: PDFToolkitP
                         <SelectItem value="90">90° Clockwise</SelectItem>
                         <SelectItem value="180">180°</SelectItem>
                         <SelectItem value="270">270° Clockwise</SelectItem>
-                        <SelectItem value="-90">90° Counter-clockwise</SelectItem>
+                        <SelectItem value="-90">
+                          90° Counter-clockwise
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <Button
                     onClick={() => rotatePDF()}
                     disabled={isProcessing}
@@ -535,18 +623,27 @@ export default function PDFToolkit({ onFileProcessed, currentFile }: PDFToolkitP
                 <>
                   <div className="space-y-2">
                     <Label>Compression Level</Label>
-                    <Select value={compressionLevel} onValueChange={setCompressionLevel}>
+                    <Select
+                      value={compressionLevel}
+                      onValueChange={setCompressionLevel}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="low">Low (Better Quality)</SelectItem>
-                        <SelectItem value="medium">Medium (Balanced)</SelectItem>
-                        <SelectItem value="high">High (Smaller Size)</SelectItem>
+                        <SelectItem value="low">
+                          Low (Better Quality)
+                        </SelectItem>
+                        <SelectItem value="medium">
+                          Medium (Balanced)
+                        </SelectItem>
+                        <SelectItem value="high">
+                          High (Smaller Size)
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded">
                     <p className="text-sm">
                       <strong>Current file:</strong> {currentFile.name}
@@ -558,7 +655,7 @@ export default function PDFToolkit({ onFileProcessed, currentFile }: PDFToolkitP
                       <strong>Pages:</strong> {currentFile.pageCount}
                     </p>
                   </div>
-                  
+
                   <Button
                     onClick={compressPDF}
                     disabled={isProcessing}
@@ -599,7 +696,7 @@ export default function PDFToolkit({ onFileProcessed, currentFile }: PDFToolkitP
                 </Button>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>Information</CardTitle>

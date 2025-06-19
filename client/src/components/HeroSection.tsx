@@ -11,11 +11,16 @@ export default function HeroSection() {
   };
 
   return (
-    <section id="home" className="relative bg-gradient-to-br from-background to-muted dark:from-background dark:to-card overflow-hidden">
+    <section
+      id="home"
+      className="relative bg-gradient-to-br from-background to-muted dark:from-background dark:to-card overflow-hidden"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
         <div className="text-center">
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-foreground mb-8 text-center">
-            Premium Online <span className="text-primary bg-transparent">PDF</span> Editing Capabilities
+            Premium Online{" "}
+            <span className="text-primary bg-transparent">PDF</span> Editing
+            Capabilities
           </h1>
           <div className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-4xl mx-auto leading-relaxed">
             <ul className="space-y-2 mb-8">

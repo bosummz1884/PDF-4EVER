@@ -4,7 +4,6 @@ import ComprehensivePDFEditor from "@/components/ComprehensivePDFEditor";
 import { Button } from "@/components/ui/button";
 import { LogOut, User } from "lucide-react";
 
-
 function AuthenticatedHome() {
   const { user, logout } = useAuth();
 
@@ -13,19 +12,19 @@ function AuthenticatedHome() {
       {/* Minimal Header */}
       <header className="border-b bg-white dark:bg-gray-900 px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center space-x-3">
-          <img 
-            src="/70x70logo.png" 
-            alt="PDF4EVER Logo" 
-            className="h-8 w-8"
-          />
+          <img src="/70x70logo.png" alt="PDF4EVER Logo" className="h-8 w-8" />
+
           <span className="text-xl font-bold">
-            <span style={{ color: '#005aff' }}>PDF4</span><span style={{ color: '#ff3900' }}>EVER</span>
+            <span style={{ color: "#005aff" }}>PDF4</span>
+            <span style={{ color: "#ff3900" }}>EVER</span>
           </span>
         </div>
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2 text-sm text-muted-foreground">
             <User className="h-4 w-4" />
-            <span>{user?.firstName} {user?.lastName}</span>
+            <span>
+              {user?.firstName} {user?.lastName}
+            </span>
           </div>
           <Button variant="ghost" size="sm" onClick={logout}>
             <LogOut className="h-4 w-4 mr-2" />
@@ -65,13 +64,15 @@ export default function Home() {
           {/* Header with optional auth */}
           <header className="border-b bg-white dark:bg-gray-900 px-4 py-3 flex items-center justify-between shrink-0">
             <div className="flex items-center space-x-3">
-              <img 
-                src="/70x70logo.png"  
-                alt="PDF4EVER Logo" 
+              <img
+                src="/70x70logo.png"
+                alt="PDF4EVER Logo"
                 className="h-8 w-8"
               />
+
               <span className="text-xl font-bold">
-                <span style={{ color: '#005aff' }}>PDF4</span><span style={{ color: '#ff3900' }}>EVER</span>
+                <span style={{ color: "#005aff" }}>PDF4</span>
+                <span style={{ color: "#ff3900" }}>EVER</span>
               </span>
             </div>
             <div className="flex items-center space-x-4">
@@ -79,7 +80,9 @@ export default function Home() {
                 <>
                   <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                     <User className="h-4 w-4" />
-                    <span>{user?.firstName} {user?.lastName}</span>
+                    <span>
+                      {user?.firstName} {user?.lastName}
+                    </span>
                   </div>
                   <Button variant="ghost" size="sm" onClick={logout}>
                     <LogOut className="h-4 w-4 mr-2" />
@@ -91,9 +94,7 @@ export default function Home() {
                   <Button variant="ghost" size="sm">
                     Sign In
                   </Button>
-                  <Button size="sm">
-                    Sign Up
-                  </Button>
+                  <Button size="sm">Sign Up</Button>
                 </div>
               )}
             </div>

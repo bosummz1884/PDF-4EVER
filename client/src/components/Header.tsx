@@ -33,7 +33,7 @@ export default function Header() {
   ];
 
   const handleNavClick = (href: string) => {
-    if (href.startsWith('/')) {
+    if (href.startsWith("/")) {
       // Navigate to route
       window.location.href = href;
     } else {
@@ -47,14 +47,17 @@ export default function Header() {
   };
 
   return (
-    <header className={`bg-background dark:bg-background border-b border-border sticky top-0 z-50 transition-shadow duration-200 ${scrolled ? "shadow-lg" : "shadow-sm"}`}>
+    <header
+      className={`bg-background dark:bg-background border-b border-border sticky top-0 z-50 transition-shadow duration-200 ${scrolled ? "shadow-lg" : "shadow-sm"}`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <h1 className="text-2xl font-bold">
-                <span className="text-muted-foreground">PDF</span><span className="text-primary">4EVER</span>
+                <span className="text-muted-foreground">PDF</span>
+                <span className="text-primary">4EVER</span>
               </h1>
             </div>
           </div>
@@ -62,8 +65,8 @@ export default function Header() {
           {/* Desktop Navigation */}
           <nav className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-8">
-              {navItems.map((item, index) => (
-                item.href.startsWith('/') ? (
+              {navItems.map((item, index) =>
+                item.href.startsWith("/") ? (
                   <Link
                     key={item.name}
                     href={item.href}
@@ -87,8 +90,8 @@ export default function Header() {
                   >
                     {item.name}
                   </button>
-                )
-              ))}
+                ),
+              )}
             </div>
           </nav>
 
@@ -121,7 +124,11 @@ export default function Header() {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="text-muted-foreground hover:text-primary"
             >
-              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {mobileMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
             </Button>
           </div>
         </div>

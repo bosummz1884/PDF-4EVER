@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from "react";
 
 interface EraserBlock {
   id: string;
@@ -18,12 +18,12 @@ interface EraserLayerProps {
   currentPage: number;
 }
 
-export default function EraserLayer({ 
-  isActive, 
-  canvasRef, 
-  scale, 
+export default function EraserLayer({
+  isActive,
+  canvasRef,
+  scale,
   eraserBlocks,
-  currentPage
+  currentPage,
 }: EraserLayerProps) {
   const layerRef = useRef<HTMLDivElement>(null);
 
@@ -32,20 +32,22 @@ export default function EraserLayer({
 
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-    
+
     // Position the layer to match the canvas
     const layer = layerRef.current;
     layer.style.width = `${rect.width}px`;
     layer.style.height = `${rect.height}px`;
-    layer.style.position = 'absolute';
-    layer.style.top = '0';
-    layer.style.left = '0';
-    layer.style.pointerEvents = 'none';
-    layer.style.zIndex = '5';
+    layer.style.position = "absolute";
+    layer.style.top = "0";
+    layer.style.left = "0";
+    layer.style.pointerEvents = "none";
+    layer.style.zIndex = "5";
   }, [canvasRef, scale]);
 
   // Filter blocks for current page
-  const currentPageBlocks = eraserBlocks.filter(block => block.page === currentPage);
+  const currentPageBlocks = eraserBlocks.filter(
+    (block) => block.page === currentPage,
+  );
 
   return (
     <div ref={layerRef} className="absolute top-0 left-0 pointer-events-none">
@@ -53,16 +55,16 @@ export default function EraserLayer({
         <div
           key={block.id}
           style={{
-            position: 'absolute',
+            position: "absolute",
             left: `${block.x * scale}px`,
             top: `${block.y * scale}px`,
             width: `${block.width * scale}px`,
             height: `${block.height * scale}px`,
-            backgroundColor: block.color || '#ffffff',
-            border: isActive ? '1px solid rgba(0,0,0,0.3)' : 'none',
-            pointerEvents: 'none',
+            backgroundColor: block.color || "#ffffff",
+            border: isActive ? "1px solid rgba(0,0,0,0.3)" : "none",
+            pointerEvents: "none",
             zIndex: 15,
-            borderRadius: '2px'
+            borderRadius: "2px",
           }}
         />
       ))}

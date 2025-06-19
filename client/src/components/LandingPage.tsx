@@ -1,13 +1,30 @@
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Upload, FileText, Edit3, Download, Merge, Split, 
-  Shield, Zap, Eye, Users, Star, Check, ArrowRight,
-  Github, Twitter, Mail, Heart, Globe, Lock, Clock
-} from 'lucide-react';
-import { AuthDialogs } from './AuthSystem';
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Upload,
+  FileText,
+  Edit3,
+  Download,
+  Merge,
+  Split,
+  Shield,
+  Zap,
+  Eye,
+  Users,
+  Star,
+  Check,
+  ArrowRight,
+  Github,
+  Twitter,
+  Mail,
+  Heart,
+  Globe,
+  Lock,
+  Clock,
+} from "lucide-react";
+import { AuthDialogs } from "./AuthSystem";
 
 interface LandingPageProps {
   onGetStarted?: () => void;
@@ -27,20 +44,29 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
               <span className="text-xl font-bold">PDF4EVER</span>
               <Badge variant="secondary">Free</Badge>
             </div>
-            
+
             <nav className="hidden md:flex items-center gap-6">
-              <a href="#features" className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+              <a
+                href="#features"
+                className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+              >
                 Features
               </a>
-              <a href="#pricing" className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+              <a
+                href="#pricing"
+                className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+              >
                 Pricing
               </a>
-              <a href="#about" className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+              <a
+                href="#about"
+                className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+              >
                 About
               </a>
-              <AuthDialogs trigger={
-                <Button variant="outline">Sign In</Button>
-              } />
+              <AuthDialogs
+                trigger={<Button variant="outline">Sign In</Button>}
+              />
             </nav>
           </div>
         </div>
@@ -52,37 +78,45 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
           <div className="max-w-4xl mx-auto">
             <h1 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
               The Ultimate
-              <span className="text-blue-600 dark:text-blue-400"> PDF Editor</span>
+              <span className="text-blue-600 dark:text-blue-400">
+                {" "}
+                PDF Editor
+              </span>
               <br />
               You'll Ever Need
             </h1>
-            
+
             <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-              Edit, merge, split, annotate, and transform your PDFs with our powerful, 
-              privacy-first editor. No downloads required, works entirely in your browser.
+              Edit, merge, split, annotate, and transform your PDFs with our
+              powerful, privacy-first editor. No downloads required, works
+              entirely in your browser.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="text-lg px-8 py-3"
                 onClick={onGetStarted}
               >
                 <Upload className="h-5 w-5 mr-2" />
                 Start Editing Now
               </Button>
-              
-              <AuthDialogs 
+
+              <AuthDialogs
                 defaultTab="signup"
                 trigger={
-                  <Button size="lg" variant="outline" className="text-lg px-8 py-3">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="text-lg px-8 py-3"
+                  >
                     Create Free Account
                     <ArrowRight className="h-5 w-5 ml-2" />
                   </Button>
                 }
               />
             </div>
-            
+
             <div className="flex items-center justify-center gap-8 text-sm text-gray-500 dark:text-gray-400">
               <div className="flex items-center gap-2">
                 <Shield className="h-4 w-4" />
@@ -109,50 +143,60 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
               Everything You Need for PDF Editing
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Comprehensive tools for all your PDF needs, from basic editing to advanced annotations
+              Comprehensive tools for all your PDF needs, from basic editing to
+              advanced annotations
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               {
                 icon: Edit3,
                 title: "Rich Text Editing",
-                description: "Add, edit, and format text with full control over fonts, colors, and styling"
+                description:
+                  "Add, edit, and format text with full control over fonts, colors, and styling",
               },
               {
                 icon: Eye,
                 title: "Form Filling",
-                description: "Detect and fill PDF forms automatically with smart field recognition"
+                description:
+                  "Detect and fill PDF forms automatically with smart field recognition",
               },
               {
                 icon: Merge,
                 title: "Merge & Split",
-                description: "Combine multiple PDFs or split large documents into smaller files"
+                description:
+                  "Combine multiple PDFs or split large documents into smaller files",
               },
               {
                 icon: FileText,
                 title: "OCR Text Recognition",
-                description: "Extract text from scanned documents with advanced OCR technology"
+                description:
+                  "Extract text from scanned documents with advanced OCR technology",
               },
               {
                 icon: Shield,
                 title: "Privacy Protected",
-                description: "All processing happens in your browser - your files never leave your device"
+                description:
+                  "All processing happens in your browser - your files never leave your device",
               },
               {
                 icon: Download,
                 title: "Multiple Export Options",
-                description: "Save as PDF, export text, or download individual pages"
-              }
+                description:
+                  "Save as PDF, export text, or download individual pages",
+              },
             ].map((feature, index) => (
               <Card key={index} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <feature.icon className="h-12 w-12 text-blue-600 dark:text-blue-400 mb-4" />
+
                   <CardTitle>{feature.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-600 dark:text-gray-300">{feature.description}</p>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    {feature.description}
+                  </p>
                 </CardContent>
               </Card>
             ))}
@@ -168,13 +212,15 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
               { number: "1M+", label: "Documents Processed" },
               { number: "50K+", label: "Happy Users" },
               { number: "99.9%", label: "Uptime" },
-              { number: "0", label: "Data Stored" }
+              { number: "0", label: "Data Stored" },
             ].map((stat, index) => (
               <div key={index}>
                 <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">
                   {stat.number}
                 </div>
-                <div className="text-gray-600 dark:text-gray-300">{stat.label}</div>
+                <div className="text-gray-600 dark:text-gray-300">
+                  {stat.label}
+                </div>
               </div>
             ))}
           </div>
@@ -192,14 +238,16 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
               Choose the plan that works best for you
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {/* Free Plan */}
             <Card className="relative">
               <CardHeader>
                 <CardTitle className="text-2xl">Free Forever</CardTitle>
                 <div className="text-4xl font-bold">$0</div>
-                <p className="text-gray-600 dark:text-gray-300">Perfect for personal use</p>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Perfect for personal use
+                </p>
               </CardHeader>
               <CardContent className="space-y-4">
                 {[
@@ -207,10 +255,11 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
                   "Basic editing tools",
                   "Form filling",
                   "Text extraction",
-                  "Browser-based processing"
+                  "Browser-based processing",
                 ].map((feature, index) => (
                   <div key={index} className="flex items-center gap-2">
                     <Check className="h-5 w-5 text-green-500" />
+
                     <span>{feature}</span>
                   </div>
                 ))}
@@ -227,8 +276,13 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
               </div>
               <CardHeader>
                 <CardTitle className="text-2xl">Pro</CardTitle>
-                <div className="text-4xl font-bold">$9<span className="text-lg">/month</span></div>
-                <p className="text-gray-600 dark:text-gray-300">For power users and professionals</p>
+                <div className="text-4xl font-bold">
+                  $9
+                  <span className="text-lg">/month</span>
+                </div>
+                <p className="text-gray-600 dark:text-gray-300">
+                  For power users and professionals
+                </p>
               </CardHeader>
               <CardContent className="space-y-4">
                 {[
@@ -238,19 +292,18 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
                   "Batch processing",
                   "OCR in 10+ languages",
                   "Priority support",
-                  "Cloud sync (optional)"
+                  "Cloud sync (optional)",
                 ].map((feature, index) => (
                   <div key={index} className="flex items-center gap-2">
                     <Check className="h-5 w-5 text-green-500" />
+
                     <span>{feature}</span>
                   </div>
                 ))}
-                <AuthDialogs 
+                <AuthDialogs
                   defaultTab="signup"
                   trigger={
-                    <Button className="w-full mt-6">
-                      Start Pro Trial
-                    </Button>
+                    <Button className="w-full mt-6">Start Pro Trial</Button>
                   }
                 />
               </CardContent>
@@ -264,12 +317,14 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
         <div className="container mx-auto text-center">
           <div className="max-w-3xl mx-auto">
             <Shield className="h-16 w-16 text-blue-600 dark:text-blue-400 mx-auto mb-6" />
+
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
               Your Privacy is Our Priority
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">
-              Unlike other PDF editors, we process everything in your browser. 
-              Your documents never leave your device, ensuring complete privacy and security.
+              Unlike other PDF editors, we process everything in your browser.
+              Your documents never leave your device, ensuring complete privacy
+              and security.
             </p>
             <div className="flex items-center justify-center gap-8 text-sm">
               <div className="flex items-center gap-2">
@@ -299,19 +354,19 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
             Join thousands of users who trust PDF4EVER for their document needs
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               variant="secondary"
               className="text-lg px-8 py-3"
               onClick={onGetStarted}
             >
               Start Editing Now
             </Button>
-            <AuthDialogs 
+            <AuthDialogs
               defaultTab="signup"
               trigger={
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   variant="outline"
                   className="text-lg px-8 py-3 border-white text-white hover:bg-white hover:text-blue-600"
                 >
@@ -349,7 +404,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
                 </Button>
               </div>
             </div>
-            
+
             <div>
               <h4 className="font-semibold mb-4">Features</h4>
               <div className="space-y-2 text-gray-400">
@@ -360,7 +415,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
                 <div>Annotations</div>
               </div>
             </div>
-            
+
             <div>
               <h4 className="font-semibold mb-4">Resources</h4>
               <div className="space-y-2 text-gray-400">
@@ -371,7 +426,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
                 <div>Support</div>
               </div>
             </div>
-            
+
             <div>
               <h4 className="font-semibold mb-4">Company</h4>
               <div className="space-y-2 text-gray-400">
@@ -383,9 +438,13 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
               </div>
             </div>
           </div>
-          
+
           <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
-            <p>© 2024 PDF4EVER. Made with <Heart className="h-4 w-4 inline text-red-500" /> for document lovers worldwide.</p>
+            <p>
+              © 2024 PDF4EVER. Made with{" "}
+              <Heart className="h-4 w-4 inline text-red-500" /> for document
+              lovers worldwide.
+            </p>
           </div>
         </div>
       </footer>

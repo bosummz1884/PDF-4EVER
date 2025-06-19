@@ -39,10 +39,12 @@ export default function Footer() {
           {/* Company Info */}
           <div className="col-span-1 md:col-span-2">
             <h3 className="text-2xl font-bold mb-4">
-              <span className="text-muted-foreground">PDF</span><span className="text-primary">4EVER</span>
+              <span className="text-muted-foreground">PDF</span>
+              <span className="text-primary">4EVER</span>
             </h3>
             <p className="text-muted-foreground mb-6 max-w-md">
-              The most powerful online PDF editor. Edit, convert, and manage your PDFs with ease.
+              The most powerful online PDF editor. Edit, convert, and manage
+              your PDFs with ease.
             </p>
             {/* Social Media Links */}
             <div className="flex space-x-4">
@@ -63,7 +65,9 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h4 className="text-lg font-semibold text-foreground mb-4">Product</h4>
+            <h4 className="text-lg font-semibold text-foreground mb-4">
+              Product
+            </h4>
             <ul className="space-y-3">
               <li>
                 <button
@@ -82,12 +86,18 @@ export default function Footer() {
                 </button>
               </li>
               <li>
-                <a href="#" className="hover:text-primary transition-colors duration-200 text-muted-foreground">
+                <a
+                  href="#"
+                  className="hover:text-primary transition-colors duration-200 text-muted-foreground"
+                >
                   API
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-primary transition-colors duration-200 text-muted-foreground">
+                <a
+                  href="#"
+                  className="hover:text-primary transition-colors duration-200 text-muted-foreground"
+                >
                   Integrations
                 </a>
               </li>
@@ -96,7 +106,9 @@ export default function Footer() {
 
           {/* Support Links */}
           <div>
-            <h4 className="text-lg font-semibold text-foreground mb-4">Support</h4>
+            <h4 className="text-lg font-semibold text-foreground mb-4">
+              Support
+            </h4>
             <ul className="space-y-3">
               <li>
                 <button
@@ -123,7 +135,10 @@ export default function Footer() {
                 </button>
               </li>
               <li>
-                <a href="#" className="hover:text-primary transition-colors duration-200 text-muted-foreground">
+                <a
+                  href="#"
+                  className="hover:text-primary transition-colors duration-200 text-muted-foreground"
+                >
                   Help Center
                 </a>
               </li>
@@ -134,10 +149,19 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="border-t border-border mt-12 pt-8 flex flex-col sm:flex-row justify-between items-center">
           <p className="text-muted-foreground text-sm">
-            © 2024 <span className="text-muted-foreground">PDF</span><span className="text-primary">4EVER</span>. All rights reserved.
+            © 2024 <span className="text-muted-foreground">PDF</span>
+            <span className="text-primary">4EVER</span>. All rights reserved.
           </p>
           <p className="text-muted-foreground text-sm mt-2 sm:mt-0 max-w-md text-right">
-            Thank you for choosing <span className="text-muted-foreground">PDF</span><span className="text-primary">4EVER</span>, we appreciate you utilizing our service. If you have any suggestions, or ideas on how we could make the experience better for you please email Admin@<span className="text-muted-foreground">PDF</span><span className="text-primary">4EVER</span>.org with your comments and suggestions. Always remember to stay positive!
+            Thank you for choosing{" "}
+            <span className="text-muted-foreground">PDF</span>
+            <span className="text-primary">4EVER</span>, we appreciate you
+            utilizing our service. If you have any suggestions, or ideas on how
+            we could make the experience better for you please email Admin@
+            <span className="text-muted-foreground">PDF</span>
+            <span className="text-primary">4EVER</span>
+            .org with your comments and suggestions. Always remember to stay
+            positive!
           </p>
         </div>
       </div>

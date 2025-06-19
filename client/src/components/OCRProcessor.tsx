@@ -1,12 +1,12 @@
-import React, { useState, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Textarea } from '@/components/ui/textarea';
-import { Progress } from '@/components/ui/progress';
-import { Eye, Copy, Download, FileText, Zap } from 'lucide-react';
-import { createWorker } from 'tesseract.js';
+import React, { useState, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
+import { Eye, Copy, Download, FileText, Zap } from "lucide-react";
+import { createWorker } from "tesseract.js";
 
 interface OCRResult {
   id: string;
@@ -34,25 +34,25 @@ export default function OCRProcessor({
   canvasRef,
   currentPage,
   onTextDetected,
-  onTextBoxCreate
+  onTextBoxCreate,
 }: OCRProcessorProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [ocrResults, setOcrResults] = useState<OCRResult[]>([]);
-  const [extractedText, setExtractedText] = useState('');
-  const [selectedLanguage, setSelectedLanguage] = useState('eng');
+  const [extractedText, setExtractedText] = useState("");
+  const [selectedLanguage, setSelectedLanguage] = useState("eng");
 
   const languages = [
-    { code: 'eng', name: 'English' },
-    { code: 'spa', name: 'Spanish' },
-    { code: 'fra', name: 'French' },
-    { code: 'deu', name: 'German' },
-    { code: 'chi_sim', name: 'Chinese (Simplified)' },
-    { code: 'jpn', name: 'Japanese' },
-    { code: 'kor', name: 'Korean' },
-    { code: 'rus', name: 'Russian' },
-    { code: 'ara', name: 'Arabic' },
-    { code: 'por', name: 'Portuguese' }
+    { code: "eng", name: "English" },
+    { code: "spa", name: "Spanish" },
+    { code: "fra", name: "French" },
+    { code: "deu", name: "German" },
+    { code: "chi_sim", name: "Chinese (Simplified)" },
+    { code: "jpn", name: "Japanese" },
+    { code: "kor", name: "Korean" },
+    { code: "rus", name: "Russian" },
+    { code: "ara", name: "Arabic" },
+    { code: "por", name: "Portuguese" },
   ];
 
   const extractTextFromPDF = useCallback(async () => {
@@ -64,14 +64,14 @@ export default function OCRProcessor({
     try {
       const page = await pdfDocument.getPage(currentPage);
       const textContent = await page.getTextContent();
-      
-      let extractedPageText = '';
+
+      let extractedPageText = "";
       const results: OCRResult[] = [];
 
       textContent.items.forEach((item: any, index: number) => {
         if (item.str && item.str.trim()) {
-          extractedPageText += item.str + ' ';
-          
+          extractedPageText += item.str + " ";
+
           // Create OCR result for PDF text
           results.push({
             id: `pdf-text-${index}`,
@@ -81,9 +81,9 @@ export default function OCRProcessor({
               x0: item.transform[4],
               y0: item.transform[5],
               x1: item.transform[4] + item.width,
-              y1: item.transform[5] + item.height
+              y1: item.transform[5] + item.height,
             },
-            page: currentPage
+            page: currentPage,
           });
         }
       });
@@ -93,7 +93,7 @@ export default function OCRProcessor({
       onTextDetected?.(results);
       setProgress(100);
     } catch (error) {
-      console.error('PDF text extraction error:', error);
+      console.error("PDF text extraction error:", error);
     } finally {
       setIsProcessing(false);
     }
@@ -107,40 +107,41 @@ export default function OCRProcessor({
 
     try {
       const canvas = canvasRef.current;
-      const imageData = canvas.toDataURL('image/png');
-      
+      const imageData = canvas.toDataURL("image/png");
+
       const worker = await createWorker(selectedLanguage);
-      
+
       await worker.setParameters({
-        tessedit_pageseg_mode: '6', // Uniform block of text
-        tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz .,!?-()[]{}:;"\'',
+        tessedit_pageseg_mode: "6", // Uniform block of text
+        tessedit_char_whitelist:
+          "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz .,!?-()[]{}:;\"'",
       });
 
       const { data } = await worker.recognize(imageData, {
         logger: (m) => {
-          if (m.status === 'recognizing text') {
+          if (m.status === "recognizing text") {
             setProgress(Math.round(m.progress * 100));
           }
-        }
+        },
       });
 
       const results: OCRResult[] = data.words
-        .filter(word => word.text.trim() && word.confidence > 30)
+        .filter((word) => word.text.trim() && word.confidence > 30)
         .map((word, index) => ({
           id: `ocr-${index}`,
           text: word.text,
           confidence: word.confidence,
           bbox: word.bbox,
-          page: currentPage
+          page: currentPage,
         }));
 
       setExtractedText(data.text);
       setOcrResults(results);
       onTextDetected?.(results);
-      
+
       await worker.terminate();
     } catch (error) {
-      console.error('OCR processing error:', error);
+      console.error("OCR processing error:", error);
     } finally {
       setIsProcessing(false);
       setProgress(0);
@@ -152,39 +153,45 @@ export default function OCRProcessor({
   }, [extractedText]);
 
   const downloadText = useCallback(() => {
-    const blob = new Blob([extractedText], { type: 'text/plain' });
+    const blob = new Blob([extractedText], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
     link.download = `extracted-text-page-${currentPage}.txt`;
     link.click();
     URL.revokeObjectURL(url);
   }, [extractedText, currentPage]);
 
-  const createTextBoxFromResult = useCallback((result: OCRResult) => {
-    if (onTextBoxCreate) {
-      onTextBoxCreate(result.bbox.x0, result.bbox.y0, result.text);
-    }
-  }, [onTextBoxCreate]);
+  const createTextBoxFromResult = useCallback(
+    (result: OCRResult) => {
+      if (onTextBoxCreate) {
+        onTextBoxCreate(result.bbox.x0, result.bbox.y0, result.text);
+      }
+    },
+    [onTextBoxCreate],
+  );
 
-  const highlightTextOnCanvas = useCallback((result: OCRResult) => {
-    if (!canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  const highlightTextOnCanvas = useCallback(
+    (result: OCRResult) => {
+      if (!canvasRef.current) return;
 
-    // Draw highlight rectangle
-    ctx.save();
-    ctx.fillStyle = 'rgba(255, 255, 0, 0.3)';
-    ctx.fillRect(
-      result.bbox.x0,
-      result.bbox.y0,
-      result.bbox.x1 - result.bbox.x0,
-      result.bbox.y1 - result.bbox.y0
-    );
-    ctx.restore();
-  }, [canvasRef]);
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      // Draw highlight rectangle
+      ctx.save();
+      ctx.fillStyle = "rgba(255, 255, 0, 0.3)";
+      ctx.fillRect(
+        result.bbox.x0,
+        result.bbox.y0,
+        result.bbox.x1 - result.bbox.x0,
+        result.bbox.y1 - result.bbox.y0,
+      );
+      ctx.restore();
+    },
+    [canvasRef],
+  );
 
   return (
     <div className="space-y-4">
@@ -206,7 +213,7 @@ export default function OCRProcessor({
               <FileText className="h-4 w-4 mr-1" />
               Extract PDF Text
             </Button>
-            
+
             <Button
               onClick={performOCR}
               disabled={isProcessing || !canvasRef.current}
@@ -223,7 +230,7 @@ export default function OCRProcessor({
               className="px-3 py-1 border rounded text-sm"
               disabled={isProcessing}
             >
-              {languages.map(lang => (
+              {languages.map((lang) => (
                 <option key={lang.code} value={lang.code}>
                   {lang.name}
                 </option>
@@ -240,8 +247,9 @@ export default function OCRProcessor({
           {isProcessing && (
             <div className="space-y-2">
               <Progress value={progress} className="w-full" />
+
               <p className="text-sm text-gray-500">
-                {progress > 0 ? `Processing: ${progress}%` : 'Initializing...'}
+                {progress > 0 ? `Processing: ${progress}%` : "Initializing..."}
               </p>
             </div>
           )}
