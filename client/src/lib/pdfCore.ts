@@ -1,6 +1,14 @@
-import { PDFDocument, StandardFonts, rgb, PDFPage, PDFFont } from 'pdf-lib';
+import { PDFDocument, StandardFonts, rgb, PDFPage, PDFFont, degrees } from 'pdf-lib';
 import * as pdfjs from 'pdfjs-dist/build/pdf';
 import 'pdfjs-dist/build/pdf.worker.entry';
+
+function getArrayBuffer(u8: Uint8Array): ArrayBuffer {
+  return u8.buffer instanceof ArrayBuffer &&
+    u8.byteOffset === 0 &&
+    u8.byteLength === u8.buffer.byteLength
+    ? u8.buffer
+    : u8.slice().buffer;
+}
 
 export interface TextElement {
   id: string;
@@ -166,13 +174,13 @@ export class PDFCore {
       const x = element.x;
       const y = pageHeight - element.y - element.fontSize;
 element
-      page.drawText(.text, {
+      page.drawText(element.text, {
         x: Math.max(0, x),
         y: Math.max(0, y),
         size: element.fontSize,
         font,
         color: rgb(color.r, color.g, color.b),
-        rotate: element.rotation
+        rotate: degrees(element.rotation)
       });
     }
 
@@ -269,7 +277,9 @@ element
             y,
             width: annotation.width,
             height: annotation.height,
-            color: rgb(color.r, color.g, color.b, 0.3)
+            color: rgb(color.r, color.g, color.b),
+            opacity: 0.3,
+            borderColor: rgb(color.r, color.g, color.b)
           });
           break;
       }
@@ -345,25 +355,24 @@ element
     formFields: FormField[],
     annotations: AnnotationElement[]
   ): Promise<Uint8Array> {
-    let pdfBytes = new Uint8Array(originalPdfData);
+    let pdfBytes: Uint8Array = new Uint8Array(originalPdfData);
 
-    // Add text elements first
     if (textElements.length > 0) {
-      pdfBytes = await this.addTextElementsToPDF(pdfBytes, textElements);
+      pdfBytes = await this.addTextElementsToPDF(getArrayBuffer(pdfBytes), textElements) as Uint8Array;
     }
-
-    // Fill form fields
+  
     if (formFields.length > 0) {
-      pdfBytes = await this.fillFormFields(pdfBytes, formFields);
+      pdfBytes = await this.fillFormFields(getArrayBuffer(pdfBytes), formFields) as Uint8Array;
     }
-
-    // Add annotations last
+  
     if (annotations.length > 0) {
-      pdfBytes = await this.addAnnotationsToPDF(pdfBytes, annotations);
+      pdfBytes = await this.addAnnotationsToPDF(getArrayBuffer(pdfBytes), annotations) as Uint8Array;
     }
-
+  
     return pdfBytes;
   }
 }
 
+
 export const pdfCore = PDFCore.getInstance();
+
