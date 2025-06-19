@@ -1160,7 +1160,7 @@ export default function ComprehensivePDFEditor({
         }
 
         const pdfBytes = await pdfDoc.save();
-        const blob = new Blob([pdfBytes], { type: "application/pdf" });
+        const blob = new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
@@ -1169,7 +1169,7 @@ export default function ComprehensivePDFEditor({
         URL.revokeObjectURL(url);
       } else {
         // Fallback to original export if no advanced text
-        const blob = new Blob([originalFileData], { type: "application/pdf" });
+        const blob = new Blob([new Uint8Array(originalFileData)], { type: "application/pdf" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;

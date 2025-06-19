@@ -1,5 +1,6 @@
 import { PDFDocument, StandardFonts, rgb, PDFPage, PDFFont } from 'pdf-lib';
-import { pdfjs } from 'pdfjs-dist';
+import * as pdfjs from 'pdfjs-dist/build/pdf';
+import 'pdfjs-dist/build/pdf.worker.entry';
 
 export interface TextElement {
   id: string;
@@ -164,14 +165,14 @@ export class PDFCore {
 
       const x = element.x;
       const y = pageHeight - element.y - element.fontSize;
-
-      page.drawText(element.text, {
+element
+      page.drawText(.text, {
         x: Math.max(0, x),
         y: Math.max(0, y),
         size: element.fontSize,
         font,
         color: rgb(color.r, color.g, color.b),
-        rotate: { type: 'degrees', angle: element.rotation }
+        rotate: element.rotation
       });
     }
 
@@ -306,15 +307,15 @@ export class PDFCore {
     return splitPdfs;
   }
 
-  async rotatePDF(pdfData: ArrayBuffer, pageNum: number, degrees: number): Promise<Uint8Array> {
+  async rotatePDF(pdfData: ArrayBuffer, pageNum: number, degreesValue: number): Promise<Uint8Array> {
     const pdfDoc = await PDFDocument.load(pdfData);
     const pages = pdfDoc.getPages();
     const page = pages[pageNum - 1];
     
     if (page) {
-      page.setRotation({ type: 'degrees', angle: degrees });
+      page.setRotation(degrees(degreesValue));
     }
-
+  
     return await pdfDoc.save();
   }
 

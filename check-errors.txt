@@ -9,13 +9,6 @@ client/src/components/OCRProcessor.tsx(128,41): error TS2339: Property 'words' d
 client/src/components/OCRProcessor.tsx(129,18): error TS7006: Parameter 'word' implicitly has an 'any' type.
 client/src/components/OCRProcessor.tsx(130,15): error TS7006: Parameter 'word' implicitly has an 'any' type.
 client/src/components/OCRProcessor.tsx(130,21): error TS7006: Parameter 'index' implicitly has an 'any' type.
-client/src/components/PDFToolkit.tsx(34,3): error TS2724: '"lucide-react"' has no exported member named 'Compress'. Did you mean 'Compass'?
-client/src/lib/ConsolidatedPDFUtils.ts(523,11): error TS2353: Object literal may only specify known properties, and 'radius' does not exist in type 'PDFPageDrawCircleOptions'.
-client/src/lib/ConsolidatedPDFUtils.ts(584,31): error TS2339: Property 'PDFFormatVersion' does not exist on type 'Object'.
-client/src/lib/ConsolidatedPDFUtils.ts(587,32): error TS2339: Property 'IsEncrypted' does not exist on type 'Object'.
-client/src/lib/ConsolidatedPDFUtils.ts(589,32): error TS2339: Property 'IsEncrypted' does not exist on type 'Object'.
-client/src/lib/ConsolidatedPDFUtils.ts(590,31): error TS2339: Property 'IsEncrypted' does not exist on type 'Object'.
-client/src/lib/ConsolidatedPDFUtils.ts(591,31): error TS2339: Property 'IsEncrypted' does not exist on type 'Object'.
 client/src/lib/pdfCore.ts(2,10): error TS2305: Module '"pdfjs-dist"' has no exported member 'pdfjs'.
 client/src/lib/pdfCore.ts(174,19): error TS2322: Type '"degrees"' is not assignable to type 'RotationTypes'.
 client/src/lib/pdfCore.ts(271,51): error TS2554: Expected 3 arguments, but got 4.

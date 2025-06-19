@@ -6,9 +6,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Eye, Copy, Download, FileText, Zap } from "lucide-react";
-import { createWorker } from "tesseract.js";
+import { createWorker, PSM } from "tesseract.js";
 
-interface OCRResult {
+type OCRWord = {
   id: string;
   text: string;
   confidence: number;
@@ -25,7 +25,7 @@ interface OCRProcessorProps {
   pdfDocument?: any;
   canvasRef: React.RefObject<HTMLCanvasElement>;
   currentPage: number;
-  onTextDetected?: (results: OCRResult[]) => void;
+  onTextDetected?: (results: OCRWord[]) => void;
   onTextBoxCreate?: (x: number, y: number, text: string) => void;
 }
 
@@ -38,7 +38,7 @@ export default function OCRProcessor({
 }: OCRProcessorProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [ocrResults, setOcrResults] = useState<OCRResult[]>([]);
+  const [ocrResults, setOcrResults] = useState<OCRWord[]>([]);
   const [extractedText, setExtractedText] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("eng");
 
@@ -66,7 +66,7 @@ export default function OCRProcessor({
       const textContent = await page.getTextContent();
 
       let extractedPageText = "";
-      const results: OCRResult[] = [];
+      const results: OCRWord[] = [];
 
       textContent.items.forEach((item: any, index: number) => {
         if (item.str && item.str.trim()) {
@@ -112,22 +112,25 @@ export default function OCRProcessor({
       const worker = await createWorker(selectedLanguage);
 
       await worker.setParameters({
-        tessedit_pageseg_mode: "6", // Uniform block of text
+        PSM: PSM.SINGLE_BLOCK, // Use the Tesseract enum for best typing
         tessedit_char_whitelist:
           "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz .,!?-()[]{}:;\"'",
       });
 
+      // Notice the `as any` cast on options to allow logger property
       const { data } = await worker.recognize(imageData, {
-        logger: (m) => {
+        logger: (m: any) => {
           if (m.status === "recognizing text") {
             setProgress(Math.round(m.progress * 100));
           }
         },
-      });
+      } as any);
 
-      const results: OCRResult[] = data.words
-        .filter((word) => word.text.trim() && word.confidence > 30)
-        .map((word, index) => ({
+      // Ensure correct typing for words
+      const words: OCRWord[] = ((data as any).words as OCRWord[]) || [];
+      const results: OCRWord[] = words
+        .filter((word: OCRWord) => word.text.trim() && word.confidence > 30)
+        .map((word: OCRWord, index: number) => ({
           id: `ocr-${index}`,
           text: word.text,
           confidence: word.confidence,
@@ -147,6 +150,7 @@ export default function OCRProcessor({
       setProgress(0);
     }
   }, [canvasRef, currentPage, selectedLanguage, onTextDetected]);
+  
 
   const copyToClipboard = useCallback(() => {
     navigator.clipboard.writeText(extractedText);
@@ -163,7 +167,7 @@ export default function OCRProcessor({
   }, [extractedText, currentPage]);
 
   const createTextBoxFromResult = useCallback(
-    (result: OCRResult) => {
+    (result: OCRWord) => {
       if (onTextBoxCreate) {
         onTextBoxCreate(result.bbox.x0, result.bbox.y0, result.text);
       }
@@ -172,7 +176,7 @@ export default function OCRProcessor({
   );
 
   const highlightTextOnCanvas = useCallback(
-    (result: OCRResult) => {
+    (result: OCRWord) => {
       if (!canvasRef.current) return;
 
       const canvas = canvasRef.current;
@@ -333,4 +337,5 @@ export default function OCRProcessor({
   );
 }
 
-export type { OCRResult };
+export type { OCRWord };
+export { OCRProcessor };
