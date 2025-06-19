@@ -31,7 +31,7 @@ import {
   Scissors,
   Combine,
   RefreshCw,
-  Compress,
+  Shrink,
   Shield,
   Eye,
   Settings,
@@ -141,7 +141,7 @@ export default function PDFToolkit({
       const mergedPdfBytes = await pdfCore.mergePDFs(pdfDataArray);
       setProgress(90);
 
-      const blob = new Blob([mergedPdfBytes], { type: "application/pdf" });
+      const blob = new Blob([new Uint8Array(mergedPdfBytes)], { type: "application/pdf" });
       pdfCore.downloadBlob(blob, "merged-document.pdf");
 
       setProgress(100);
@@ -173,7 +173,7 @@ export default function PDFToolkit({
 
       splitPdfs.forEach((pdfBytes, index) => {
         const range = splitRanges[index];
-        const blob = new Blob([pdfBytes], { type: "application/pdf" });
+        const blob = new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" });
         const filename =
           range.name || `${currentFile.name}-part-${index + 1}.pdf`;
         pdfCore.downloadBlob(blob, filename);
@@ -201,7 +201,8 @@ export default function PDFToolkit({
           rotationAngle,
         );
 
-        const blob = new Blob([rotatedPdfBytes], { type: "application/pdf" });
+        const blob = new Blob([new Uint8Array(rotatedPdfBytes)], { type: 'application/pdf' });
+        setProgress(100);
         pdfCore.downloadBlob(blob, `${currentFile.name}-rotated.pdf`);
       } catch (error) {
         console.error("Rotation failed:", error);
@@ -230,7 +231,7 @@ export default function PDFToolkit({
         100
       ).toFixed(1);
 
-      const blob = new Blob([compressedPdfBytes], { type: "application/pdf" });
+      const blob = new Blob([new Uint8Array(compressedPdfBytes)], { type: "application/pdf" });
       pdfCore.downloadBlob(blob, `${currentFile.name}-compressed.pdf`);
 
       alert(`Compression complete! Size reduced by ${reduction}%`);
@@ -369,8 +370,8 @@ export default function PDFToolkit({
             Rotate
           </TabsTrigger>
           <TabsTrigger value="compress">
-            <Compress className="h-4 w-4 mr-1" />
-            Compress
+            <Shrink className="h-4 w-4 mr-1" />
+            Shrink
           </TabsTrigger>
           <TabsTrigger value="tools">
             <Settings className="h-4 w-4 mr-1" />
@@ -661,7 +662,7 @@ export default function PDFToolkit({
                     disabled={isProcessing}
                     className="w-full"
                   >
-                    <Compress className="h-4 w-4 mr-2" />
+                    <Shrink className="h-4 w-4 mr-2" />
                     Compress PDF
                   </Button>
                 </>

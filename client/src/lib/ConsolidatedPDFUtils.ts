@@ -520,7 +520,7 @@ export async function addElementsToPDF(
         page.drawCircle({
           x: annotation.x + radius,
           y: yPos + radius,
-          radius,
+          size: radius,
           borderColor: rgb(annotation.color.r, annotation.color.g, annotation.color.b),
           borderWidth: annotation.strokeWidth
         });
@@ -572,26 +572,32 @@ export async function getPDFInfo(pdfFile: File) {
   const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
   const pdf = await loadingTask.promise;
   const metadata = await pdf.getMetadata();
+  const info = metadata.info as Record<string, any>;
+  const isEncrypted = typeof info.IsEncrypted === "boolean" ? info.IsEncrypted : false;
+  const pdfVersion = typeof info.PDFFormatVersion === "string" ? info.PDFFormatVersion : "";
+  typeof (metadata.info as any).PDFFormatVersion === 'string'
+    ? (metadata.info as any).PDFFormatVersion
+    : '';
 
-  return {
-    pageCount,
-    title,
-    author,
-    subject,
-    creator,
-    creationDate,
-    modificationDate,
-    pdfVersion: metadata.info.PDFFormatVersion,
-    fileSize: arrayBuffer.byteLength,
-    metadata: metadata.info,
-    isEncrypted: metadata.info.IsEncrypted || false,
-    permissions: {
-      printing: !metadata.info.IsEncrypted,
-      copying: !metadata.info.IsEncrypted,
-      editing: !metadata.info.IsEncrypted
-    }
-  };
-}
+return {
+  pageCount,
+  title,
+  author,
+  subject,
+  creator,
+  creationDate,
+  modificationDate,
+  pdfVersion,
+  fileSize: arrayBuffer.byteLength,
+  metadata: metadata.info,
+  isEncrypted,
+  permissions: {
+    printing: !isEncrypted,
+    copying: !isEncrypted,
+    editing: !isEncrypted
+  }
+ }
+};
 
 // PDF Optimization
 export async function optimizePDF(pdfFile: File, options: {
@@ -640,7 +646,7 @@ export async function convertToPDFA(pdfFile: File): Promise<Uint8Array> {
 
 // Utility function to download PDF
 export function downloadPDF(pdfBytes: Uint8Array, filename: string) {
-  const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+  const blob = new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -660,4 +666,4 @@ export async function safePDFOperation<T>(
     console.error(errorMessage, error);
     throw new Error(`${errorMessage}: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
-}
+ };
