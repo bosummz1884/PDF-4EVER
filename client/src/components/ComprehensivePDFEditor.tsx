@@ -82,18 +82,23 @@ import TextBoxManager from "./TextBoxManager";
 import AnnotationManager from "./AnnotationManager";
 import FontManager from "./FontManager";
 import OCRProcessor from "./OCRProcessor";
+import OCRTool from "./OCRTool";
+import SignatureTool from "./SignatureTool";
 import PDFToolkit from "./PDFToolkit";
 import FillablePDFViewer from "./FillablePDFViewer";
 import type { TextBox } from "./TextBoxManager";
 import type { Annotation as AnnotationType } from "./AnnotationManager";
-import WhiteoutLayer, { type WhiteoutBlock } from "./WhiteoutLayer";
+import { WhiteoutBlock, WhiteoutLayerProps } from "../types/pdf-types";
+import WhiteoutLayer from "./WhiteoutLayer";
 import TextLayer from "./TextLayer";
-
-import { getAvailableFontNames } from "@/lib/loadFonts";
+import { loadFonts, isFontAvailable, getAvailableFontNames } from "../lib/loadFonts";
 import { hexToRgbNormalized } from "@/lib/colorUtils";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import * as PDFUtils from "@/lib/ConsolidatedPDFUtils";
 import Draggable from "react-draggable";
+import { FontInfo } from "../types/pdf-types";
+
+ 
 
 interface TextElement {
   id: string;
@@ -151,6 +156,40 @@ interface FormField {
 interface ComprehensivePDFEditorProps {
   className?: string;
 }
+// --- Advanced Google Fonts Setup ---
+const googleFonts = [
+  "Open Sans", "Roboto", "Lato", "Montserrat", "Source Sans Pro",
+  "Raleway", "Ubuntu", "Nunito", "Poppins", "Merriweather"
+];
+
+// FontFaceObserver polyfill for font loading
+class FontFaceObserver {
+  family: string;
+  constructor(family: string) {
+    this.family = family;
+  }
+  load() {
+    return new Promise((resolve, reject) => {
+      const testString = "BESbswy";
+      const timeout = 3000;
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Canvas context not available'));
+        return;
+      }
+      const before = ctx.measureText(testString);
+      ctx.font = `12px ${this.family}`;
+      const after = ctx.measureText(testString);
+      if (before.width !== after.width) {
+        resolve(true);
+      } else {
+        setTimeout(() => reject(new Error('Font load timeout')), timeout);
+      }
+    });
+  }
+}
+
 
 export default function ComprehensivePDFEditor({
   className,
@@ -178,6 +217,7 @@ export default function ComprehensivePDFEditor({
   // Tools and modes
   const [currentTool, setCurrentTool] = useState<
     | "select"
+    | "whiteout"
     | "text"
     | "highlight"
     | "rectangle"
@@ -190,6 +230,8 @@ export default function ComprehensivePDFEditor({
     | "x-mark"
     | "line"
     | "image"
+    | "inlineEdit"
+    | "ocr"
   >("select");
   const [activeMode, setActiveMode] = useState<
     "edit" | "merge" | "split" | "forms" | "fill"
@@ -243,6 +285,15 @@ export default function ComprehensivePDFEditor({
   }>({});
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [editingTextId, setEditingTextId] = useState<string | null>(null);
+
+  // List of all available fonts (built-in + loaded Google Fonts)
+const [availableFontList, setAvailableFontList] = useState<{ name: string; family: string; loaded: boolean }[]>([
+  { name: "Arial", family: "Arial, sans-serif", loaded: true },
+  { name: "Times New Roman", family: "'Times New Roman', serif", loaded: true },
+  { name: "Courier New", family: "'Courier New', monospace", loaded: true }
+]);
+const [loadingFonts, setLoadingFonts] = useState(false);
+
 
   // Text properties
   const [selectedFont, setSelectedFont] = useState("Arial");
@@ -462,6 +513,40 @@ export default function ComprehensivePDFEditor({
       }
     }
   };
+
+  // Loads a Google Font by injecting a <link> and waiting for it to be ready
+  const loadGoogleFont = async (fontName: string) => {
+    try {
+      if (!document.querySelector(`link[href*="${fontName.replace(/\s+/g, "+")}"]`)) {
+        const link = document.createElement("link");
+        link.href = `https://fonts.googleapis.com/css2?family=${fontName.replace(/\s+/g, "+")}:wght@300;400;500;600;700&display=swap`;
+        link.rel = "stylesheet";
+        document.head.appendChild(link);
+      }
+      // Wait for the font to load
+      await new FontFaceObserver(fontName).load();
+      return true;
+    } catch (error) {
+      console.warn(`Failed to load font: ${fontName}`, error);
+      return false;
+    }
+  };
+
+  const loadMoreFonts = async () => {
+    setLoadingFonts(true);
+    const newFonts: { name: string; family: string; loaded: boolean }[] = [];
+    for (const fontName of googleFonts) {
+      const loaded = await loadGoogleFont(fontName);
+      newFonts.push({
+        name: fontName,
+        family: `'${fontName}', sans-serif`,
+        loaded
+      });
+    }
+    setAvailableFontList(prev => [...prev, ...newFonts]);
+    setLoadingFonts(false);
+  };
+
 
   // Annotation drawing functions
   const startDrawing = useRef(false);
@@ -1104,60 +1189,56 @@ export default function ComprehensivePDFEditor({
 
   // Export PDF function with advanced text support
   const exportPDF = useCallback(async () => {
-    if (!pdfDocument || !originalFileData) return;
+  if (!pdfDocument || !originalFileData) return;
 
-    try {
-      setIsLoading(true);
+  try {
+    setIsLoading(true);
 
-      // If we have text boxes, include them in the export
-      if (textBoxes.length > 0) {
-        const pdfDoc = await PDFDocument.load(originalFileData);
-        const pages = pdfDoc.getPages();
+    if (textBoxes.length > 0) {
+      const pdfDoc = await PDFDocument.load(originalFileData);
+      const pages = pdfDoc.getPages();
 
-        // Add text boxes to PDF
-        for (const textBox of textBoxes) {
-          const page = pages[textBox.page - 1];
-          if (!page) continue;
+      // Load and embed all custom fonts
+      const embeddedFonts = await loadFonts(pdfDoc);
 
-          const { width: pageWidth, height: pageHeight } = page.getSize();
+      for (const textBox of textBoxes) {
+        const page = pages[textBox.page - 1];
+        if (!page) continue;
 
-          // Convert coordinates accounting for PDF coordinate system
-          const scale = zoom / 100;
-          const x = textBox.x / scale;
-          const y = pageHeight - textBox.y / scale - textBox.height / scale;
+        const { width: pageWidth, height: pageHeight } = page.getSize();
 
-          // Parse color
-          const color = textBox.color.startsWith("#")
-            ? hexToRgbNormalized(textBox.color)
-            : { r: 0, g: 0, b: 0 };
-
-          // Get font based on selected font
-          let font;
-          try {
-            switch (textBox.font) {
-              case "Times New Roman":
-                font = await pdfDoc.embedFont(StandardFonts.TimesRoman);
-                break;
-              case "Courier New":
-                font = await pdfDoc.embedFont(StandardFonts.Courier);
-                break;
-              case "Helvetica":
-              default:
-                font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-            }
-          } catch {
-            font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        let font;
+        if (isFontAvailable(textBox.font) && embeddedFonts[textBox.font]) {
+          font = embeddedFonts[textBox.font];
+        } else {
+          // fallback to built-in fonts
+          switch (textBox.font) {
+            case "Times New Roman":
+              font = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+              break;
+            case "Courier New":
+              font = await pdfDoc.embedFont(StandardFonts.Courier);
+              break;
+            case "Helvetica":
+            default:
+              font = await pdfDoc.embedFont(StandardFonts.Helvetica);
           }
-
-          // Draw text with proper styling
-          page.drawText(textBox.value, {
-            x: Math.max(0, x),
-            y: Math.max(0, y),
-            size: textBox.size,
-            font,
-            color: rgb(color.r, color.g, color.b),
-          });
         }
+
+        page.drawText(textBox.value ?? "", { 
+          x: textBox.x,
+          y: pageHeight - textBox.y - (textBox.size || 16),
+          size: textBox.size || 16,
+          font: font,
+          color: textBox.color
+            ? rgb(
+                parseInt(textBox.color.slice(1, 3), 16) / 255,
+                parseInt(textBox.color.slice(3, 5), 16) / 255,
+                parseInt(textBox.color.slice(5, 7), 16) / 255
+              )
+            : rgb(0, 0, 0)
+        });
+      }
 
         const pdfBytes = await pdfDoc.save();
         const blob = new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" });
@@ -1785,6 +1866,31 @@ export default function ComprehensivePDFEditor({
               {/* Text Controls - only show when text tool is active */}
               {currentTool === "text" && (
                 <>
+                  {/* Global Font Picker */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                    <label htmlFor="font-picker" style={{ fontSize: "0.9em" }}>Font:</label>
+                    <select
+                      id="font-picker"
+                      value={selectedFont}
+                      onChange={e => setSelectedFont(e.target.value)}
+                      style={{ minWidth: 140 }}
+                    >
+                      {availableFontList.map(font => (
+                        <option key={font.name} value={font.name} style={{ fontFamily: font.family }}>
+                          {font.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={loadMoreFonts}
+                      disabled={loadingFonts}
+                      style={{ padding: "2px 8px", fontSize: "0.9em" }}
+                    >
+                      {loadingFonts ? "Loading..." : "Load Google Fonts"}
+                    </button>
+                  </div>
+
                   {hasSelectedTextBox && (
                     <Button
                       variant="outline"

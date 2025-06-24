@@ -1,22 +1,5 @@
 import React, { useEffect, useRef } from "react";
-
-interface EraserBlock {
-  id: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  page: number;
-  color?: string;
-}
-
-interface EraserLayerProps {
-  isActive: boolean;
-  canvasRef: React.RefObject<HTMLCanvasElement>;
-  scale: number;
-  eraserBlocks: EraserBlock[];
-  currentPage: number;
-}
+import {EraserBlock, EraserLayerProps } from "../types/pdf-types";
 
 export default function EraserLayer({
   isActive,

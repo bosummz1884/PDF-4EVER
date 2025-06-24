@@ -99,30 +99,94 @@ export default function FontManager({
       loaded: true,
     },
   ];
-
-  // Google Fonts list (most popular)
   const googleFonts = [
-    "Open Sans",
-    "Roboto",
-    "Lato",
-    "Montserrat",
-    "Source Sans Pro",
-    "Raleway",
-    "Ubuntu",
-    "Nunito",
-    "Poppins",
-    "Merriweather",
-    "Playfair Display",
-    "Oswald",
-    "Mukti",
-    "Fira Sans",
-    "Work Sans",
-    "Libre Baskerville",
-    "Crimson Text",
-    "Lora",
-    "PT Sans",
-    "Noto Sans",
+    "Open Sans", "Roboto", "Lato", "Montserrat", "Source Sans Pro",
+    "Raleway", "Ubuntu", "Nunito", "Poppins", "Merriweather"
   ];
+
+  class FontFaceObserver {
+    family: string;
+    constructor(family: string) {
+      this.family = family;
+    }
+    load() {
+      return new Promise((resolve, reject) => {
+        const testString = "BESbswy";
+        const timeout = 3000;
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Canvas context not available'));
+          return;
+        }
+        const before = ctx.measureText(testString);
+        ctx.font = `12px ${this.family}`;
+        const after = ctx.measureText(testString);
+        if (before.width !== after.width) {
+          resolve(true);
+        } else {
+          setTimeout(() => reject(new Error('Font load timeout')), timeout);
+        }
+      });
+    }
+  }
+  
+  
+  useEffect(() => {
+  const standardFonts: FontInfo[] = [
+    ...baseFonts.map(font => ({
+      name: font,
+      family: font,
+      style: "normal",
+      weight: "normal",
+      loaded: true
+    })),
+    ...availableFonts.map(font => ({
+      name: font,
+      family: font,
+      style: "normal", 
+      weight: "normal",
+      loaded: true
+    }))
+  ];
+  setAvailableFontList(standardFonts);
+}, []);
+
+const loadGoogleFont = useCallback(async (fontName: string) => {
+  try {
+    const link = document.createElement("link");
+    link.href = `https://fonts.googleapis.com/css2?family=${fontName.replace(/\s+/g, "+")}:wght@300;400;500;600;700&display=swap`;
+    link.rel = "stylesheet";
+    document.head.appendChild(link);
+
+    await new FontFaceObserver(fontName).load();
+    return true;
+  } catch (error) {
+    console.warn(`Failed to load font: ${fontName}`, error);
+    return false;
+  }
+}, []);
+
+const loadMoreFonts = useCallback(async () => {
+  setLoadingFonts(true);
+  const newFonts: FontInfo[] = [];
+  for (const fontName of googleFonts) {
+    const loaded = await loadGoogleFont(fontName);
+    newFonts.push({
+      name: fontName,
+      family: fontName,
+      style: "normal",
+      weight: "normal",
+      loaded,
+      variants: ["300", "400", "500", "600", "700"]
+    });
+  }
+  setAvailableFontList(prev => [...prev, ...newFonts]);
+  setLoadingFonts(false);
+}, [loadGoogleFont, googleFonts]);
+
+
+
 
   const loadGoogleFont = useCallback(async (fontName: string) => {
     try {

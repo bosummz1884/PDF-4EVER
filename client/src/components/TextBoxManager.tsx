@@ -29,17 +29,21 @@ export interface TextBox {
   y: number;
   width: number;
   height: number;
-  value: string;
+  value?: string;         // Content-editable
+  text?: string;          // Text content
   font: string;
-  size: number;
+  fontFamily?: string;    // Redundant but common
+  size: number;           // Alias for fontSize
+  fontSize: number;      // Alias for size
   color: string;
-  bold: boolean;
-  italic: boolean;
-  underline: boolean;
-  alignment: "left" | "center" | "right";
-  rotation: number;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  fontWeight?: string;    // or "normal" | "bold"
+  fontStyle?: string;     // or "normal" | "italic"
+  textAlign?: "left" | "center" | "right";
+  rotation?: number;
 }
-
 interface TextBoxManagerProps {
   canvasRef: React.RefObject<HTMLCanvasElement>;
   currentPage: number;

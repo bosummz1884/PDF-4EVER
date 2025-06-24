@@ -7,27 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Eye, Copy, Download, FileText, Zap } from "lucide-react";
 import { createWorker, PSM } from "tesseract.js";
-
-type OCRWord = {
-  id: string;
-  text: string;
-  confidence: number;
-  bbox: {
-    x0: number;
-    y0: number;
-    x1: number;
-    y1: number;
-  };
-  page: number;
-}
-
-interface OCRProcessorProps {
-  pdfDocument?: any;
-  canvasRef: React.RefObject<HTMLCanvasElement>;
-  currentPage: number;
-  onTextDetected?: (results: OCRWord[]) => void;
-  onTextBoxCreate?: (x: number, y: number, text: string) => void;
-}
+import { OCRWord, OCRProcessorProps } from "../types/pdf-types";
 
 export default function OCRProcessor({
   pdfDocument,

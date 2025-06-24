@@ -2,22 +2,8 @@ import React, { useState } from "react";
 import { Rnd } from "react-rnd";
 import { HexColorPicker } from "react-colorful";
 import { nanoid } from "nanoid";
+import { WhiteoutBlock, WhiteoutLayerProps } from "../types/pdf-types";
 
-type WhiteoutBlock = {
-  id: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  color: string;
-};
-
-type WhiteoutLayerProps = {
-  isActive: boolean;
-  canvasRef: React.RefObject<HTMLCanvasElement>;
-  scale?: number;
-  onBlocksChange?: (blocks: WhiteoutBlock[]) => void;
-};
 
 export default function WhiteoutLayer({
   isActive,

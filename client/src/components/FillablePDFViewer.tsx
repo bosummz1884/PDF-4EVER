@@ -5,27 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Download, Save, FileText } from "lucide-react";
 import { saveFilledFormFields } from "../utils/saveFilledFormFields";
-
-type FieldEntry = {
-  id: string;
-  fieldName: string;
-  fieldType: string;
-  rect: number[];
-  value: string;
-  options?: string[];
-  radioGroup?: string;
-  page: number;
-  required?: boolean;
-};
-
-interface FillablePDFViewerProps {
-  file: File | null;
-  pdfDocument?: any;
-  currentPage?: number;
-  onFieldsDetected: (fields: FieldEntry[]) => void;
-  onSave: (fields: FieldEntry[]) => void;
-  className?: string;
-}
+import { FieldEntry, FillablePDFViewerProps } from "../types/pdf-types";
 
 export default function FillablePDFViewer({
   file,
