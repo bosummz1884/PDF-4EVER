@@ -162,3 +162,10 @@ html {
     transform: translateY(-20px);
   }
 }
+
+/* Make font picker dropdown text black and background white for readability */
+#font-picker,
+#font-picker option {
+  color: #000 !important;
+  background: #fff !important;
+}
