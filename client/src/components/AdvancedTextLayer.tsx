@@ -1,273 +1,427 @@
-import React, { useState, useRef } from "react";
-import { Rnd } from "react-rnd";
-import { nanoid } from "nanoid";
+import React, {
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+  MouseEvent,
+  ChangeEvent,
+  KeyboardEvent,
+} from "react";
+import type { TextBox, FontInfo } from "@/types/pdf-types";
+import { FontManager } from "./FontManager";
 
-type TextBox = {
-  id: string;
-  page: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  value: string;
-  font: string;
-  size: number;
-  color: string;
-  bold: boolean;
-  italic: boolean;
-  underline: boolean;
-};
+// Utility: clamp
+function clamp(val: number, min: number, max: number): number {
+  return Math.max(min, Math.min(val, max));
+}
 
-type Props = {
+interface AdvancedTextLayerProps {
+  textBoxes: TextBox[];
+  selectedBoxIds: Set<string>;
+  onSelect: (id: string) => void;
+  onMultiSelect: (id: string) => void;
+  onClearSelection: () => void;
+  onUpdate: (id: string, updates: Partial<TextBox>) => void;
+  onRemove: (id: string) => void;
+  onAdd: (box: Omit<TextBox, "id">) => void;
+  currentPage: number;
   canvasRef: React.RefObject<HTMLCanvasElement>;
-  page: number;
-  addTextBox?: boolean;
-  onTextBoxesChange?: (textBoxes: TextBox[]) => void;
-};
+  fontList?: FontInfo[]; // List of available fonts
+}
 
-export default function AdvancedTextLayer({
+type ResizeDirection = "right" | "bottom" | "corner" | null;
+
+export const AdvancedTextLayer: React.FC<AdvancedTextLayerProps> = ({
+  textBoxes,
+  selectedBoxIds,
+  onSelect,
+  onMultiSelect,
+  onClearSelection,
+  onUpdate,
+  onRemove,
+  onAdd,
+  currentPage,
   canvasRef,
-  page,
-  onTextBoxesChange,
-}: Props) {
-  const [textBoxes, setTextBoxes] = useState<TextBox[]>([]);
-  const [selectedFont, setSelectedFont] = useState("Helvetica");
-  const [fontSize, setFontSize] = useState(16);
-  const [fontColor, setFontColor] = useState("#000000");
-  const [isAddMode, setIsAddMode] = useState(false);
+  fontList = [],
+}) => {
+  // State for editing
+  const [editingBoxId, setEditingBoxId] = useState<string | null>(null);
+  const [draggingBoxId, setDraggingBoxId] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState<{ x: number; y: number } | null>(
+    null
+  );
+  const [resizingBoxId, setResizingBoxId] = useState<string | null>(null);
+  const [resizeDirection, setResizeDirection] = useState<ResizeDirection>(null);
 
-  const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Only create new text box if in add mode and clicking on empty area
-    if (isAddMode && e.target === e.currentTarget) {
-      const rect = canvasRef.current!.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+  // Mouse down position for drag/resize
+  const mouseDownRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const originalBoxRef = useRef<TextBox | null>(null);
 
-      const newBox: TextBox = {
-        id: nanoid(),
-        page,
-        x,
-        y,
-        width: 200,
-        height: 50,
-        value: "Edit me",
-        font: selectedFont,
-        size: fontSize,
-        color: fontColor,
-        bold: false,
-        italic: false,
-        underline: false,
-      };
+  // Scale factor for PDF/canvas coordinate mapping
+  const getScale = useCallback(() => {
+    if (!canvasRef.current) return { x: 1, y: 1 };
+    const rect = canvasRef.current.getBoundingClientRect();
+    return {
+      x: canvasRef.current.width / rect.width,
+      y: canvasRef.current.height / rect.height,
+    };
+  }, [canvasRef]);
 
-      const updatedBoxes = [...textBoxes, newBox];
-      setTextBoxes(updatedBoxes);
-      onTextBoxesChange?.(updatedBoxes);
-      setIsAddMode(false); // Turn off add mode after creating a text box
+  // ---- Selection Handlers ----
+  const handleSelect = useCallback(
+    (id: string, e: MouseEvent) => {
+      e.stopPropagation();
+      if (e.shiftKey) {
+        onMultiSelect(id);
+      } else {
+        onSelect(id);
+      }
+    },
+    [onSelect, onMultiSelect]
+  );
+
+  // ---- Editing Handlers ----
+  const handleStartEdit = (id: string) => setEditingBoxId(id);
+
+  const handleEditChange = (
+    id: string,
+    e: ChangeEvent<HTMLTextAreaElement>
+  ) => {
+    onUpdate(id, { value: e.target.value, text: e.target.value });
+  };
+
+  const handleEditBlur = (id: string) => {
+    setEditingBoxId(null);
+  };
+
+  // ---- Drag Logic ----
+  const handleMouseDown = (
+    e: React.MouseEvent,
+    box: TextBox
+  ) => {
+    if (editingBoxId) return;
+    setDraggingBoxId(box.id);
+    const startX = e.clientX;
+    const startY = e.clientY;
+    mouseDownRef.current = { x: startX, y: startY };
+    originalBoxRef.current = { ...box };
+    window.addEventListener("mousemove", handleMouseMove as any);
+    window.addEventListener("mouseup", handleMouseUp as any);
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!draggingBoxId || !originalBoxRef.current) return;
+    const deltaX = e.clientX - mouseDownRef.current.x;
+    const deltaY = e.clientY - mouseDownRef.current.y;
+    const scale = getScale();
+    const box = originalBoxRef.current;
+    const newX = clamp(box.x + deltaX * scale.x, 0, (canvasRef.current?.width ?? 9999) - box.width);
+    const newY = clamp(box.y + deltaY * scale.y, 0, (canvasRef.current?.height ?? 9999) - box.height);
+    onUpdate(draggingBoxId, { x: newX, y: newY });
+  };
+
+  const handleMouseUp = () => {
+    setDraggingBoxId(null);
+    window.removeEventListener("mousemove", handleMouseMove as any);
+    window.removeEventListener("mouseup", handleMouseUp as any);
+  };
+
+  // ---- Resize Logic ----
+  const handleResizeMouseDown = (
+    e: React.MouseEvent,
+    box: TextBox,
+    direction: ResizeDirection
+  ) => {
+    e.stopPropagation();
+    setResizingBoxId(box.id);
+    setResizeDirection(direction);
+    mouseDownRef.current = { x: e.clientX, y: e.clientY };
+    originalBoxRef.current = { ...box };
+    window.addEventListener("mousemove", handleResizeMouseMove as any);
+    window.addEventListener("mouseup", handleResizeMouseUp as any);
+  };
+
+  const handleResizeMouseMove = (e: MouseEvent) => {
+    if (!resizingBoxId || !originalBoxRef.current || !resizeDirection) return;
+    const deltaX = e.clientX - mouseDownRef.current.x;
+    const deltaY = e.clientY - mouseDownRef.current.y;
+    const scale = getScale();
+    let newWidth = originalBoxRef.current.width;
+    let newHeight = originalBoxRef.current.height;
+    if (resizeDirection === "right" || resizeDirection === "corner") {
+      newWidth = clamp(originalBoxRef.current.width + deltaX * scale.x, 40, 1500);
     }
+    if (resizeDirection === "bottom" || resizeDirection === "corner") {
+      newHeight = clamp(originalBoxRef.current.height + deltaY * scale.y, 24, 800);
+    }
+    onUpdate(resizingBoxId, { width: newWidth, height: newHeight });
   };
 
-  const updateText = (id: string, value: string) => {
-    const updatedBoxes = textBoxes.map((tb) =>
-      tb.id === id ? { ...tb, value } : tb,
-    );
-    setTextBoxes(updatedBoxes);
-    onTextBoxesChange?.(updatedBoxes);
+  const handleResizeMouseUp = () => {
+    setResizingBoxId(null);
+    setResizeDirection(null);
+    window.removeEventListener("mousemove", handleResizeMouseMove as any);
+    window.removeEventListener("mouseup", handleResizeMouseUp as any);
   };
 
-  const updateBox = (id: string, props: Partial<TextBox>) => {
-    const updatedBoxes = textBoxes.map((tb) =>
-      tb.id === id ? { ...tb, ...props } : tb,
-    );
-    setTextBoxes(updatedBoxes);
-    onTextBoxesChange?.(updatedBoxes);
-  };
+  // ---- Toolbar Logic ----
+  // Use your FontManager if available for font/size
+  const renderToolbar = (box: TextBox) => (
+    <div
+      className="textbox-toolbar"
+      style={{
+        position: "absolute",
+        top: -38,
+        left: 0,
+        background: "white",
+        boxShadow: "0 1px 5px rgba(0,0,0,0.15)",
+        borderRadius: 6,
+        padding: "2px 8px",
+        display: "flex",
+        gap: 8,
+        zIndex: 200,
+        alignItems: "center",
+      }}
+    >
+      <FontManager
+        selectedFont={box.font}
+        onFontChange={(font) => onUpdate(box.id, { font })}
+        fontSize={box.fontSize}
+        onFontSizeChange={(fontSize) => onUpdate(box.id, { fontSize })}
+        fontWeight={box.fontWeight ?? "normal"}
+        onFontWeightChange={(fontWeight) => onUpdate(box.id, { fontWeight })}
+        fontStyle={box.fontStyle ?? "normal"}
+        onFontStyleChange={(fontStyle) => onUpdate(box.id, { fontStyle })}
+        showAdvanced
+        fontList={fontList}
+      />
+      <input
+        type="color"
+        value={box.color}
+        onChange={(e) => onUpdate(box.id, { color: e.target.value })}
+        title="Font Color"
+        style={{ width: 24, height: 24, border: "none", background: "none" }}
+      />
+      <button
+        onClick={() => onUpdate(box.id, { bold: !(box.bold ?? false) })}
+        title="Bold"
+        style={{
+          fontWeight: "bold",
+          background: box.bold ? "#eee" : "none",
+        }}
+        type="button"
+      >
+        B
+      </button>
+      <button
+        onClick={() => onUpdate(box.id, { italic: !(box.italic ?? false) })}
+        title="Italic"
+        style={{
+          fontStyle: "italic",
+          background: box.italic ? "#eee" : "none",
+        }}
+        type="button"
+      >
+        I
+      </button>
+      <button
+        onClick={() => onUpdate(box.id, { underline: !(box.underline ?? false) })}
+        title="Underline"
+        style={{
+          textDecoration: "underline",
+          background: box.underline ? "#eee" : "none",
+        }}
+        type="button"
+      >
+        U
+      </button>
+      <button
+        onClick={() => onRemove(box.id)}
+        title="Delete"
+        style={{
+          color: "#e74c3c",
+          background: "none",
+          border: "none",
+          fontSize: 18,
+        }}
+        type="button"
+      >
+        🗑️
+      </button>
+    </div>
+  );
 
-  const deleteTextBox = (id: string) => {
-    const updatedBoxes = textBoxes.filter((tb) => tb.id !== id);
-    setTextBoxes(updatedBoxes);
-    onTextBoxesChange?.(updatedBoxes);
-  };
+  // ---- Click Outside to Deselect ----
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if ((e.target as HTMLElement).closest(".pdf-textbox")) return;
+      onClearSelection();
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [onClearSelection]);
 
-  const toggleStyle = (id: string, style: "bold" | "italic" | "underline") => {
-    const updatedBoxes = textBoxes.map((tb) =>
-      tb.id === id ? { ...tb, [style]: !tb[style] } : tb,
-    );
-    setTextBoxes(updatedBoxes);
-    onTextBoxesChange?.(updatedBoxes);
-  };
+  // ---- Keyboard Editing (escape to blur) ----
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && editingBoxId) {
+        setEditingBoxId(null);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [editingBoxId]);
 
+  // ---- Render ----
   return (
-    <>
-      <div
-        style={{
-          marginBottom: "0.5rem",
-          display: "flex",
-          gap: "1rem",
-          alignItems: "center",
-        }}
-      >
-        <button
-          onClick={() => setIsAddMode(!isAddMode)}
-          style={{
-            padding: "4px 8px",
-            borderRadius: "4px",
-            border: "1px solid #ccc",
-            backgroundColor: isAddMode ? "#3b82f6" : "#f8f9fa",
-            color: isAddMode ? "white" : "#333",
-            cursor: "pointer",
-            fontSize: "12px",
-          }}
-        >
-          {isAddMode ? "Cancel" : "Add Text"}
-        </button>
-
-        <select
-          value={selectedFont}
-          onChange={(e) => setSelectedFont(e.target.value)}
-          style={{
-            padding: "4px",
-            borderRadius: "4px",
-            border: "1px solid #ccc",
-          }}
-        >
-          <option value="Helvetica">Helvetica</option>
-          <option value="Times New Roman">Times New Roman</option>
-          <option value="Courier New">Courier New</option>
-        </select>
-
-        <input
-          type="number"
-          min={8}
-          max={72}
-          value={fontSize}
-          onChange={(e) => setFontSize(parseInt(e.target.value))}
-          style={{
-            width: "60px",
-            padding: "4px",
-            borderRadius: "4px",
-            border: "1px solid #ccc",
-          }}
-        />
-
-        <input
-          type="color"
-          value={fontColor}
-          onChange={(e) => setFontColor(e.target.value)}
-          style={{
-            width: "40px",
-            height: "32px",
-            borderRadius: "4px",
-            border: "1px solid #ccc",
-            cursor: "pointer",
-          }}
-        />
-      </div>
-
-      <div
-        style={{
-          position: "relative",
-          width: canvasRef.current?.width,
-          height: canvasRef.current?.height,
-          cursor: isAddMode ? "crosshair" : "default",
-        }}
-        onClick={handleCanvasClick}
-      >
-        {textBoxes
-          .filter((box) => box.page === page)
-          .map((box) => (
-            <Rnd
+    <div
+      className="pdf-text-layer"
+      style={{
+        position: "absolute",
+        left: 0,
+        top: 0,
+        width: "100%",
+        height: "100%",
+        pointerEvents: "none",
+        zIndex: 10,
+      }}
+    >
+      {textBoxes
+        .filter((box) => box.page === currentPage)
+        .map((box) => {
+          const isSelected = selectedBoxIds.has(box.id);
+          return (
+            <div
               key={box.id}
-              size={{ width: box.width, height: box.height }}
-              position={{ x: box.x, y: box.y }}
-              bounds="parent"
-              onDragStop={(_, d) => updateBox(box.id, { x: d.x, y: d.y })}
-              onResizeStop={(_, __, ref, ____, pos) =>
-                updateBox(box.id, {
-                  width: parseInt(ref.style.width, 10),
-                  height: parseInt(ref.style.height, 10),
-                  x: pos.x,
-                  y: pos.y,
-                })
-              }
-              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+              className={`pdf-textbox${isSelected ? " selected" : ""}`}
+              tabIndex={0}
+              style={{
+                position: "absolute",
+                left: box.x,
+                top: box.y,
+                width: box.width,
+                height: box.height,
+                fontFamily: box.font,
+                fontSize: box.fontSize,
+                color: box.color,
+                fontWeight: box.fontWeight ?? (box.bold ? "bold" : "normal"),
+                fontStyle: box.fontStyle ?? (box.italic ? "italic" : "normal"),
+                textDecoration: box.underline ? "underline" : undefined,
+                textAlign: box.textAlign,
+                transform: box.rotation ? `rotate(${box.rotation}deg)` : undefined,
+                outline: isSelected ? "2px solid #377dff" : undefined,
+                background: "transparent",
+                pointerEvents: "auto",
+                cursor: isSelected ? (draggingBoxId === box.id ? "grabbing" : "move") : "pointer",
+                zIndex: isSelected ? 100 : 1,
+                userSelect: editingBoxId === box.id ? "text" : "none",
+                overflow: "hidden",
+                transition: "outline 0.1s",
+                boxSizing: "border-box",
+              }}
+              onClick={(e) => handleSelect(box.id, e)}
+              onDoubleClick={() => handleStartEdit(box.id)}
+              onMouseDown={(e) => handleMouseDown(e, box)}
             >
-              <div className="group relative">
-                {/* Hover Controls */}
-                <div className="absolute -top-8 left-0 hidden group-hover:flex gap-1 bg-white border rounded p-1 shadow-lg z-20">
-                  <button
-                    onClick={() => toggleStyle(box.id, "bold")}
-                    className={`px-2 py-1 text-xs font-bold rounded ${box.bold ? "bg-blue-500 text-white" : "bg-gray-200"}`}
-                    title="Bold"
-                  >
-                    B
-                  </button>
-                  <button
-                    onClick={() => toggleStyle(box.id, "italic")}
-                    className={`px-2 py-1 text-xs italic rounded ${box.italic ? "bg-blue-500 text-white" : "bg-gray-200"}`}
-                    title="Italic"
-                  >
-                    I
-                  </button>
-                  <button
-                    onClick={() => toggleStyle(box.id, "underline")}
-                    className={`px-2 py-1 text-xs underline rounded ${box.underline ? "bg-blue-500 text-white" : "bg-gray-200"}`}
-                    title="Underline"
-                  >
-                    U
-                  </button>
-                  <button
-                    onClick={() => deleteTextBox(box.id)}
-                    className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
-                    title="Delete"
-                  >
-                    ×
-                  </button>
-                </div>
-
-                <div
-                  contentEditable
-                  suppressContentEditableWarning
+              {isSelected && renderToolbar(box)}
+              {/* Drag Handles (bottom-right for resize, right for width, bottom for height) */}
+              {isSelected && (
+                <>
+                  <div
+                    className="resize-handle-corner"
+                    style={{
+                      position: "absolute",
+                      right: 0,
+                      bottom: 0,
+                      width: 12,
+                      height: 12,
+                      background: "#377dff",
+                      borderRadius: 2,
+                      cursor: "se-resize",
+                      zIndex: 110,
+                    }}
+                    onMouseDown={(e) => handleResizeMouseDown(e, box, "corner")}
+                  />
+                  <div
+                    className="resize-handle-right"
+                    style={{
+                      position: "absolute",
+                      right: 0,
+                      bottom: "50%",
+                      width: 10,
+                      height: 22,
+                      background: "#377dff",
+                      borderRadius: 2,
+                      cursor: "e-resize",
+                      zIndex: 110,
+                      transform: "translateY(50%)",
+                    }}
+                    onMouseDown={(e) => handleResizeMouseDown(e, box, "right")}
+                  />
+                  <div
+                    className="resize-handle-bottom"
+                    style={{
+                      position: "absolute",
+                      left: "50%",
+                      bottom: 0,
+                      width: 22,
+                      height: 10,
+                      background: "#377dff",
+                      borderRadius: 2,
+                      cursor: "s-resize",
+                      zIndex: 110,
+                      transform: "translateX(-50%)",
+                    }}
+                    onMouseDown={(e) => handleResizeMouseDown(e, box, "bottom")}
+                  />
+                </>
+              )}
+              {/* Inline Editing */}
+              {editingBoxId === box.id ? (
+                <textarea
+                  value={box.value ?? box.text ?? ""}
+                  autoFocus
                   style={{
                     width: "100%",
                     height: "100%",
                     fontFamily: box.font,
-                    fontSize: box.size,
+                    fontSize: box.fontSize,
                     color: box.color,
-                    fontWeight: box.bold ? "bold" : "normal",
-                    fontStyle: box.italic ? "italic" : "normal",
-                    textDecoration: box.underline ? "underline" : "none",
-                    background: "rgba(255,255,255,0.8)",
-                    padding: "6px",
-                    outline: "2px solid rgba(59, 130, 246, 0.3)",
-                    borderRadius: "3px",
-                    overflow: "hidden",
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                    boxSizing: "border-box",
-                    cursor: "text",
+                    fontWeight: box.fontWeight ?? (box.bold ? "bold" : "normal"),
+                    fontStyle: box.fontStyle ?? (box.italic ? "italic" : "normal"),
+                    textDecoration: box.underline ? "underline" : undefined,
+                    textAlign: box.textAlign,
+                    background: "transparent",
+                    border: "none",
+                    resize: "none",
+                    outline: "none",
+                    padding: 0,
                   }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.currentTarget.focus();
-                  }}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onBlur={(e) => updateText(box.id, e.currentTarget.innerText)}
+                  onBlur={() => handleEditBlur(box.id)}
+                  onChange={(e) => handleEditChange(box.id, e)}
                   onKeyDown={(e) => {
-                    e.stopPropagation();
                     if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      e.currentTarget.blur();
+                      setEditingBoxId(null);
+                      (e.target as HTMLTextAreaElement).blur();
                     }
                   }}
+                />
+              ) : (
+                <span
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    display: "inline-block",
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                  }}
                 >
-                  {box.value}
-                </div>
-              </div>
-            </Rnd>
-          ))}
-      </div>
-    </>
+                  {box.value ?? box.text ?? ""}
+                </span>
+              )}
+            </div>
+          );
+        })}
+    </div>
   );
-}
-
-export type { TextBox };
+};
