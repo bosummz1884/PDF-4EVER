@@ -1,12 +1,18 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import type { TextBox } from "@/types/pdf-types";
 import { AdvancedTextLayer } from "./AdvancedTextLayer";
+
+// Utility for deep copying (undo/redo)
+function deepCopyTextBoxes(boxes: TextBox[]): TextBox[] {
+  return boxes.map(box => ({ ...box }));
+}
 
 interface TextBoxManagerProps {
   initialTextBoxes?: TextBox[];
   onTextBoxesChange?: (boxes: TextBox[]) => void;
   currentPage: number;
   canvasRef: React.RefObject<HTMLCanvasElement>;
+  fontList?: any[]; // If using FontManager/fontList, import FontInfo type
 }
 
 export const TextBoxManager: React.FC<TextBoxManagerProps> = ({
@@ -14,12 +20,20 @@ export const TextBoxManager: React.FC<TextBoxManagerProps> = ({
   onTextBoxesChange,
   currentPage,
   canvasRef,
+  fontList = [],
 }) => {
   // --- State ---
-  const [textBoxes, setTextBoxes] = useState<TextBox[]>(initialTextBoxes);
+  const [textBoxes, setTextBoxes] = useState<TextBox[]>(deepCopyTextBoxes(initialTextBoxes));
   const [selectedBoxIds, setSelectedBoxIds] = useState<Set<string>>(new Set());
   const undoStack = useRef<TextBox[][]>([]);
   const redoStack = useRef<TextBox[][]>([]);
+
+  // --- Utility: Push undo ---
+  const pushUndo = useCallback((boxes: TextBox[]) => {
+    undoStack.current.push(deepCopyTextBoxes(boxes));
+    // Clear redo stack on new action
+    redoStack.current = [];
+  }, []);
 
   // --- Selection ---
   const selectBox = useCallback((id: string) => {
@@ -27,7 +41,11 @@ export const TextBoxManager: React.FC<TextBoxManagerProps> = ({
   }, []);
 
   const multiSelectBox = useCallback((id: string) => {
-    setSelectedBoxIds(prev => new Set(prev).add(id));
+    setSelectedBoxIds(prev => {
+      const newSet = new Set(prev);
+      newSet.add(id);
+      return newSet;
+    });
   }, []);
 
   const clearSelection = useCallback(() => {
@@ -35,43 +53,40 @@ export const TextBoxManager: React.FC<TextBoxManagerProps> = ({
   }, []);
 
   // --- Undo/Redo ---
-  const pushUndo = (boxes: TextBox[]) => {
-    undoStack.current.push([...boxes]);
-    redoStack.current = [];
-  };
-
-  const undo = () => {
+  const undo = useCallback(() => {
     if (undoStack.current.length === 0) return;
     const prev = undoStack.current.pop();
     if (prev) {
-      redoStack.current.push(textBoxes);
-      setTextBoxes(prev);
-      if (onTextBoxesChange) onTextBoxesChange(prev);
+      redoStack.current.push(deepCopyTextBoxes(textBoxes));
+      setTextBoxes(deepCopyTextBoxes(prev));
+      setSelectedBoxIds(new Set());
+      if (onTextBoxesChange) onTextBoxesChange(deepCopyTextBoxes(prev));
     }
-  };
+  }, [textBoxes, onTextBoxesChange]);
 
-  const redo = () => {
+  const redo = useCallback(() => {
     if (redoStack.current.length === 0) return;
     const next = redoStack.current.pop();
     if (next) {
-      undoStack.current.push(textBoxes);
-      setTextBoxes(next);
-      if (onTextBoxesChange) onTextBoxesChange(next);
+      undoStack.current.push(deepCopyTextBoxes(textBoxes));
+      setTextBoxes(deepCopyTextBoxes(next));
+      setSelectedBoxIds(new Set());
+      if (onTextBoxesChange) onTextBoxesChange(deepCopyTextBoxes(next));
     }
-  };
+  }, [textBoxes, onTextBoxesChange]);
 
   // --- Box Operations ---
-  const addTextBox = (box: Omit<TextBox, "id">) => {
-    const id = `textbox_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+  const addTextBox = useCallback((box: Omit<TextBox, "id">) => {
+    const id = `textbox_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
     const newBox: TextBox = { ...box, id };
     const newBoxes = [...textBoxes, newBox];
     pushUndo(textBoxes);
     setTextBoxes(newBoxes);
-    if (onTextBoxesChange) onTextBoxesChange(newBoxes);
     setSelectedBoxIds(new Set([id]));
-  };
+    if (onTextBoxesChange) onTextBoxesChange(newBoxes);
+  }, [textBoxes, pushUndo, onTextBoxesChange]);
 
-  const updateTextBox = (id: string, updates: Partial<TextBox>) => {
+  const updateTextBox = useCallback((id: string, updates: Partial<TextBox>) => {
     const idx = textBoxes.findIndex(box => box.id === id);
     if (idx === -1) return;
     const updatedBoxes = textBoxes.map(box =>
@@ -80,56 +95,67 @@ export const TextBoxManager: React.FC<TextBoxManagerProps> = ({
     pushUndo(textBoxes);
     setTextBoxes(updatedBoxes);
     if (onTextBoxesChange) onTextBoxesChange(updatedBoxes);
-  };
+  }, [textBoxes, pushUndo, onTextBoxesChange]);
 
-  const removeTextBox = (id: string) => {
+  const removeTextBox = useCallback((id: string) => {
     const updatedBoxes = textBoxes.filter(box => box.id !== id);
     pushUndo(textBoxes);
     setTextBoxes(updatedBoxes);
-    if (onTextBoxesChange) onTextBoxesChange(updatedBoxes);
     setSelectedBoxIds(prev => {
       const newSet = new Set(prev);
       newSet.delete(id);
       return newSet;
     });
-  };
+    if (onTextBoxesChange) onTextBoxesChange(updatedBoxes);
+  }, [textBoxes, pushUndo, onTextBoxesChange]);
 
-  const duplicateTextBox = (id: string) => {
+  const duplicateTextBox = useCallback((id: string) => {
     const box = textBoxes.find(box => box.id === id);
     if (!box) return;
+    const idNew = `textbox_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
     const newBox: TextBox = {
       ...box,
-      id: `textbox_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-      x: box.x + 20,
-      y: box.y + 20,
+      id: idNew,
+      x: box.x + 24,
+      y: box.y + 24,
     };
-    addTextBox(newBox);
-  };
+    const newBoxes = [...textBoxes, newBox];
+    pushUndo(textBoxes);
+    setTextBoxes(newBoxes);
+    setSelectedBoxIds(new Set([idNew]));
+    if (onTextBoxesChange) onTextBoxesChange(newBoxes);
+  }, [textBoxes, pushUndo, onTextBoxesChange]);
 
   // --- Keyboard Shortcuts ---
-  React.useEffect(() => {
+  useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        if (e.key === "z") {
-          e.preventDefault();
-          undo();
-        } else if (e.key === "y") {
-          e.preventDefault();
-          redo();
-        } else if (e.key === "d" && selectedBoxIds.size === 1) {
-          e.preventDefault();
-          duplicateTextBox(Array.from(selectedBoxIds)[0]);
-        }
+      if (document.activeElement && (document.activeElement.tagName === "TEXTAREA" || document.activeElement.tagName === "INPUT")) {
+        // Don't trigger hotkeys while typing in input/textarea
+        return;
       }
-      if ((e.key === "Delete" || e.key === "Backspace") && selectedBoxIds.size > 0) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        undo();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") {
+        e.preventDefault();
+        redo();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "d" && selectedBoxIds.size === 1) {
+        e.preventDefault();
+        duplicateTextBox(Array.from(selectedBoxIds)[0]);
+      } else if ((e.key === "Delete" || e.key === "Backspace") && selectedBoxIds.size > 0) {
         e.preventDefault();
         selectedBoxIds.forEach(id => removeTextBox(id));
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedBoxIds, textBoxes]);
+  }, [selectedBoxIds, undo, redo, duplicateTextBox, removeTextBox]);
+
+  // --- Sync external changes to initialTextBoxes (if any) ---
+  useEffect(() => {
+    setTextBoxes(deepCopyTextBoxes(initialTextBoxes));
+    setSelectedBoxIds(new Set());
+  }, [initialTextBoxes]);
 
   // --- Render ---
   return (
@@ -144,6 +170,7 @@ export const TextBoxManager: React.FC<TextBoxManagerProps> = ({
       onAdd={addTextBox}
       currentPage={currentPage}
       canvasRef={canvasRef}
+      fontList={fontList}
     />
   );
 };
