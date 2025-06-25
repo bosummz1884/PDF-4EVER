@@ -127,9 +127,7 @@ export default function Landing() {
                 designed to gouge you when you forget to cancel.
               </p>
               <p>
-                I've been there too - waking up to overdraft fees because some
-                service I forgot about decided to charge my account. There has
-                to be a better way.
+                
               </p>
               <p>
                 <strong>
@@ -155,11 +153,10 @@ export default function Landing() {
                   </div>
                   <div>
                     <h4 className="font-semibold text-lg mb-2">
-                      🎯 Watch Ads for Credits
+                      🎯 Real Customer Support
                     </h4>
                     <p>
-                      Can't afford the full price? Watch ads and earn credits.
-                      Your time has value.
+                      In the era of AI, being able to get a real person to help you anymor
                     </p>
                   </div>
                   <div>
@@ -192,9 +189,7 @@ export default function Landing() {
                     Can't afford the one-time payment but still need to use the
                     service?
                   </strong>{" "}
-                  I've been there too! I dislike ads as much as everyone else
-                  but we have a rewarded ads section that allows you to earn
-                  usage for watching ads.
+                  
                 </p>
               </div>
             </div>
