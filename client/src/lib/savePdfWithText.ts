@@ -30,7 +30,7 @@ export async function savePdfWithText(
   if (originalPdfData instanceof File) {
     arrayBuffer = await originalPdfData.arrayBuffer();
   } else if (originalPdfData instanceof Uint8Array) {
-    arrayBuffer = originalPdfData.buffer;
+    arrayBuffer = originalPdfData;
   } else {
     arrayBuffer = originalPdfData;
   }
@@ -205,8 +205,7 @@ export async function savePdfWithText(
  * Triggers a PDF file download in the browser.
  */
 export function triggerDownload(bytes: Uint8Array, filename: string) {
-  const blob = new Blob([bytes], { type: "application/pdf" });
-  const link = document.createElement("a");
+    const blob = new Blob([new Uint8Array(bytes)], { type: "application/pdf" });  const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
   link.download = filename;
   document.body.appendChild(link);
