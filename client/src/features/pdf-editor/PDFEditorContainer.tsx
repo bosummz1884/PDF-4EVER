@@ -10,7 +10,7 @@ import FillableFormLayer from "@layers/FillableFormLayer";
 import AdvancedTextLayer from "@layers/AdvancedTextLayer";
 import OCRLayer from "@/features/components/layers/OCRLayer";
 import EraserLayer from "@/features/components/layers/EraserLayer";
-import { FormField, Annotation, WhiteoutBlock, TextBox, OCRResult, FontInfo, DEFAULT_FONT_INFO, FontManagerProps } from "client/src/types/pdf-types";
+import { FormField, Annotation, WhiteoutBlock, TextBox, OCRResult, FontInfo, DEFAULT_FONT_INFO, FontManagerProps } from "../../types/pdf-types";
 import PDFToolbar from "@/features/components/PDFToolbar";
 import PDFSidebar from "client/src/features/components/PDFSidebar";
 
