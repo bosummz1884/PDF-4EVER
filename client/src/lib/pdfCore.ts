@@ -1,6 +1,8 @@
 import { PDFDocument, StandardFonts, rgb, PDFPage, PDFFont, degrees } from 'pdf-lib';
 import * as pdfjs from 'pdfjs-dist/build/pdf';
 import 'pdfjs-dist/build/pdf.worker.entry';
+import { AnnotationElement } from '../types/pdf-types';
+
 
 function getArrayBuffer(u8: Uint8Array): ArrayBuffer {
   return u8.buffer instanceof ArrayBuffer &&
@@ -10,45 +12,8 @@ function getArrayBuffer(u8: Uint8Array): ArrayBuffer {
     : u8.slice().buffer;
 }
 
-export interface TextElement {
-  id: string;
-  x: number;
-  y: number;
-  text: string;
-  fontSize: number;
-  fontFamily: string;
-  color: string;
-  page: number;
-  fontWeight: 'normal' | 'bold';
-  fontStyle: 'normal' | 'italic';
-  textAlign: 'left' | 'center' | 'right';
-  rotation: number;
-}
 
-export interface FormField {
-  id: string;
-  fieldName: string;
-  fieldType: string;
-  rect: number[];
-  value: string;
-  options?: string[];
-  radioGroup?: string;
-  page: number;
-  required?: boolean;
-}
 
-export interface AnnotationElement {
-  id: string;
-  type: 'highlight' | 'rectangle' | 'circle' | 'freeform' | 'signature';
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  color: string;
-  page: number;
-  strokeWidth?: number;
-  points?: number[];
-}
 
 export class PDFCore {
   private static instance: PDFCore;

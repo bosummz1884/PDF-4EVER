@@ -12,38 +12,38 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import { signupSchema, type SignupData } from "@shared/schema";
+import { useToast } from "@/features/hooks/use-toast";
+import { loginSchema, type LoginData } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
-import { Eye, EyeOff, Mail, User, Lock } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 
-interface SignupDialogProps {
+interface LoginDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: (user: any, token: string) => void;
+  onSwitchToSignup: () => void;
 }
 
-export function SignupDialog({
+export function LoginDialog({
   open,
   onOpenChange,
   onSuccess,
-}: SignupDialogProps) {
+  onSwitchToSignup,
+}: LoginDialogProps) {
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
-  const form = useForm<SignupData>({
-    resolver: zodResolver(signupSchema),
+  const form = useForm<LoginData>({
+    resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
       password: "",
-      firstName: "",
-      lastName: "",
     },
   });
 
-  const signupMutation = useMutation({
-    mutationFn: async (data: SignupData) => {
-      return apiRequest("/api/auth/signup", "POST", {
+  const loginMutation = useMutation({
+    mutationFn: async (data: LoginData) => {
+      return apiRequest("/api/auth/login", "POST", {
         body: JSON.stringify(data),
         headers: {
           "Content-Type": "application/json",
@@ -52,8 +52,8 @@ export function SignupDialog({
     },
     onSuccess: (data) => {
       toast({
-        title: "Account created successfully!",
-        description: "Please check your email for verification instructions.",
+        title: "Welcome back!",
+        description: "You have been successfully logged in.",
       });
       onSuccess(data.user, data.token);
       onOpenChange(false);
@@ -61,18 +61,18 @@ export function SignupDialog({
     },
     onError: (error: any) => {
       toast({
-        title: "Signup failed",
-        description: error.message || "An error occurred during signup",
+        title: "Login failed",
+        description: error.message || "Invalid email or password",
         variant: "destructive",
       });
     },
   });
 
-  const onSubmit = (data: SignupData) => {
-    signupMutation.mutate(data);
+  const onSubmit = (data: LoginData) => {
+    loginMutation.mutate(data);
   };
 
-  const handleGoogleSignup = () => {
+  const handleGoogleLogin = () => {
     window.location.href = "/api/auth/google";
   };
 
@@ -81,17 +81,17 @@ export function SignupDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-center">
-            Create Account
+            Welcome Back
           </DialogTitle>
           <DialogDescription className="text-center">
-            Join PDF4EVER to start editing your PDFs securely
+            Sign in to your PDF4EVER account
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Google Signup Button */}
+          {/* Google Login Button */}
           <Button
-            onClick={handleGoogleSignup}
+            onClick={handleGoogleLogin}
             variant="outline"
             className="w-full flex items-center gap-2 h-11"
             type="button"
@@ -131,48 +131,8 @@ export function SignupDialog({
             </div>
           </div>
 
-          {/* Email Signup Form */}
+          {/* Email Login Form */}
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First Name</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-
-                  <Input
-                    id="firstName"
-                    placeholder="John"
-                    className="pl-10"
-                    {...form.register("firstName")}
-                  />
-                </div>
-                {form.formState.errors.firstName && (
-                  <p className="text-sm text-red-600">
-                    {form.formState.errors.firstName.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-
-                  <Input
-                    id="lastName"
-                    placeholder="Doe"
-                    className="pl-10"
-                    {...form.register("lastName")}
-                  />
-                </div>
-                {form.formState.errors.lastName && (
-                  <p className="text-sm text-red-600">
-                    {form.formState.errors.lastName.message}
-                  </p>
-                )}
-              </div>
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">
@@ -225,33 +185,27 @@ export function SignupDialog({
                   {form.formState.errors.password.message}
                 </p>
               )}
-              <p className="text-xs text-muted-foreground">
-                Password must be at least 8 characters with uppercase,
-                lowercase, number, and special character.
-              </p>
             </div>
 
             <Button
               type="submit"
               className="w-full"
-              disabled={signupMutation.isPending}
+              disabled={loginMutation.isPending}
             >
-              {signupMutation.isPending
-                ? "Creating Account..."
-                : "Create Account"}
+              {loginMutation.isPending ? "Signing In..." : "Sign In"}
             </Button>
           </form>
 
           <div className="text-center text-sm">
             <span className="text-muted-foreground">
-              Already have an account?{" "}
+              Don't have an account?{" "}
             </span>
             <Button
               variant="link"
               className="p-0 h-auto font-normal"
-              onClick={() => onOpenChange(false)}
+              onClick={onSwitchToSignup}
             >
-              Sign in
+              Sign up
             </Button>
           </div>
 

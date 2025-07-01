@@ -12,28 +12,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Type, Download, Eye, Search } from "lucide-react";
+import { usePDFFonts } from 'client/src/components/hooks/usePDFFonts';
+import { FontInfo, FontManagerProps } from '../../types/pdf-types';
 
-interface FontInfo {
-  name: string;
-  family: string;
-  style: string;
-  weight: string;
-  size?: number;
-  variants?: string[];
-  loaded: boolean;
-}
+// Standard PDF-safe fonts
+const STANDARD_FONTS: FontInfo[] = [
+  { name: "Helvetica", family: "Helvetica", style: "normal", weight: "normal", loaded: true },
+  { name: "Times-Roman", family: "Times", style: "normal", weight: "normal", loaded: true },
+  { name: "Courier", family: "Courier", style: "normal", weight: "normal", loaded: true },
+  { name: "Arial", family: "Arial", style: "normal", weight: "normal", loaded: true },
+  { name: "Georgia", family: "Georgia", style: "normal", weight: "normal", loaded: true },
+  { name: "Verdana", family: "Verdana", style: "normal", weight: "normal", loaded: true },
+];
 
-interface FontManagerProps {
-  selectedFont: string;
-  onFontChange: (font: string) => void;
-  fontSize: number;
-  onFontSizeChange: (size: number) => void;
-  fontWeight: "normal" | "bold";
-  onFontWeightChange: (weight: "normal" | "bold") => void;
-  fontStyle: "normal" | "italic";
-  onFontStyleChange: (style: "normal" | "italic") => void;
-  showAdvanced?: boolean;
-}
+// Popular Google Fonts
+const GOOGLE_FONTS = [
+  "Open Sans", "Roboto", "Lato", "Montserrat", "Source Sans Pro",
+  "Raleway", "Ubuntu", "Nunito", "Poppins", "Merriweather"
+];
 
 export default function FontManager({
   selectedFont,
@@ -45,162 +41,34 @@ export default function FontManager({
   fontStyle,
   onFontStyleChange,
   showAdvanced = false,
-}: FontManagerProps) {
+  pdfDoc,
+}: FontManagerProps & {pdfDoc?: any}) {
+  // State
   const [availableFonts, setAvailableFonts] = useState<FontInfo[]>([]);
   const [loadingFonts, setLoadingFonts] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
-  const [fontPreview, setFontPreview] = useState(
-    "The quick brown fox jumps over the lazy dog",
-  );
+  const [fontPreview, setFontPreview] = useState("The quick brown fox jumps over the lazy dog");
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Standard PDF-safe fonts
-  const standardFonts: FontInfo[] = [
-    {
-      name: "Helvetica",
-      family: "Helvetica",
-      style: "normal",
-      weight: "normal",
-      loaded: true,
-    },
-    {
-      name: "Times-Roman",
-      family: "Times",
-      style: "normal",
-      weight: "normal",
-      loaded: true,
-    },
-    {
-      name: "Courier",
-      family: "Courier",
-      style: "normal",
-      weight: "normal",
-      loaded: true,
-    },
-    {
-      name: "Arial",
-      family: "Arial",
-      style: "normal",
-      weight: "normal",
-      loaded: true,
-    },
-    {
-      name: "Georgia",
-      family: "Georgia",
-      style: "normal",
-      weight: "normal",
-      loaded: true,
-    },
-    {
-      name: "Verdana",
-      family: "Verdana",
-      style: "normal",
-      weight: "normal",
-      loaded: true,
-    },
-  ];
-  const googleFonts = [
-    "Open Sans", "Roboto", "Lato", "Montserrat", "Source Sans Pro",
-    "Raleway", "Ubuntu", "Nunito", "Poppins", "Merriweather"
-  ];
-
-  class FontFaceObserver {
-    family: string;
-    constructor(family: string) {
-      this.family = family;
-    }
-    load() {
-      return new Promise((resolve, reject) => {
-        const testString = "BESbswy";
-        const timeout = 3000;
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          reject(new Error('Canvas context not available'));
-          return;
-        }
-        const before = ctx.measureText(testString);
-        ctx.font = `12px ${this.family}`;
-        const after = ctx.measureText(testString);
-        if (before.width !== after.width) {
-          resolve(true);
-        } else {
-          setTimeout(() => reject(new Error('Font load timeout')), timeout);
-        }
-      });
-    }
-  }
   
-  
-  useEffect(() => {
-  const standardFonts: FontInfo[] = [
-    ...baseFonts.map(font => ({
-      name: font,
-      family: font,
-      style: "normal",
-      weight: "normal",
-      loaded: true
-    })),
-    ...availableFonts.map(font => ({
-      name: font,
-      family: font,
-      style: "normal", 
-      weight: "normal",
-      loaded: true
-    }))
-  ];
-  setAvailableFontList(standardFonts);
-}, []);
+  // PDF Fonts hook
+  const { embeddedFonts, isLoading: loadingEmbeddedFonts, getFontInfoList } = usePDFFonts(pdfDoc);
 
-const loadGoogleFont = useCallback(async (fontName: string) => {
-  try {
-    const link = document.createElement("link");
-    link.href = `https://fonts.googleapis.com/css2?family=${fontName.replace(/\s+/g, "+")}:wght@300;400;500;600;700&display=swap`;
-    link.rel = "stylesheet";
-    document.head.appendChild(link);
-
-    await new FontFaceObserver(fontName).load();
-    return true;
-  } catch (error) {
-    console.warn(`Failed to load font: ${fontName}`, error);
-    return false;
-  }
-}, []);
-
-const loadMoreFonts = useCallback(async () => {
-  setLoadingFonts(true);
-  const newFonts: FontInfo[] = [];
-  for (const fontName of googleFonts) {
-    const loaded = await loadGoogleFont(fontName);
-    newFonts.push({
-      name: fontName,
-      family: fontName,
-      style: "normal",
-      weight: "normal",
-      loaded,
-      variants: ["300", "400", "500", "600", "700"]
-    });
-  }
-  setAvailableFontList(prev => [...prev, ...newFonts]);
-  setLoadingFonts(false);
-}, [loadGoogleFont, googleFonts]);
-
-
-
-
+  // Load Google Font
   const loadGoogleFont = useCallback(async (fontName: string) => {
     try {
+      // Check if font is already loaded
+      if (document.querySelector(`link[href*="${fontName.replace(/\s+/g, "+")}"]`)) {
+        return true;
+      }
+      
+      // Create link element for Google Font
       const link = document.createElement("link");
       link.href = `https://fonts.googleapis.com/css2?family=${fontName.replace(/\s+/g, "+")}:wght@300;400;500;600;700&display=swap`;
       link.rel = "stylesheet";
       document.head.appendChild(link);
 
       // Wait for font to load
-      await new Promise((resolve) => {
-        const observer = new FontFaceObserver(fontName);
-        observer.load().then(resolve).catch(resolve);
-      });
-
+      await new FontFaceObserver(fontName).load();
       return true;
     } catch (error) {
       console.warn(`Failed to load font: ${fontName}`, error);
@@ -208,116 +76,60 @@ const loadMoreFonts = useCallback(async () => {
     }
   }, []);
 
-  const loadFonts = useCallback(async () => {
+  // Initialize fonts
+  useEffect(() => {
+    // Start with standard fonts
+    const initialFonts = [...STANDARD_FONTS];
+    
+    // Add embedded fonts if available
+    if (embeddedFonts && getFontInfoList) {
+      const pdfFonts = getFontInfoList();
+      initialFonts.push(...pdfFonts);
+    }
+    
+    setAvailableFonts(initialFonts);
+  }, [embeddedFonts, getFontInfoList]);
+
+  // Load additional Google Fonts
+  const loadMoreFonts = useCallback(async () => {
     setLoadingFonts(true);
     setLoadProgress(0);
-
-    const fonts: FontInfo[] = [...standardFonts];
-
-    for (let i = 0; i < googleFonts.length; i++) {
-      const fontName = googleFonts[i];
-      setLoadProgress((i / googleFonts.length) * 100);
-
+    
+    const newFonts: FontInfo[] = [];
+    
+    for (let i = 0; i < GOOGLE_FONTS.length; i++) {
+      const fontName = GOOGLE_FONTS[i];
+      setLoadProgress(((i + 1) / GOOGLE_FONTS.length) * 100);
+      
       const loaded = await loadGoogleFont(fontName);
-      fonts.push({
+      newFonts.push({
         name: fontName,
         family: fontName,
         style: "normal",
         weight: "normal",
         loaded,
-        variants: ["300", "400", "500", "600", "700"],
+        variants: ["300", "400", "500", "600", "700"]
       });
     }
-
-    setAvailableFonts(fonts);
+    
+    setAvailableFonts(prev => {
+      // Filter out any duplicates
+      const existingFontNames = prev.map(f => f.name);
+      const uniqueNewFonts = newFonts.filter(f => !existingFontNames.includes(f.name));
+      return [...prev, ...uniqueNewFonts];
+    });
+    
     setLoadingFonts(false);
-    setLoadProgress(100);
-  }, [loadGoogleFont, standardFonts]);
+  }, [loadGoogleFont]);
 
-  useEffect(() => {
-    // Initialize with standard fonts
-    setAvailableFonts(standardFonts);
-  }, []);
-
-  const detectUsedFonts = useCallback(async (pdfDocument: any) => {
-    if (!pdfDocument) return [];
-
-    const detectedFonts: FontInfo[] = [];
-
-    try {
-      const numPages = pdfDocument.numPages;
-
-      for (let i = 1; i <= numPages; i++) {
-        const page = await pdfDocument.getPage(i);
-        const textContent = await page.getTextContent();
-
-        textContent.items.forEach((item: any) => {
-          if (item.fontName) {
-            const existing = detectedFonts.find(
-              (f) => f.name === item.fontName,
-            );
-            if (!existing) {
-              detectedFonts.push({
-                name: item.fontName,
-                family: item.fontName,
-                style: "normal",
-                weight: "normal",
-                loaded: false,
-              });
-            }
-          }
-        });
-      }
-    } catch (error) {
-      console.error("Font detection error:", error);
-    }
-
-    return detectedFonts;
-  }, []);
-
-  const matchFont = useCallback(
-    (targetFont: string) => {
-      // Try exact match first
-      let match = availableFonts.find(
-        (f) =>
-          f.name.toLowerCase() === targetFont.toLowerCase() ||
-          f.family.toLowerCase() === targetFont.toLowerCase(),
-      );
-
-      if (match) return match.name;
-
-      // Try partial match
-      match = availableFonts.find(
-        (f) =>
-          f.name.toLowerCase().includes(targetFont.toLowerCase()) ||
-          targetFont.toLowerCase().includes(f.name.toLowerCase()),
-      );
-
-      if (match) return match.name;
-
-      // Fallback mapping
-      const fallbacks: { [key: string]: string } = {
-        times: "Times-Roman",
-        helvetica: "Helvetica",
-        courier: "Courier",
-        arial: "Arial",
-        "sans-serif": "Helvetica",
-        serif: "Times-Roman",
-        monospace: "Courier",
-      };
-
-      const fallback = fallbacks[targetFont.toLowerCase()];
-      return fallback || "Helvetica";
-    },
-    [availableFonts],
-  );
-
+  // Filter fonts based on search query
   const filteredFonts = availableFonts.filter(
     (font) =>
       font.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       font.family.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
+  // Get info for selected font
   const selectedFontInfo = availableFonts.find((f) => f.name === selectedFont);
 
   return (
@@ -375,7 +187,7 @@ const loadMoreFonts = useCallback(async () => {
         </Button>
 
         {!loadingFonts && (
-          <Button variant="outline" size="sm" onClick={loadFonts}>
+          <Button variant="outline" size="sm" onClick={loadMoreFonts}>
             <Download className="h-4 w-4 mr-1" />
             Load More Fonts
           </Button>
@@ -490,15 +302,15 @@ const loadMoreFonts = useCallback(async () => {
             {/* Font Statistics */}
             <div className="text-sm text-gray-500">
               <p>Available fonts: {availableFonts.length}</p>
-              <p>
-                Loaded fonts: {availableFonts.filter((f) => f.loaded).length}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
+                  <p>
+                  Loaded fonts: {availableFonts.filter((f) => f.loaded).length}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
 }
 
 // FontFaceObserver polyfill for older browsers
@@ -521,30 +333,49 @@ class FontFaceObserver {
         return;
       }
 
-      // Measure with fallback font
-      context.font = `12px monospace`;
-      const fallbackWidth = context.measureText(testString).width;
-
-      // Measure with target font
-      context.font = `12px "${this.family}", monospace`;
-
-      const startTime = Date.now();
-
-      const check = () => {
-        const currentWidth = context.measureText(testString).width;
-
-        if (currentWidth !== fallbackWidth) {
-          resolve(true);
-        } else if (Date.now() - startTime > timeout) {
-          reject(new Error("Font load timeout"));
-        } else {
-          setTimeout(check, 50);
+      // Create a style element to add @font-face rule for testing
+      const style = document.createElement("style");
+      style.innerHTML = `
+        @font-face {
+          font-family: 'font-observer-test';
+          src: local('${this.family}');
+          font-weight: normal;
+          font-style: normal;
         }
+      `;
+      document.head.appendChild(style);
+
+      // Set up timeout
+      const timer = setTimeout(() => {
+        reject(new Error(`Font '${this.family}' load timed out after ${timeout}ms`));
+      }, timeout);
+
+      // Check if font is loaded by comparing width with fallback fonts
+      const checkFont = () => {
+        // Draw with test font
+        context.font = `normal 16px 'font-observer-test'`;
+        const testWidth = context.measureText(testString).width;
+
+        // Draw with fallback fonts
+        context.font = `normal 16px 'serif'`;
+        const serifWidth = context.measureText(testString).width;
+
+        context.font = `normal 16px 'sans-serif'`;
+        const sansWidth = context.measureText(testString).width;
+
+        // If width is different from both fallbacks, font is loaded
+        if (testWidth !== serifWidth && testWidth !== sansWidth) {
+          clearTimeout(timer);
+          document.head.removeChild(style);
+          resolve(true);
+          return;
+        }
+
+        // Try again in 50ms
+        setTimeout(checkFont, 50);
       };
 
-      check();
+      checkFont();
     });
   }
 }
-
-export type { FontInfo };

@@ -37,22 +37,8 @@ import {
   Settings,
 } from "lucide-react";
 import { pdfCore } from "@/lib/pdfCore";
+import { PDFFile, SplitRange } from "../types/pdf-types";
 
-interface PDFFile {
-  id: string;
-  name: string;
-  size: number;
-  data: ArrayBuffer;
-  pageCount?: number;
-  preview?: string;
-}
-
-interface SplitRange {
-  id: string;
-  start: number;
-  end: number;
-  name: string;
-}
 
 interface PDFToolkitProps {
   onFileProcessed?: (file: PDFFile) => void;

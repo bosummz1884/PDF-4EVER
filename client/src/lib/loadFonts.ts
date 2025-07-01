@@ -1,5 +1,6 @@
 import { PDFDocument } from "pdf-lib";
 
+
 // Comprehensive font paths for widely-used fonts
 const fontPaths: Record<string, string> = {
   "Arial": "/fonts/arial.ttf",

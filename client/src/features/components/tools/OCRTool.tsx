@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, ChangeEvent, DragEvent } from "react";
 import { ocrService, OCR_LANGUAGES } from "@/services/ocrService";
-import { OCRResult, OCRToolProps } from "../types/pdf-types";
+import { OCRResult, OCRToolProps } from "client/src/types/pdf-types";
 
 const OCRTool: React.FC<OCRToolProps> = ({
   pdfDocument,

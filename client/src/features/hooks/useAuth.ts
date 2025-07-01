@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { AuthContext } from "@/components/AuthProvider";
+import { AuthContext } from "client/src/components/auth/AuthProvider";
 
 interface User {
   id: string;

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { SignupDialog } from "@/components/SignupDialog";
 import { LoginDialog } from "@/components/LoginDialog";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/features/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   FileText,

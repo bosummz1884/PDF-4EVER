@@ -2,6 +2,7 @@
 // PDF File Types
 // =======================
 
+
 export interface PDFFile {
   id: string;
   name: string;
@@ -9,6 +10,20 @@ export interface PDFFile {
   data: ArrayBuffer;
   pageCount?: number;
   preview?: string;
+}
+
+export interface PDFEditorState {
+  // Core PDF state
+  pdfDocument: any;
+  originalFileData: Uint8Array | null;
+  currentPage: number;
+  totalPages: number;
+  scale: number;
+  rotation: number;
+  isLoading: boolean;
+  isRendering: boolean;
+  fileName: string;
+  renderingError: string | null;
 }
 
 // =======================
@@ -79,7 +94,7 @@ export interface TextBox {
   underline?: boolean;
   fontWeight?: string;    // or "normal" | "bold"
   fontStyle?: string;     // or "normal" | "italic"
-  textAlign?: "left" | "center" | "right";
+  align?: "left" | "center" | "right";
   rotation?: number;
 }
 
@@ -136,6 +151,9 @@ export interface Annotation {
   text?: string;          // For text annotation
   fontSize: number;      // For text annotation
   src?: string;           // For image/signature
+  font?: string;
+  imageData?: string;
+  imageName?: string;
 }
 
 // **Optional**: specialized annotation element (for legacy/manager)
@@ -319,6 +337,23 @@ export interface AnnotationManagerProps {
 // =======================
 // UI Dialog & Component Types
 // =======================
+export interface User {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  isVerified: boolean;
+  profileImageUrl: string | null;
+}
+
+export interface AuthContextType {
+  user: User | null;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string, name?: string) => Promise<void>;
+  logout: () => Promise<void>;
+  isLoading: boolean;
+  error: string | null;
+}
 
 export interface LoginDialogProps {
   open: boolean;
@@ -515,4 +550,9 @@ export type AnnotationToolName =
     onTextElementsChange?: (elements: TextElement[]) => void;
   };
 
+
+  
+  export interface ComprehensivePDFEditorProps {
+    className?: string;
+  }
   

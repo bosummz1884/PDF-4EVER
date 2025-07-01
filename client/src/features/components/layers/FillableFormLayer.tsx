@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Download, Save, FileText } from "lucide-react";
-import { saveFilledFormFields } from "../utils/saveFilledFormFields";
-import { FieldEntry, FillablePDFViewerProps } from "../types/pdf-types";
+import { saveFilledFormFields } from "../../utils/pdfFillableFormUtils";
+import { FieldEntry, FillablePDFViewerProps } from "../../../types/pdf-types";
 
 export default function FillablePDFViewer({
   file,

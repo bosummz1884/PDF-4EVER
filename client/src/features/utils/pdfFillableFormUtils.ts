@@ -169,7 +169,7 @@ function downloadBlob(bytes: Uint8Array, filename: string) {
       throw new Error(`Invalid data type for PDF: ${typeof bytes}`);
     }
     
-    const blob = new Blob([bytes], { type: "application/pdf" });
+    const blob = new Blob([new Uint8Array(bytes)], { type: "application/pdf" });
     
     // Validate blob was created successfully
     if (!blob || blob.size === 0) {

@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Eye, Copy, Download, FileText, Zap } from "lucide-react";
 import { createWorker, PSM } from "tesseract.js";
-import { OCRWord, OCRProcessorProps } from "../types/pdf-types";
+import { OCRWord, OCRProcessorProps } from "../../../types/pdf-types";
 
 export default function OCRProcessor({
   pdfDocument,

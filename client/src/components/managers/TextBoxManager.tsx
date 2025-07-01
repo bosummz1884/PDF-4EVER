@@ -1,6 +1,8 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import type { TextBox } from "@/types/pdf-types";
-import { AdvancedTextLayer } from "./AdvancedTextLayer";
+import type { TextBox, FontInfo } from "@/types/pdf-types";
+import AdvancedTextLayer from "client/src/features/components/layers/AdvancedTextLayer";
+import { loadFonts, isFontAvailable, getAvailableFontNames, getFontPath } from "client/src/lib/loadFonts";
+import { usePDFFonts } from "client/src/features/hooks/usePDFFonts";
 
 // Utility for deep copying (undo/redo)
 function deepCopyTextBoxes(boxes: TextBox[]): TextBox[] {
@@ -12,7 +14,7 @@ interface TextBoxManagerProps {
   onTextBoxesChange?: (boxes: TextBox[]) => void;
   currentPage: number;
   canvasRef: React.RefObject<HTMLCanvasElement>;
-  fontList?: any[]; // If using FontManager/fontList, import FontInfo type
+  fontList?: FontInfo[]; // If using FontManager/fontList, import FontInfo type
 }
 
 export const TextBoxManager: React.FC<TextBoxManagerProps> = ({

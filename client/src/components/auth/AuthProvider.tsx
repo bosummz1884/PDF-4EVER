@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import { useAuthProvider } from "@/hooks/useAuth";
+import { useAuthProvider } from "@/features/hooks/useAuth";
 
 interface User {
   id: string;

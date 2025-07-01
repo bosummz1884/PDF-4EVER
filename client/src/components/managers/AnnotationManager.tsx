@@ -28,33 +28,8 @@ import {
   Signature,
   Download,
 } from "lucide-react";
-
-export interface Annotation {
-  id: string;
-  type:
-    | "highlight"
-    | "rectangle"
-    | "circle"
-    | "freeform"
-    | "signature"
-    | "text"
-    | "checkmark"
-    | "x-mark"
-    | "line"
-    | "image";
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  color: string;
-  strokeWidth: number;
-  page: number;
-  points?: number[];
-  text?: string;
-  fontSize?: number;
-  src?: string;
-}
-
+import { Annotation } from "../../types/pdf-types";
+;
 interface AnnotationManagerProps {
   canvasRef: React.RefObject<HTMLCanvasElement>;
   currentPage: number;
