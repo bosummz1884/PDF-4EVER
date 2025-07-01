@@ -8,7 +8,6 @@ import { useIsMobile } from "@/features/hooks/use-mobile";
 export default function Home() {
   const { isAuthenticated, isLoading, user, logout } = useAuth();
   const isMobile = useIsMobile(); // <-- Only call hooks inside function components!
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -16,7 +15,7 @@ export default function Home() {
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
-      </div>
+        </div>
     );
   }
 
@@ -39,33 +38,18 @@ export default function Home() {
               </span>
             </div>
             <div className="flex items-center space-x-4">
-              {isAuthenticated ? (
-                <>
-                  <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                    <User className="h-4 w-4" />
-                    <span>
-                      {user?.firstName} {user?.lastName}
-                    </span>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={logout}>
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Sign Out
-                  </Button>
-                </>
-              ) : (
                 <div className="flex items-center space-x-2">
                   <Button variant="ghost" size="sm">
                     Sign In
                   </Button>
                   <Button size="sm">Sign Up</Button>
                 </div>
-              )}
             </div>
           </header>
 
           {/* Full-height PDF Editor - always available */}
           <div className="flex-1 overflow-hidden">
-            <PDFEditorContainer isMobile={isMobile} />
+            <PDFEditorContainer />
           </div>
         </div>
       </div>
