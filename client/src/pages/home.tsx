@@ -4,21 +4,27 @@ import { Button } from "@/components/ui/button";
 import PDFEditorContainer from "@/features/pdf-editor/PDFEditorContainer";
 import { useIsMobile } from "@/features/hooks/use-mobile";
 
-const [isLoading, setIsLoading] = useState(false);
-
 export default function Home() {
-  const isMobile = useIsMobile(); // <-- Only call hooks inside function components!
+  const isMobile = useIsMobile();
+  const [isLoading, setIsLoading] = useState(false); // Set to true to test spinner
+
   if (isLoading) {
+    // Show loading spinner while loading
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600">
+            Loading...
+            <br />
+            {isMobile ? "(Mobile View)" : "(Desktop View)"}
+          </p>
         </div>
-        </div>
+      </div>
     );
   }
 
+  // Show main Home UI when not loading
   return (
     <div className="min-h-screen bg-background">
       {/* PDF Editor at the top - always visible */}
@@ -38,12 +44,12 @@ export default function Home() {
               </span>
             </div>
             <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <Button variant="ghost" size="sm">
-                    Sign In
-                  </Button>
-                  <Button size="sm">Sign Up</Button>
-                </div>
+              <div className="flex items-center space-x-2">
+                <Button variant="ghost" size="sm">
+                  Sign In
+                </Button>
+                <Button size="sm">Sign Up</Button>
+              </div>
             </div>
           </header>
 
