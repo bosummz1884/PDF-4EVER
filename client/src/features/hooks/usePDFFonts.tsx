@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { PDFDocument } from 'pdf-lib';
-import { loadFonts, getAvailableFontNames } from 'client/src/lib/loadFonts';
-import type { FontInfo } from 'client/src/types/pdf-types';
+import { loadFonts, getAvailableFontNames } from '../../lib/loadFonts';
+import type { FontInfo } from '../../types/pdf-types';
 
 export function usePDFFonts(pdfDoc?: PDFDocument) {
   const [embeddedFonts, setEmbeddedFonts] = useState<Record<string, any>>({});
