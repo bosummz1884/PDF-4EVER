@@ -1,6 +1,5 @@
 import { useAuth } from "@/features/hooks/useAuth";
 import Landing from "./landing";
-import ComprehensivePDFEditor from "@/components/ComprehensivePDFEditor";
 import { Button } from "@/components/ui/button";
 import { LogOut, User } from "lucide-react";
 
