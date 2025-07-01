@@ -2,6 +2,11 @@ import { useAuth } from "@/features/hooks/useAuth";
 import Landing from "./landing";
 import { Button } from "@/components/ui/button";
 import { LogOut, User } from "lucide-react";
+import PDFEditorContainer from "@/features/pdf-editor/PDFEditorContainer";
+import { useIsMobile } from "@/features/hooks/use-mobile";
+
+const isMobile = useIsMobile();
+
 
 function AuthenticatedHome() {
   const { user, logout } = useAuth();
@@ -34,7 +39,7 @@ function AuthenticatedHome() {
 
       {/* Full-height PDF Editor */}
       <div className="flex-1 overflow-hidden">
-        <ComprehensivePDFEditor className="h-full" />
+      <PDFEditorContainer isMobile={isMobile} />
       </div>
     </div>
   );
@@ -101,8 +106,8 @@ export default function Home() {
 
           {/* Full-height PDF Editor - always available */}
           <div className="flex-1 overflow-hidden">
-            <ComprehensivePDFEditor className="h-full" />
-          </div>
+          <PDFEditorContainer isMobile={isMobile} />
+        </div>
         </div>
       </div>
 
