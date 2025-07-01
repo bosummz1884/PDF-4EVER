@@ -17,12 +17,14 @@ import {
 export default function Landing() {
   const [showSignup, setShowSignup] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
-  const { login } = useAuth();
+  const auth = useAuth(); 
 
   const handleAuthSuccess = (user: any, token: string) => {
-    login(user, token);
+    if (auth && auth.login) {
+      auth.login(user, token);
+    }
   };
-
+  
   const handleSwitchToSignup = () => {
     setShowLogin(false);
     setShowSignup(true);
