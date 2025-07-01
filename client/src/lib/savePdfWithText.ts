@@ -25,16 +25,27 @@ export async function savePdfWithText(
   textObjects: TextObject[],
   canvas: HTMLCanvasElement
 ): Promise<Uint8Array> {
-  // Support both File and ArrayBuffer/Uint8Array inputs
   let arrayBuffer: ArrayBuffer;
+
   if (originalPdfData instanceof File) {
     arrayBuffer = await originalPdfData.arrayBuffer();
   } else if (originalPdfData instanceof Uint8Array) {
+    // This guarantees a real ArrayBuffer copy
+    arrayBuffer = new Uint8Array(
+      originalPdfData.buffer,
+      originalPdfData.byteOffset,
+      originalPdfData.byteLength
+    ).slice().buffer;
+  } else if (originalPdfData instanceof ArrayBuffer) {
+    // Already the type we need
     arrayBuffer = originalPdfData;
   } else {
-    arrayBuffer = originalPdfData;
+    // Absolute fallback: forcibly coerce
+    arrayBuffer = new Uint8Array(originalPdfData as ArrayBufferLike).slice()
+      .buffer;
   }
 
+  // Now, arrayBuffer is a true ArrayBuffer
   const pdfDoc = await PDFDocument.load(arrayBuffer);
 
   // Load all fonts using your font loader

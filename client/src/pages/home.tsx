@@ -5,48 +5,9 @@ import { LogOut, User } from "lucide-react";
 import PDFEditorContainer from "@/features/pdf-editor/PDFEditorContainer";
 import { useIsMobile } from "@/features/hooks/use-mobile";
 
-const isMobile = useIsMobile();
-
-
-function AuthenticatedHome() {
-  const { user, logout } = useAuth();
-
-  return (
-    <div className="h-screen bg-background flex flex-col">
-      {/* Minimal Header */}
-      <header className="border-b bg-white dark:bg-gray-900 px-4 py-3 flex items-center justify-between shrink-0">
-        <div className="flex items-center space-x-3">
-          <img src="/70x70logo.png" alt="PDF4EVER Logo" className="h-8 w-8" />
-
-          <span className="text-xl font-bold">
-            <span style={{ color: "#005aff" }}>PDF4</span>
-            <span style={{ color: "#ff3900" }}>EVER</span>
-          </span>
-        </div>
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <User className="h-4 w-4" />
-            <span>
-              {user?.firstName} {user?.lastName}
-            </span>
-          </div>
-          <Button variant="ghost" size="sm" onClick={logout}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign Out
-          </Button>
-        </div>
-      </header>
-
-      {/* Full-height PDF Editor */}
-      <div className="flex-1 overflow-hidden">
-      <PDFEditorContainer isMobile={isMobile} />
-      </div>
-    </div>
-  );
-}
-
 export default function Home() {
   const { isAuthenticated, isLoading, user, logout } = useAuth();
+  const isMobile = useIsMobile(); // <-- Only call hooks inside function components!
 
   if (isLoading) {
     return (
@@ -59,7 +20,6 @@ export default function Home() {
     );
   }
 
-  // Show PDF editor immediately without authentication requirement
   return (
     <div className="min-h-screen bg-background">
       {/* PDF Editor at the top - always visible */}
@@ -73,7 +33,6 @@ export default function Home() {
                 alt="PDF4EVER Logo"
                 className="h-8 w-8"
               />
-
               <span className="text-xl font-bold">
                 <span style={{ color: "#005aff" }}>PDF4</span>
                 <span style={{ color: "#ff3900" }}>EVER</span>
@@ -106,8 +65,8 @@ export default function Home() {
 
           {/* Full-height PDF Editor - always available */}
           <div className="flex-1 overflow-hidden">
-          <PDFEditorContainer isMobile={isMobile} />
-        </div>
+            <PDFEditorContainer isMobile={isMobile} />
+          </div>
         </div>
       </div>
 

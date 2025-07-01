@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useRef, ReactNode } from 'react';
-import { pdfjsLib } from "@/lib/pdfWorker";
+import { pdfjsLib } from "../../lib/pdfWorker";
 import { TextElement, Annotation, WhiteoutBlock, FormField } from "@/types/pdf-types";
 
 // Define the state type

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,7 @@ import {
   Lock,
   Clock,
 } from "lucide-react";
-import { AuthDialogs } from "./AuthSystem";
+import { AuthDialogs } from "../auth/AuthSystem";
 
 interface LandingPageProps {
   onGetStarted?: () => void;
