@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import type { TextBox } from "@/types/pdf-types";
 
-interface AdvancedTextLayerProps {
+export interface AdvancedTextLayerProps {
   textBoxes: TextBox[];
+  textLayerElements: any[];
   selectedBoxIds: Set<string>;
   onSelect: (id: string) => void;
   onMultiSelect: (id: string) => void;
@@ -17,6 +18,7 @@ interface AdvancedTextLayerProps {
 
 const AdvancedTextLayer: React.FC<AdvancedTextLayerProps> = ({
   textBoxes,
+  textLayerElements,
   selectedBoxIds,
   onSelect,
   onMultiSelect,
@@ -41,13 +43,13 @@ const AdvancedTextLayer: React.FC<AdvancedTextLayerProps> = ({
   // Add new text box on double click
   const handleDoubleClick = (e: React.MouseEvent) => {
     if (e.target !== e.currentTarget) return;
-    
+
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
-    
+
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
+
     onAdd({
       text: "Double-click to edit",
       x,
@@ -141,9 +143,9 @@ const TextBoxElement: React.FC<TextBoxElementProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
+    if (e.key === "Escape") {
       setIsEditing(false);
-    } else if (e.key === 'Enter' && !e.shiftKey) {
+    } else if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       setIsEditing(false);
     }
@@ -151,14 +153,14 @@ const TextBoxElement: React.FC<TextBoxElementProps> = ({
 
   return (
     <div
-      className={`absolute transform ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
+      className={`absolute transform ${isSelected ? "ring-2 ring-blue-500" : ""}`}
       style={{
         left: `${box.x}px`,
         top: `${box.y}px`,
         width: `${box.width}px`,
         height: `${box.height}px`,
         transform: `rotate(${box.rotation || 0}deg)`,
-        cursor: isSelected ? 'move' : 'pointer',
+        cursor: isSelected ? "move" : "pointer",
       }}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
@@ -172,25 +174,25 @@ const TextBoxElement: React.FC<TextBoxElementProps> = ({
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           style={{
-            fontFamily: box.fontFamily || 'Arial',
+            fontFamily: box.fontFamily || "Arial",
             fontSize: `${box.fontSize || 16}px`,
-            color: box.color || '#000000',
-            fontWeight: box.fontWeight || 'normal',
-            fontStyle: box.fontStyle || 'normal',
-            textAlign: box.align || 'left',
+            color: box.color || "#000000",
+            fontWeight: box.fontWeight || "normal",
+            fontStyle: box.fontStyle || "normal",
+            textAlign: box.align || "left",
           }}
         />
       ) : (
         <div
           className="w-full h-full overflow-hidden"
           style={{
-            fontFamily: box.fontFamily || 'Arial',
+            fontFamily: box.fontFamily || "Arial",
             fontSize: `${box.fontSize || 16}px`,
-            color: box.color || '#000000',
-            fontWeight: box.fontWeight || 'normal',
-            fontStyle: box.fontStyle || 'normal',
-            textAlign: box.align || 'left',
-            whiteSpace: 'pre-wrap',
+            color: box.color || "#000000",
+            fontWeight: box.fontWeight || "normal",
+            fontStyle: box.fontStyle || "normal",
+            textAlign: box.align || "left",
+            whiteSpace: "pre-wrap",
           }}
         >
           {box.text}

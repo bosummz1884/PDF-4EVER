@@ -1,48 +1,81 @@
 import React, { useState, useEffect } from "react";
-import usePDFEditor from "client/src/features/pdf-editor/PDFEditorContainer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Layers, FileText, Settings } from "lucide-react";
+import { Annotation, TextBox, WhiteoutBlock } from "@/types/pdf-types";
 
-export default function PDFSidebar() {
-  const { state, setCurrentPage } = usePDFEditor();
-  const { currentFile, currentPage, pdfDocument } = state;
-  
+// -------------------
+// Props Interface
+// -------------------
+export interface PDFSidebarProps {
+  annotations: Annotation[];
+  textBoxes: TextBox[];
+  whiteoutBlocks: WhiteoutBlock[];
+  textElements: { [page: number]: any[] };
+  onSelectAnnotation: (id: string | null) => void;
+  onDeleteAnnotation: (id: string) => void;
+  onSelectTextBox: (id: string | null) => void;
+  onDeleteTextBox: (id: string) => void;
+  onSelectWhiteoutBlock: (id: string | null) => void;
+  onDeleteWhiteoutBlock: (id: string) => void;
+  pdfDocument: any; // Should be stricter type, e.g. PDFDocumentProxy if you use pdfjs
+  currentPage: number;
+  setCurrentPage: (page: number) => void;
+  totalPages: number;
+  fileName: string;
+  fileSizeBytes: number;
+}
+
+// -------------------
+// Component
+// -------------------
+export default function PDFSidebar(props: PDFSidebarProps) {
+  const {
+    annotations,
+    textBoxes,
+    whiteoutBlocks,
+    textElements,
+    onSelectAnnotation,
+    onDeleteAnnotation,
+    onSelectTextBox,
+    onDeleteTextBox,
+    onSelectWhiteoutBlock,
+    onDeleteWhiteoutBlock,
+    pdfDocument,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    fileName,
+    fileSizeBytes,
+  } = props;
+
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState("pages");
   const [isLoading, setIsLoading] = useState(false);
 
   // Generate thumbnails when PDF document changes
   useEffect(() => {
-    if (!currentFile || !pdfDocument) {
+    if (!pdfDocument) {
       setThumbnails([]);
       return;
     }
 
     const generateThumbnails = async () => {
       setIsLoading(true);
-      
       try {
         const thumbs: string[] = [];
-        
-        for (let i = 1; i <= pdfDocument.numPages; i++) {
+        for (let i = 1; i <= totalPages; i++) {
           const page = await pdfDocument.getPage(i);
-          const viewport = page.getViewport({ scale: 0.2 }); // Small scale for thumbnails
-          
-          const canvas = document.createElement('canvas');
-          const context = canvas.getContext('2d')!;
+          const viewport = page.getViewport({ scale: 0.2 });
+          const canvas = document.createElement("canvas");
+          const context = canvas.getContext("2d");
+          if (!context) continue;
           canvas.height = viewport.height;
           canvas.width = viewport.width;
-          
-          await page.render({
-            canvasContext: context,
-            viewport
-          }).promise;
-          
+          await page.render({ canvasContext: context, viewport }).promise;
           thumbs.push(canvas.toDataURL());
         }
-        
         setThumbnails(thumbs);
       } catch (error) {
         console.error("Error generating thumbnails:", error);
@@ -52,11 +85,7 @@ export default function PDFSidebar() {
     };
 
     generateThumbnails();
-  }, [currentFile, pdfDocument]);
-
-  if (!currentFile) {
-    return null;
-  }
+  }, [pdfDocument, totalPages]);
 
   return (
     <div className="w-64 border-r bg-white dark:bg-gray-900 flex flex-col">
@@ -75,11 +104,11 @@ export default function PDFSidebar() {
             Props
           </TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="pages" className="flex-1 flex flex-col p-0">
           <div className="p-2 border-b flex items-center justify-between">
             <span className="text-sm font-medium">
-              Page {currentPage} of {currentFile.pageCount}
+              Page {currentPage} of {totalPages}
             </span>
             <div className="flex gap-1">
               <Button
@@ -93,14 +122,13 @@ export default function PDFSidebar() {
               <Button
                 size="icon"
                 variant="ghost"
-                onClick={() => setCurrentPage(Math.min(currentFile.pageCount, currentPage + 1))}
-                disabled={currentPage >= currentFile.pageCount}
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage >= totalPages}
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
-          
           <ScrollArea className="flex-1">
             {isLoading ? (
               <div className="flex items-center justify-center h-32">
@@ -109,19 +137,15 @@ export default function PDFSidebar() {
             ) : (
               <div className="p-2 space-y-2">
                 {thumbnails.map((thumbnail, index) => (
-                  <div 
+                  <div
                     key={index}
                     className={`border rounded p-1 cursor-pointer transition-all ${
-                      currentPage === index + 1 ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : ''
+                      currentPage === index + 1 ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20" : ""
                     }`}
                     onClick={() => setCurrentPage(index + 1)}
                   >
                     <div className="relative">
-                      <img 
-                        src={thumbnail} 
-                        alt={`Page ${index + 1}`} 
-                        className="w-full"
-                      />
+                      <img src={thumbnail} alt={`Page ${index + 1}`} className="w-full" />
                       <div className="absolute bottom-0 right-0 bg-black/70 text-white text-xs px-1 rounded-tl">
                         {index + 1}
                       </div>
@@ -132,7 +156,7 @@ export default function PDFSidebar() {
             )}
           </ScrollArea>
         </TabsContent>
-        
+
         <TabsContent value="layers" className="flex-1">
           <div className="p-4">
             <h3 className="font-medium mb-2">Document Layers</h3>
@@ -156,19 +180,19 @@ export default function PDFSidebar() {
             </div>
           </div>
         </TabsContent>
-        
+
         <TabsContent value="properties" className="flex-1">
           <div className="p-4">
             <h3 className="font-medium mb-2">Document Properties</h3>
             <div className="space-y-2 text-sm">
               <div>
-                <span className="font-medium">Filename:</span> {currentFile.name}
+                <span className="font-medium">Filename:</span> {fileName}
               </div>
               <div>
-                <span className="font-medium">Pages:</span> {currentFile.pageCount}
+                <span className="font-medium">Pages:</span> {totalPages}
               </div>
               <div>
-                <span className="font-medium">Size:</span> {formatFileSize(currentFile.size)}
+                <span className="font-medium">Size:</span> {formatFileSize(fileSizeBytes)}
               </div>
             </div>
           </div>

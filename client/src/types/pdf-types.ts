@@ -327,8 +327,20 @@ export interface FontManagerProps {
 
 // Annotation manager (UI)
 export interface AnnotationManagerProps {
-  canvasRef: React.RefObject<HTMLCanvasElement>;
+  annotations: Annotation[];
+  textBoxes: TextBox[];
+  whiteoutBlocks: WhiteoutBlock[];
+  textElements: { [page: number]: any[] }; // Replace 'any' with a stricter type if you have one
+  onSelectAnnotation: (id: string | null) => void;
+  onDeleteAnnotation: (id: string) => void;
+  onSelectTextBox: (id: string | null) => void;
+  onDeleteTextBox: (id: string) => void;
+  onSelectWhiteoutBlock: (id: string | null) => void;
+  onDeleteWhiteoutBlock: (id: string) => void;
+  pdfDocument: any; // Use correct type if you have
   currentPage: number;
+  totalPages: number;
+  canvasRef: React.RefObject<HTMLCanvasElement>;
   zoom: number;
   onAnnotationsChange?: (annotations: Annotation[]) => void;
   showControls?: boolean;
@@ -464,12 +476,16 @@ export type AnnotationToolName =
     width: number;
     height: number;
     color: string;
+    page: number;
   };
   
   export type WhiteoutLayerProps = {
+    whiteoutBlocks: WhiteoutBlock[];
+    setWhiteoutBlocks: React.Dispatch<React.SetStateAction<WhiteoutBlock[]>>;
     isActive: boolean;
+    currentPage: number;
     canvasRef: React.RefObject<HTMLCanvasElement>;
-    scale?: number;
+    scale: number
     onBlocksChange?: (blocks: WhiteoutBlock[]) => void;
   };
 
@@ -510,6 +526,7 @@ export type AnnotationToolName =
     onFieldsDetected: (fields: FieldEntry[]) => void;
     onSave: (fields: FieldEntry[]) => void;
     className?: string;
+    detectedFormFields: any[];
   }
 
   export type OCRWord = {
@@ -527,6 +544,7 @@ export type AnnotationToolName =
   
   export interface OCRProcessorProps {
     pdfDocument?: any;
+    ocrResults: OCRResult[];
     canvasRef: React.RefObject<HTMLCanvasElement>;
     currentPage: number;
     onTextDetected?: (results: OCRWord[]) => void;

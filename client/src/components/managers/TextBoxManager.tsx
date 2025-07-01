@@ -12,9 +12,19 @@ function deepCopyTextBoxes(boxes: TextBox[]): TextBox[] {
 interface TextBoxManagerProps {
   initialTextBoxes?: TextBox[];
   onTextBoxesChange?: (boxes: TextBox[]) => void;
+  textBoxes: TextBox[];
+  setTextBoxes: React.Dispatch<React.SetStateAction<TextBox[]>>;
+  selectedTextBox: string | null;
+  setSelectedTextBox: React.Dispatch<React.SetStateAction<string | null>>;
   currentPage: number;
   canvasRef: React.RefObject<HTMLCanvasElement>;
-  fontList?: FontInfo[]; // If using FontManager/fontList, import FontInfo type
+  zoom: number;
+  fontList: FontInfo[]; // or whatever type you use
+  onFontChange: (font: string) => void;
+  selectedFont: string;
+  onTextBoxUpdate: (textBox: TextBox) => void; // add real type!
+  originalPdfData: Uint8Array | null;
+  showControls: boolean;
 }
 
 export const TextBoxManager: React.FC<TextBoxManagerProps> = ({

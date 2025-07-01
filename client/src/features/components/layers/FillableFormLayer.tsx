@@ -14,6 +14,7 @@ export default function FillablePDFViewer({
   onFieldsDetected,
   onSave,
   className,
+  
 }: FillablePDFViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);

@@ -28,11 +28,24 @@ import {
   Signature,
   Download,
 } from "lucide-react";
-import { Annotation } from "../../types/pdf-types";
+import { Annotation, WhiteoutBlock, TextBox } from "../../types/pdf-types";
 ;
-interface AnnotationManagerProps {
-  canvasRef: React.RefObject<HTMLCanvasElement>;
+// Define the props interface
+export interface AnnotationManagerProps {
+  annotations: Annotation[];
+  textBoxes: TextBox[];
+  whiteoutBlocks: WhiteoutBlock[];
+  textElements: { [page: number]: any[] }; // Replace 'any' with a stricter type if you have one
+  onSelectAnnotation: (id: string | null) => void;
+  onDeleteAnnotation: (id: string) => void;
+  onSelectTextBox: (id: string | null) => void;
+  onDeleteTextBox: (id: string) => void;
+  onSelectWhiteoutBlock: (id: string | null) => void;
+  onDeleteWhiteoutBlock: (id: string) => void;
+  pdfDocument: any; // Use correct type if you have
   currentPage: number;
+  totalPages: number;
+  canvasRef: React.RefObject<HTMLCanvasElement>;
   zoom: number;
   onAnnotationsChange?: (annotations: Annotation[]) => void;
   showControls?: boolean;
@@ -295,6 +308,8 @@ export default function AnnotationManager({
             color,
             strokeWidth,
             page: currentPage,
+            points: currentPath,
+            fontSize: 16,
           };
           break;
 
@@ -309,6 +324,8 @@ export default function AnnotationManager({
             color,
             strokeWidth,
             page: currentPage,
+            points: currentPath,
+            fontSize: 16,
           };
           break;
 
@@ -324,6 +341,8 @@ export default function AnnotationManager({
             color,
             strokeWidth,
             page: currentPage,
+            points: currentPath,
+            fontSize: 16,
           };
           break;
 
@@ -346,6 +365,7 @@ export default function AnnotationManager({
               strokeWidth,
               page: currentPage,
               points: currentPath,
+              fontSize: 16,
             };
           } else {
             setIsDrawing(false);

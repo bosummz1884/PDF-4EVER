@@ -1,44 +1,44 @@
-import React, { useState, useEffect } from 'react';
-import { usePDFEditor } from '../../PDFEditorContext';
-import { useAnnotations } from '../../hooks/useAnnotations';
+import React, { useState } from 'react';
 
-export default function EraserLayer() {
-  const { 
-    currentTool, 
-    annotationCanvasRef
-  } = usePDFEditor();
-  
-  const { eraseAnnotationsAt } = useAnnotations();
-  
+export interface EraserLayerProps {
+  eraserSize: number;
+  setEraserSize: React.Dispatch<React.SetStateAction<number>>;
+  onErase: (x: number, y: number, size: number) => void;
+  currentTool: string;
+  currentPage: number;
+  canvasRef: React.RefObject<HTMLCanvasElement>;
+}
+
+export default function EraserLayer({
+  eraserSize,
+  setEraserSize,
+  onErase,
+  currentTool,
+  currentPage,
+  canvasRef,
+}: EraserLayerProps) {
   const [eraserPosition, setEraserPosition] = useState({ x: 0, y: 0 });
-  const [eraserSize, setEraserSize] = useState(20);
   const [isErasing, setIsErasing] = useState(false);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (currentTool !== 'eraser') return;
-    
-    const rect = annotationCanvasRef.current?.getBoundingClientRect();
+    const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
-    
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
     setEraserPosition({ x, y });
     setIsErasing(true);
-    eraseAnnotationsAt(x, y, eraserSize);
+    onErase(x, y, eraserSize);
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = annotationCanvasRef.current?.getBoundingClientRect();
+    const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
-    
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
     setEraserPosition({ x, y });
-    
     if (isErasing && currentTool === 'eraser') {
-      eraseAnnotationsAt(x, y, eraserSize);
+      onErase(x, y, eraserSize);
     }
   };
 
@@ -50,24 +50,22 @@ export default function EraserLayer() {
     setIsErasing(false);
   };
 
-  // Only show eraser cursor when eraser tool is active
   if (currentTool !== 'eraser') return null;
 
   return (
-    <div 
+    <div
       className="eraser-layer absolute inset-0 z-30"
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
-      style={{ cursor: 'none' }}
+      style={{ cursor: 'none', pointerEvents: currentTool === 'eraser' ? 'auto' : 'none' }}
     >
-      {/* Eraser cursor visualization */}
       <div
         className="eraser-cursor absolute rounded-full border-2 border-black bg-white bg-opacity-50 pointer-events-none"
         style={{
-          left: `${eraserPosition.x - eraserSize/2}px`,
-          top: `${eraserPosition.y - eraserSize/2}px`,
+          left: `${eraserPosition.x - eraserSize / 2}px`,
+          top: `${eraserPosition.y - eraserSize / 2}px`,
           width: `${eraserSize}px`,
           height: `${eraserSize}px`,
         }}
