@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { SignupDialog } from "@/components/SignupDialog";
-import { LoginDialog } from "@/components/LoginDialog";
+import { SignupDialog } from "../components/auth/SignupDialog";
+import { LoginDialog } from "../components/auth/LoginDialog";
 import { useAuth } from "@/features/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import {
