@@ -5,6 +5,14 @@ import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";
 import viteConfig from "../vite.config";
 import { nanoid } from "nanoid";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
+// 👇 These two lines REPLACE `__filename` and `__dirname`
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+
 
 const viteLogger = createLogger();
 
