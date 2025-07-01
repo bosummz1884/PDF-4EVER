@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import type { TextBox, FontInfo } from "@/types/pdf-types";
-import AdvancedTextLayer from "client/src/features/components/layers/AdvancedTextLayer";
+import AdvancedTextLayer from "@/features/components/layers/AdvancedTextLayer";
 import { loadFonts, isFontAvailable, getAvailableFontNames, getFontPath } from "client/src/lib/loadFonts";
 import { usePDFFonts } from "client/src/features/hooks/usePDFFonts";
 

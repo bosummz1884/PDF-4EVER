@@ -25,7 +25,8 @@
       "@server/*": ["./server/*"],
       "@ui/*": ["./client/src/components/ui"],
       "@types/*": ["./client/src/types/*"],
-      "@pages/*": ["./client/src/pages/*"]
+      "@pages/*": ["./client/src/pages/*"],
+      "@layers/*": ["./client/src/features/components/layers/*"],
     }
   }
 }

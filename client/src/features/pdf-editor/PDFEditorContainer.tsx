@@ -6,8 +6,8 @@ import AnnotationManager from "@/components/managers/AnnotationManager";
 import { TextBoxManager } from "@/components/managers/TextBoxManager";
 import FontManager from "@/components/managers/FontManager";
 import WhiteoutLayer from "@/features/components/layers/WhiteoutLayer";
-import FillableFormLayer from "@/features/components/layers/FillableFormLayer";
-import AdvancedTextLayer from "@/features/components/layers/AdvancedTextLayer";
+import FillableFormLayer from "@layers/FillableFormLayer";
+import AdvancedTextLayer from "@layers/AdvancedTextLayer";
 import OCRLayer from "@/features/components/layers/OCRLayer";
 import EraserLayer from "@/features/components/layers/EraserLayer";
 import { FormField, Annotation, WhiteoutBlock, TextBox, OCRResult, FontInfo, DEFAULT_FONT_INFO, FontManagerProps } from "client/src/types/pdf-types";
@@ -21,37 +21,42 @@ const FormTool = (props: any) => null;
 const OCRTool = (props: any) => null;
 
 // ---- Props Interface ----
-interface PDFEditorContainerProps {
+interface PDFEditorContainerProps { 
+  user?: any;
+  isMobile?: boolean;
   className?: string;
 }
 
-// ---- Cursor helper ----
-const getCursorForTool = (tool: string): string => {
-  switch (tool) {
-    case "eraser":
-      return "crosshair";
-    case "highlight":
-    case "rectangle":
-    case "circle":
-    case "freeform":
-    case "signature":
-    case "text":
-    case "checkmark":
-    case "x-mark":
-    case "line":
-      return "crosshair";
-    default:
-      return "default";
-  }
-};
-
-export default function PDFEditorContainer({ className }: PDFEditorContainerProps) {
-  // ---- CORE PDF STATE ----
+export default function PDFEditorContainer({
+  user,
+  isMobile,
+  className,
+}: PDFEditorContainerProps) {
   const [originalFileData, setOriginalFileData] = useState<Uint8Array | null>(null);
   const [rotation, setRotation] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [renderingError, setRenderingError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string>("");
+
+  // ---- Cursor helper ----
+  const getCursorForTool = (tool: string): string => {
+    switch (tool) {
+      case "eraser":
+        return "crosshair";
+      case "highlight":
+      case "rectangle":
+      case "circle":
+      case "freeform":
+      case "signature":
+      case "text":
+      case "checkmark":
+      case "x-mark":
+      case "line":
+        return "crosshair";
+      default:
+        return "default";
+    }
+  };
 
   // ---- TOOL/MODE SELECTION ----
   const [currentTool, setCurrentTool] = useState<
@@ -109,10 +114,19 @@ export default function PDFEditorContainer({ className }: PDFEditorContainerProp
   ]);
   const [loadingFonts, setLoadingFonts] = useState(false);
   const [selectedFont, setSelectedFont] = useState<FontInfo>(DEFAULT_FONT_INFO);
+
+  const onFontChange = (fontName: string) => {
+    setSelectedFont({
+      ...selectedFont,
+      name: fontName,
+    });
+  };
+
   const [fontSize, setFontSize] = useState(14);
   const [fontWeight, setFontWeight] = useState<"normal" | "bold">("normal");
   const [fontStyle, setFontStyle] = useState<"normal" | "italic">("normal");
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false); // or true if you want open by default
+
   // ---- SIGNATURES ----
   const [signatureName, setSignatureName] = useState("");
   const [signatureFont, setSignatureFont] = useState("Dancing Script");
@@ -190,50 +204,49 @@ export default function PDFEditorContainer({ className }: PDFEditorContainerProp
   };
 
   // Select a single box
-const handleSelect = (id: string) => {
-  setSelectedBoxIds(new Set([id]));
-};
+  const handleSelect = (id: string) => {
+    setSelectedBoxIds(new Set([id]));
+  };
 
-// Multi-select boxes (adds to current selection)
-const handleMultiSelect = (id: string) => {
-  setSelectedBoxIds(prev => {
-    const next = new Set(prev);
-    next.add(id);
-    return next;
-  });
-};
+  // Multi-select boxes (adds to current selection)
+  const handleMultiSelect = (id: string) => {
+    setSelectedBoxIds(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  };
 
-// Clear all selection
-const handleClearSelection = () => {
-  setSelectedBoxIds(new Set());
-};
+  // Clear all selection
+  const handleClearSelection = () => {
+    setSelectedBoxIds(new Set());
+  };
 
-// Update a textbox
-const handleUpdate = (id: string, updates: Partial<TextBox>) => {
-  setTextBoxes(prev =>
-    prev.map(box =>
-      box.id === id ? { ...box, ...updates } : box
-    )
-  );
-};
+  // Update a textbox
+  const handleUpdate = (id: string, updates: Partial<TextBox>) => {
+    setTextBoxes(prev =>
+      prev.map(box =>
+        box.id === id ? { ...box, ...updates } : box
+      )
+    );
+  };
 
-// Remove a textbox
-const handleRemove = (id: string) => {
-  setTextBoxes(prev => prev.filter(box => box.id !== id));
-  setSelectedBoxIds(prev => {
-    const next = new Set(prev);
-    next.delete(id);
-    return next;
-  });
-};
+  // Remove a textbox
+  const handleRemove = (id: string) => {
+    setTextBoxes(prev => prev.filter(box => box.id !== id));
+    setSelectedBoxIds(prev => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  };
 
-// Add a new textbox (you must assign it an id)
-const handleAdd = (box: Omit<TextBox, "id">) => {
-  const id = `textbox_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-  const newBox: TextBox = { ...box, id };
-  setTextBoxes(prev => [...prev, newBox]);
-};
-
+  // Add a new textbox (you must assign it an id)
+  const handleAdd = (box: Omit<TextBox, "id">) => {
+    const id = `textbox_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    const newBox: TextBox = { ...box, id };
+    setTextBoxes(prev => [...prev, newBox]);
+  };
 
   // ---- NEW FIELD TYPE for FormTool ----
   const [newFieldType, setNewFieldType] = useState<string>("");
@@ -332,7 +345,6 @@ const handleAdd = (box: Omit<TextBox, "id">) => {
   };
 
   const handleToolChange = (tool: typeof currentTool) => setCurrentTool(tool);
-;
   const exportPDF = handleExportPDF;
 
   // Navigation
@@ -375,11 +387,9 @@ const handleAdd = (box: Omit<TextBox, "id">) => {
   const handleWhiteoutBlockAdd = (block: any) => setWhiteoutBlocks(prev => [...prev, block]);
   const handleWhiteoutBlockRemove = (id: string) => setWhiteoutBlocks(prev => prev.filter(b => b.id !== id));
 
-
-
-const onFontSizeChange = (size: number) => setFontSize(size);
-const onFontWeightChange = (weight: "normal" | "bold") => setFontWeight(weight);
-const onFontStyleChange = (style: "normal" | "italic") => setFontStyle(style);
+  const onFontSizeChange = (size: number) => setFontSize(size);
+  const onFontWeightChange = (weight: "normal" | "bold") => setFontWeight(weight);
+  const onFontStyleChange = (style: "normal" | "italic") => setFontStyle(style);
 
   // Text Elements
   const handleTextElementsChange = (elements: any[]) => {
@@ -400,18 +410,18 @@ const onFontStyleChange = (style: "normal" | "italic") => setFontStyle(style);
       [currentPage]: (prev[currentPage] || []).filter((el: any) => el.id !== id),
     }));
   };
-  // Before your return (JSX) in the parent component
-const onSelect = (id: string) => { /* your logic here */ };
-const onMultiSelect = (id: string) => { /* your logic here */ };
-const clearSelection = () => { /* your logic here */ };
-const onUpdate = (id: string, updates: Partial<TextBox>) => { /* ... */ };
-const onRemove = (id: string) => { /* ... */ };
-const onAdd = (box: Omit<TextBox, "id">) => { /* ... */ };
-const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
-  // Now you have a File object called `file`
-};
 
+  // Before your return (JSX) in the parent component
+  const onSelect = (id: string) => { /* your logic here */ };
+  const onMultiSelect = (id: string) => { /* your logic here */ };
+  const clearSelection = () => { /* your logic here */ };
+  const onUpdate = (id: string, updates: Partial<TextBox>) => { /* ... */ };
+  const onRemove = (id: string) => { /* ... */ };
+  const onAdd = (box: Omit<TextBox, "id">) => { /* ... */ };
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Now you have a File object called `file`
+  };
 
   // When a user selects an annotation
   const handleSelectAnnotation = (id: string | null) => setSelectedAnnotationId(id);
@@ -421,9 +431,12 @@ const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
   const handleSelectWhiteoutBlock = (id: string | null) => setSelectedWhiteoutBlockId(id);
   const handleDeleteWhiteoutBlock = (id: string) => setWhiteoutBlocks(prev => prev.filter(wb => wb.id !== id));
 
-  // ---- JSX ----
   return (
     <div className={`pdf-editor-container min-h-screen flex flex-col bg-background ${className || ''}`}>
+      {/* Device Info */}
+      <div className="p-2 text-xs text-center text-gray-400">
+        {isMobile ? "Mobile View" : "Desktop View"}
+      </div>
       {/* Header */}
       <header className="border-b bg-background/95 backdrop-blur sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -441,7 +454,6 @@ const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
           </nav>
         </div>
       </header>
-
       {/* Toolbar */}
       <PDFToolbar
         setCurrentTool={setCurrentTool}
@@ -488,9 +500,7 @@ const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         handleFileUpload={handleFileUpload}
         savePDF={savePDF}
         setAnnotationColor={setAnnotationColor}
-
       />
-
       {/* Main Content */}
       <main className="flex flex-1 w-full overflow-hidden">
         {/* Sidebar */}
@@ -513,7 +523,6 @@ const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
             fileName={fileName}
           />
         </aside>
-
         {/* Content Area */}
         <section className="flex-1 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-800">
           {/* Status Bar */}
@@ -533,12 +542,10 @@ const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
               {isLoading ? "Exporting..." : "Download"}
             </Button>
           </div>
-
           {/* Canvas + Layers */}
           <div className="relative w-full max-w-6xl mx-auto my-6 shadow-lg rounded-lg overflow-hidden bg-white dark:bg-gray-900" style={{ minHeight: 600 }}>
             {/* Main Rendered PDF Canvas */}
             <canvas ref={canvasRef} className="block w-full" />
-
             {/* Annotation Layer */}
             <canvas
               ref={annotationCanvasRef}
@@ -553,7 +560,6 @@ const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                 zIndex: 10,
               }}
             />
-
             {/* LAYERED COMPONENTS */}
             <AnnotationManager
               annotations={annotations}
@@ -597,22 +603,20 @@ const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
               scale={zoom / 100}
               page={currentPage}
             />
-
             <AdvancedTextLayer
               textLayerElements={textLayerElements}
               currentPage={currentPage}
               canvasRef={canvasRef}
               textBoxes={textBoxes}
               fontList={availableFontList}
-              selectedBoxIds={new Set()}
-              onSelect={onSelect}
-              onMultiSelect={onMultiSelect}
-              onClearSelection={clearSelection}
-              onUpdate={onUpdate}
-              onRemove={onRemove}
-              onAdd={onAdd}
+              selectedBoxIds={selectedBoxIds}
+              onSelect={handleSelect}
+              onMultiSelect={handleMultiSelect}
+              onClearSelection={handleClearSelection}
+              onUpdate={handleUpdate}
+              onRemove={handleRemove}
+              onAdd={handleAdd}
             />
-
             <EraserLayer
               eraserSize={eraserSize}
               setEraserSize={setEraserSize}
@@ -627,7 +631,6 @@ const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
               ocrResults={ocrResults}
               canvasRef={canvasRef}
             />
-
             <FillableFormLayer
               detectedFormFields={detectedFormFields}
               currentPage={currentPage}
@@ -635,21 +638,18 @@ const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
               onFieldsDetected={handleFormFieldsDetected}
               onSave={handleFormDataSave}
               file={new File(["Hello"], "file.txt", { type: "text/plain" })}
-
             />
-
             {/* Tool Overlays / Dialogs */}
             <FontManager
-            selectedFont={selectedFont.name}
-            onFontChange={onFontChange}
-            fontSize={fontSize}
-            onFontSizeChange={onFontSizeChange}
-            fontWeight={fontWeight}
-            onFontWeightChange={onFontWeightChange}
-            fontStyle={fontStyle}
-            onFontStyleChange={onFontStyleChange}
-            showAdvanced={showAdvanced}
-        
+              selectedFont={selectedFont.name}
+              onFontChange={onFontChange}
+              fontSize={fontSize}
+              onFontSizeChange={setFontSize}
+              fontWeight={fontWeight}
+              onFontWeightChange={setFontWeight}
+              fontStyle={fontStyle}
+              onFontStyleChange={setFontStyle}
+              showAdvanced={showAdvanced}
             />
             <SignatureTool
               signatureName={signatureName}

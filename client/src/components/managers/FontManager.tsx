@@ -12,8 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Type, Download, Eye, Search } from "lucide-react";
-import { usePDFFonts } from 'client/src/features/hooks/usePDFFonts';
 import { FontInfo, FontManagerProps } from '../../types/pdf-types';
+import { usePDFFonts } from "client/src/features/hooks/usePDFFonts";
 
 // Standard PDF-safe fonts
 const STANDARD_FONTS: FontInfo[] = [
