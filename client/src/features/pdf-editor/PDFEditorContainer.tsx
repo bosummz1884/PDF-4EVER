@@ -10,9 +10,7 @@ import FillableFormLayer from "@/features/components/layers/FillableFormLayer";
 import AdvancedTextLayer from "@/features/components/layers/AdvancedTextLayer";
 import OCRLayer from "@/features/components/layers/OCRLayer";
 import EraserLayer from "@/features/components/layers/EraserLayer";
-import { loadFonts, isFontAvailable, getAvailableFontNames } from "@/lib/loadFonts";
-import { hexToRgbNormalized } from "@/features/utils/colorUtils";
-import { FormField, Annotation, WhiteoutBlock, TextBox, OCRResult, FontInfo  } from "client/src/types/pdf-types";
+import { FormField, Annotation, WhiteoutBlock, TextBox, OCRResult, FontInfo, DEFAULT_FONT_INFO, FontManagerProps } from "client/src/types/pdf-types";
 import PDFToolbar from "@/features/components/PDFToolbar";
 import PDFSidebar from "client/src/features/components/PDFSidebar";
 
@@ -101,6 +99,7 @@ export default function PDFEditorContainer({ className }: PDFEditorContainerProp
   const [textLayerElements, setTextLayerElements] = useState<any[]>([]);
   const [ocrResults, setOcrResults] = useState<OCRResult[]>([]);
   const [detectedFormFields, setDetectedFormFields] = useState<any[]>([]);
+  const [selectedBoxIds, setSelectedBoxIds] = useState<Set<string>>(new Set());
 
   // ---- FONT MANAGEMENT ----
   const [availableFontList, setAvailableFontList] = useState<FontInfo[]>([
@@ -109,11 +108,11 @@ export default function PDFEditorContainer({ className }: PDFEditorContainerProp
     { name: "Courier New", family: "'Courier New', monospace", loaded: true, style: "normal", weight: "normal" }
   ]);
   const [loadingFonts, setLoadingFonts] = useState(false);
-  const [selectedFont, setSelectedFont] = useState("Arial");
+  const [selectedFont, setSelectedFont] = useState<FontInfo>(DEFAULT_FONT_INFO);
   const [fontSize, setFontSize] = useState(14);
   const [fontWeight, setFontWeight] = useState<"normal" | "bold">("normal");
   const [fontStyle, setFontStyle] = useState<"normal" | "italic">("normal");
-
+  const [showAdvanced, setShowAdvanced] = useState<boolean>(false); // or true if you want open by default
   // ---- SIGNATURES ----
   const [signatureName, setSignatureName] = useState("");
   const [signatureFont, setSignatureFont] = useState("Dancing Script");
@@ -189,6 +188,52 @@ export default function PDFEditorContainer({ className }: PDFEditorContainerProp
       setRenderingError(`Failed to render page ${pageNumber}`);
     }
   };
+
+  // Select a single box
+const handleSelect = (id: string) => {
+  setSelectedBoxIds(new Set([id]));
+};
+
+// Multi-select boxes (adds to current selection)
+const handleMultiSelect = (id: string) => {
+  setSelectedBoxIds(prev => {
+    const next = new Set(prev);
+    next.add(id);
+    return next;
+  });
+};
+
+// Clear all selection
+const handleClearSelection = () => {
+  setSelectedBoxIds(new Set());
+};
+
+// Update a textbox
+const handleUpdate = (id: string, updates: Partial<TextBox>) => {
+  setTextBoxes(prev =>
+    prev.map(box =>
+      box.id === id ? { ...box, ...updates } : box
+    )
+  );
+};
+
+// Remove a textbox
+const handleRemove = (id: string) => {
+  setTextBoxes(prev => prev.filter(box => box.id !== id));
+  setSelectedBoxIds(prev => {
+    const next = new Set(prev);
+    next.delete(id);
+    return next;
+  });
+};
+
+// Add a new textbox (you must assign it an id)
+const handleAdd = (box: Omit<TextBox, "id">) => {
+  const id = `textbox_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+  const newBox: TextBox = { ...box, id };
+  setTextBoxes(prev => [...prev, newBox]);
+};
+
 
   // ---- NEW FIELD TYPE for FormTool ----
   const [newFieldType, setNewFieldType] = useState<string>("");
@@ -312,6 +357,8 @@ export default function PDFEditorContainer({ className }: PDFEditorContainerProp
   const handlePlaceSignature = () => {};
   const handleImagePlace = () => {};
   const handleOCRExtract = () => {};
+  const handleFileUpload = (file: File) => {};
+  const savePDF = () => {};
 
   // Annotation handlers
   const handleAnnotationAdd = (annotation: Annotation) => setAnnotations(prev => [...prev, annotation]);
@@ -327,6 +374,12 @@ export default function PDFEditorContainer({ className }: PDFEditorContainerProp
   const handleWhiteoutBlocksChange = (blocks: any[]) => setWhiteoutBlocks(blocks);
   const handleWhiteoutBlockAdd = (block: any) => setWhiteoutBlocks(prev => [...prev, block]);
   const handleWhiteoutBlockRemove = (id: string) => setWhiteoutBlocks(prev => prev.filter(b => b.id !== id));
+
+
+
+const onFontSizeChange = (size: number) => setFontSize(size);
+const onFontWeightChange = (weight: "normal" | "bold") => setFontWeight(weight);
+const onFontStyleChange = (style: "normal" | "italic") => setFontStyle(style);
 
   // Text Elements
   const handleTextElementsChange = (elements: any[]) => {
@@ -347,6 +400,18 @@ export default function PDFEditorContainer({ className }: PDFEditorContainerProp
       [currentPage]: (prev[currentPage] || []).filter((el: any) => el.id !== id),
     }));
   };
+  // Before your return (JSX) in the parent component
+const onSelect = (id: string) => { /* your logic here */ };
+const onMultiSelect = (id: string) => { /* your logic here */ };
+const clearSelection = () => { /* your logic here */ };
+const onUpdate = (id: string, updates: Partial<TextBox>) => { /* ... */ };
+const onRemove = (id: string) => { /* ... */ };
+const onAdd = (box: Omit<TextBox, "id">) => { /* ... */ };
+const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  // Now you have a File object called `file`
+};
+
 
   // When a user selects an annotation
   const handleSelectAnnotation = (id: string | null) => setSelectedAnnotationId(id);
@@ -379,7 +444,15 @@ export default function PDFEditorContainer({ className }: PDFEditorContainerProp
 
       {/* Toolbar */}
       <PDFToolbar
+        setCurrentTool={setCurrentTool}
+        setZoom={setZoom}
+        rotation={rotation}
+        setRotation={setRotation}
         currentTool={currentTool}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        setCurrentPage={setCurrentPage}
+        fileInputRef={fileInputRef}
         onToolChange={handleToolChange}
         onUndo={() => {}} // stub: plug your real undo
         onRedo={() => {}} // stub: plug your real redo
@@ -412,6 +485,10 @@ export default function PDFEditorContainer({ className }: PDFEditorContainerProp
         setSignatureFont={setSignatureFont}
         showSignatureDialog={showSignatureDialog}
         setShowSignatureDialog={setShowSignatureDialog}
+        handleFileUpload={handleFileUpload}
+        savePDF={savePDF}
+        setAnnotationColor={setAnnotationColor}
+
       />
 
       {/* Main Content */}
@@ -432,6 +509,8 @@ export default function PDFEditorContainer({ className }: PDFEditorContainerProp
             pdfDocument={pdfDocument}
             currentPage={currentPage}
             totalPages={totalPages}
+            setCurrentPage={setCurrentPage}
+            fileName={fileName}
           />
         </aside>
 
@@ -518,14 +597,22 @@ export default function PDFEditorContainer({ className }: PDFEditorContainerProp
               scale={zoom / 100}
               page={currentPage}
             />
+
             <AdvancedTextLayer
               textLayerElements={textLayerElements}
-              setTextLayerElements={setTextLayerElements}
               currentPage={currentPage}
-              pdfDocument={pdfDocument}
               canvasRef={canvasRef}
-              zoom={zoom / 100}
+              textBoxes={textBoxes}
+              fontList={availableFontList}
+              selectedBoxIds={new Set()}
+              onSelect={onSelect}
+              onMultiSelect={onMultiSelect}
+              onClearSelection={clearSelection}
+              onUpdate={onUpdate}
+              onRemove={onRemove}
+              onAdd={onAdd}
             />
+
             <EraserLayer
               eraserSize={eraserSize}
               setEraserSize={setEraserSize}
@@ -538,28 +625,31 @@ export default function PDFEditorContainer({ className }: PDFEditorContainerProp
               pdfDocument={pdfDocument}
               currentPage={currentPage}
               ocrResults={ocrResults}
-              ocrResults={setOcrResults}
-              onOCRTextExtract={handleOCRTextExtract}
+              canvasRef={canvasRef}
             />
+
             <FillableFormLayer
               detectedFormFields={detectedFormFields}
-              setDetectedFormFields={setDetectedFormFields}
-              formFields={formFields}
-              setFormFields={setFormFields}
               currentPage={currentPage}
               pdfDocument={pdfDocument}
-              onFormDataSave={handleFormDataSave}
               onFieldsDetected={handleFormFieldsDetected}
+              onSave={handleFormDataSave}
+              file={new File(["Hello"], "file.txt", { type: "text/plain" })}
+
             />
 
             {/* Tool Overlays / Dialogs */}
             <FontManager
-              fontList={availableFontList}
-              onFontSelect={setSelectedFont}
-              selectedFont={selectedFont}
-              onFontLoad={() => {}} // plug in font loader
-              loadingFonts={loadingFonts}
-              loadMoreFonts={loadMoreFonts}
+            selectedFont={selectedFont.name}
+            onFontChange={onFontChange}
+            fontSize={fontSize}
+            onFontSizeChange={onFontSizeChange}
+            fontWeight={fontWeight}
+            onFontWeightChange={onFontWeightChange}
+            fontStyle={fontStyle}
+            onFontStyleChange={onFontStyleChange}
+            showAdvanced={showAdvanced}
+        
             />
             <SignatureTool
               signatureName={signatureName}

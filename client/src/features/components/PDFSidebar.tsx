@@ -24,7 +24,6 @@ export interface PDFSidebarProps {
   setCurrentPage: (page: number) => void;
   totalPages: number;
   fileName: string;
-  fileSizeBytes: number;
 }
 
 // -------------------
@@ -47,7 +46,6 @@ export default function PDFSidebar(props: PDFSidebarProps) {
     setCurrentPage,
     totalPages,
     fileName,
-    fileSizeBytes,
   } = props;
 
   const [thumbnails, setThumbnails] = useState<string[]>([]);
@@ -190,9 +188,6 @@ export default function PDFSidebar(props: PDFSidebarProps) {
               </div>
               <div>
                 <span className="font-medium">Pages:</span> {totalPages}
-              </div>
-              <div>
-                <span className="font-medium">Size:</span> {formatFileSize(fileSizeBytes)}
               </div>
             </div>
           </div>

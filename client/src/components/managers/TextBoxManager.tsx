@@ -20,8 +20,8 @@ interface TextBoxManagerProps {
   canvasRef: React.RefObject<HTMLCanvasElement>;
   zoom: number;
   fontList: FontInfo[]; // or whatever type you use
-  onFontChange: (font: string) => void;
-  selectedFont: string;
+  onFontChange: (font: FontInfo) => void;
+  selectedFont: FontInfo;
   onTextBoxUpdate: (textBox: TextBox) => void; // add real type!
   originalPdfData: Uint8Array | null;
   showControls: boolean;
@@ -121,6 +121,8 @@ export const TextBoxManager: React.FC<TextBoxManagerProps> = ({
     if (onTextBoxesChange) onTextBoxesChange(updatedBoxes);
   }, [textBoxes, pushUndo, onTextBoxesChange]);
 
+  const [textLayerElements, setTextLayerElements] = useState<any[]>([]);
+
   const duplicateTextBox = useCallback((id: string) => {
     const box = textBoxes.find(box => box.id === id);
     if (!box) return;
@@ -172,6 +174,7 @@ export const TextBoxManager: React.FC<TextBoxManagerProps> = ({
   // --- Render ---
   return (
     <AdvancedTextLayer
+      textLayerElements={textLayerElements}
       textBoxes={textBoxes}
       selectedBoxIds={selectedBoxIds}
       onSelect={selectBox}

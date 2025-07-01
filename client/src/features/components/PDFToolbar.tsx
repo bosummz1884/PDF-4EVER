@@ -9,6 +9,7 @@ import {
   MousePointer, Eraser, FileText, Save, FormInput, Signature, Image as ImageIcon, CheckSquare,
   X as XIcon, Minus, Palette, ChevronLeft, ChevronRight, Plus
 } from 'lucide-react';
+import { FontInfo } from '@/types/pdf-types';
 
 // Allowed tool type
 export type ToolType =
@@ -32,12 +33,40 @@ export type ToolType =
 export interface PDFToolbarProps {
   currentTool: ToolType;
   onToolChange: (tool: ToolType) => void;
-  
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
   setCurrentTool: Dispatch<SetStateAction<ToolType>>;
   zoom: number;
+  onZoomIn: () => void;
+  onZoomOut: () => void
   setZoom: Dispatch<SetStateAction<number>>;
   rotation: number;
+  fileName: string;
+  onDownload: () => void;
+  isLoading: boolean;
+  selectedFont: FontInfo;
+  onFontChange: (font: FontInfo) => void;
+  fontList: FontInfo[];
+  onLoadMoreFonts: () => void;
+  loadingFonts: boolean;
   setRotation: Dispatch<SetStateAction<number>>;
+  highlightColor: string;
+  onHighlightColorChange: (color: string) => void;
+  onAnnotationColorChange: (color: string) => void;
+  lineColor: string;
+  lineStrokeWidth: number;
+  onLineColorChange: (color: string) => void;
+  onLineStrokeWidthChange: (width: number) => void;
+  whiteoutMode: boolean;
+  onWhiteoutToggle: () => void;
+  signatureName: string;
+  signatureFont: string;
+  setSignatureName: (name: string) => void;
+  setSignatureFont: (font: string) => void;
+  showSignatureDialog: boolean;
+  setShowSignatureDialog: (show: boolean) => void;
   currentPage: number;
   totalPages: number;
   setCurrentPage: Dispatch<SetStateAction<number>>;
@@ -52,8 +81,25 @@ const PDFToolbar: React.FC<PDFToolbarProps> = ({
   currentTool,
   setCurrentTool,
   zoom,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
   setZoom,
+  onZoomIn,
+  onZoomOut,
+  onFontChange,
+  fontList,
+  onLoadMoreFonts,
+  loadingFonts,
+  selectedFont,
   rotation,
+  highlightColor,
+  onHighlightColorChange,
+  onAnnotationColorChange,
+  lineColor,
+  lineStrokeWidth,
+  onLineColorChange,
   setRotation,
   currentPage,
   totalPages,

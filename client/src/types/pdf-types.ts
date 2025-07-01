@@ -70,6 +70,15 @@ export interface FontInfo {
   fileUrl?: string; // for loaded fonts
 }
 
+// src/types/FontInfo.ts
+export const DEFAULT_FONT_INFO: FontInfo = {
+  name: 'Arial',
+  family: 'Arial, Helvetica, sans-serif',
+  style: 'normal',
+  weight: 400,
+};
+
+
 // =======================
 // Text/Annotation Types
 // =======================
