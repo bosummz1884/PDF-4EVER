@@ -1,6 +1,6 @@
 import React, { useRef, useState, MouseEvent, useCallback } from "react";
 import SignatureCanvas from "react-signature-canvas";
-import { signatureService } from "@/services/signatureService";
+import { signatureService } from "@/pages/services/signatureService";
 import { SignatureData, SignatureToolProps, SignaturePlacement } from "client/src/types/pdf-types";
 
 const SignaturePad: React.FC<{
