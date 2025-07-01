@@ -11,8 +11,8 @@ import AdvancedTextLayer from "@layers/AdvancedTextLayer";
 import OCRLayer from "@/features/components/layers/OCRLayer";
 import EraserLayer from "@/features/components/layers/EraserLayer";
 import { FormField, Annotation, WhiteoutBlock, TextBox, OCRResult, FontInfo, DEFAULT_FONT_INFO, FontManagerProps } from "../../types/pdf-types";
-import PDFToolbar from "@/features/components/PDFToolbar";
-import PDFSidebar from "client/src/features/components/PDFSidebar";
+import PDFToolbar from "../../features/components/PDFToolbar";
+import PDFSidebar from "../../features/components/PDFSidebar";
 
 // ---- DUMMY/PLACEHOLDER COMPONENTS: Replace with real ones when you build them
 const SignatureTool = (props: any) => null;
