@@ -14,11 +14,10 @@ interface User {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  // Instead of throwing, return null
+  return context ?? null;
 }
+
 
 export function useAuthProvider() {
   const [token, setToken] = useState<string | null>(() => {

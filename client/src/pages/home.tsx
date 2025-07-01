@@ -1,12 +1,12 @@
-import { useAuth } from "@/features/hooks/useAuth";
+import { useState } from "react";
 import Landing from "./landing";
 import { Button } from "@/components/ui/button";
-import { LogOut, User } from "lucide-react";
 import PDFEditorContainer from "@/features/pdf-editor/PDFEditorContainer";
 import { useIsMobile } from "@/features/hooks/use-mobile";
 
+const [isLoading, setIsLoading] = useState(false);
+
 export default function Home() {
-  const { isAuthenticated, isLoading, user, logout } = useAuth();
   const isMobile = useIsMobile(); // <-- Only call hooks inside function components!
   if (isLoading) {
     return (
