@@ -6,24 +6,6 @@ import { useIsMobile } from "@/features/hooks/use-mobile";
 
 export default function Home() {
   const isMobile = useIsMobile();
-  const [isLoading, setIsLoading] = useState(false); // Set to true to test spinner
-
-  if (isLoading) {
-    // Show loading spinner while loading
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">
-            Loading...
-            <br />
-            {isMobile ? "(Mobile View)" : "(Desktop View)"}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   // Show main Home UI when not loading
   return (
     <div className="min-h-screen bg-background">
