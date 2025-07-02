@@ -1,7 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import AnnotationManager from "@/components/managers/AnnotationManager";
 import { TextBoxManager } from "@/components/managers/TextBoxManager";
 import FontManager from "@/components/managers/FontManager";
@@ -14,10 +13,8 @@ import { FormField, Annotation, WhiteoutBlock, TextBox, OCRResult, FontInfo, DEF
 import PDFToolbar from "../../features/components/PDFToolbar";
 import PDFSidebar from "../../features/components/PDFSidebar";
 import SignatureTool from "../../features/components/tools/SignatureTool";
-import  ImageTool from "../../features/components/tools/ImageTool";
 import OCRTool from "../../features/components/tools/OCRTool";
 import { pdfjsLib } from "@/lib/pdfWorker";
-import { usePDFFonts } from "../../features/hooks/usePDFFonts";
 
 // ---- Props Interface ----
 interface PDFEditorContainerProps { 
@@ -561,7 +558,12 @@ export default function PDFEditorContainer({
         id: `ocr_${Date.now()}`,
         text: "Extracted text from OCR",
         confidence: 0.95,
-        boundingBox: coords,
+        boundingBox: {
+          x0: coords.x,
+          y0: coords.y,
+          x1: coords.x + coords.width,
+          y1: coords.y + coords.height
+        },
         page: currentPage
       };
       setOcrResults(prev => [...prev, newOCRResult]);

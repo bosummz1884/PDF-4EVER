@@ -1,9 +1,9 @@
-// src/App.tsx
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toast";
 import { useToast } from "@/features/hooks/use-toast";
 import { useIsMobile } from "@/features/hooks/use-mobile";
+import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import HomePage from "@/pages/home";
 import LandingPage from "@/pages/landing";
 import NotFoundPage from "@/pages/not-found";
@@ -19,20 +19,22 @@ export default function App() {
   useToast();
 
   return (
-    <BrowserRouter>
-      {/* Toasts (global UI notifications) */}
-      <Toaster />
+    <ThemeProvider defaultTheme="dark" storageKey="pdf4ever-theme">
+      <BrowserRouter>
+        {/* Toasts (global UI notifications) */}
+        <Toaster />
 
-      {/* App Content */}
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/home" element={<HomePage />} />
-        <Route path="/editor" element={<PDFEditorContainer isMobile={isMobile} />} />
-        <Route path="/pricing" element={<PricingPage />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-        <Route path="/terms-of-service" element={<TermsOfServicePage />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </BrowserRouter>
+        {/* App Content */}
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/editor" element={<PDFEditorContainer isMobile={isMobile} />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
