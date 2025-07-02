@@ -9,7 +9,7 @@ import { ChromePicker } from 'react-color';
 import {
   Download, Upload, Type, Edit3, Highlighter, Square, Circle, ZoomIn, ZoomOut, RotateCw, Undo, Redo,
   MousePointer, Eraser, FileText, Save, FormInput, Signature, Image as ImageIcon, CheckSquare,
-  X as XIcon, Minus, Palette, ChevronLeft, ChevronRight, Plus
+  X as XIcon, Minus, Palette, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { FontInfo } from '@/types/pdf-types';
 
@@ -117,7 +117,6 @@ const PDFToolbar: React.FC<PDFToolbarProps> = ({
   signatureFont,
   setSignatureName,
   setSignatureFont,
-  showSignatureDialog,
   setShowSignatureDialog,
 }) => {
   const [showColorPicker, setShowColorPicker] = React.useState(false);
@@ -210,6 +209,7 @@ const PDFToolbar: React.FC<PDFToolbarProps> = ({
   };
 
   return (
+  <div className="w-full flex justify-center">
     <div className="flex items-center gap-2 p-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
       {/* File Operations */}
       <div className="flex items-center gap-1">
@@ -582,6 +582,7 @@ const PDFToolbar: React.FC<PDFToolbarProps> = ({
             </div>
           </>
         )}
+      </div>
       </div>
     );
   };

@@ -843,8 +843,8 @@ const handleWhiteoutBlocksChange = (blocks: WhiteoutBlock[]) => {
 
   // ---- RENDER ----
   return (
-<div className={`flex flex-1 min-h-0 bg-gray-50 dark:bg-gray-900 ${className}`}>
-      {/* Hidden file inputs */}
+<div className="flex justify-center w-full">
+{/* Hidden file inputs */}
       <input
         ref={fileInputRef}
         type="file"
@@ -898,8 +898,7 @@ const handleWhiteoutBlocksChange = (blocks: WhiteoutBlock[]) => {
       />
 
  {/* Main Content */}
- <div className="flex-1 min-h-0 w-full relative overflow-auto bg-white">  {/* Toolbar */}
-  <PDFToolbar
+ <div className="w-full max-w-5xl relative overflow-auto bg-white">  <PDFToolbar
     currentTool={currentTool}
     onToolChange={handleToolChange}
     onUndo={handleUndo}
