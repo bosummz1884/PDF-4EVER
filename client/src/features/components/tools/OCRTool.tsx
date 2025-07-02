@@ -155,7 +155,7 @@ const OCRTool: React.FC<OCRToolProps> = ({
   const createTextBoxFromResult = useCallback(
     (result: OCRResult) => {
       if (onTextBoxCreate) {
-        onTextBoxCreate(result.bbox.x0, result.bbox.y0, result.text);
+        onTextBoxCreate(result.boundingBox.x0, result.boundingBox.y0, result.text);
       }
     },
     [onTextBoxCreate]

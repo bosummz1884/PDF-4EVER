@@ -255,10 +255,10 @@ export interface OCRResult {
   text: string;
   confidence: number;
   boundingBox: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
+    x0: number;
+    x1: number;
+    y0: number;
+    y1: number;
   };
   page: number;
 }
@@ -573,7 +573,7 @@ export type AnnotationToolName =
     id: string;
     text: string;
     confidence: number;
-    bbox: {
+    boundingBox: {
       x: number;
       y: number;
       width: number;

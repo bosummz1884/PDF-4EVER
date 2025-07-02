@@ -66,7 +66,7 @@ const ocrResults: OCRResult[] = Array.isArray(data.words)
         id: `ocr-${pageNumber}-${index}`,
         text: word.text,
         confidence: word.confidence,
-        bbox: word.bbox,
+        boundingBox: word.boundingBox,
         page: pageNumber,
       }))
   : [];
@@ -149,7 +149,7 @@ const ocrResults: OCRResult[] = Array.isArray(data.words)
             id: `pdf-text-${index}`,
             text: item.str,
             confidence: 100,
-            bbox: {
+            boundingBox: {
               x0: item.transform[4],
               y0: item.transform[5],
               x1: item.transform[4] + (item.width || 0),
@@ -178,10 +178,10 @@ const ocrResults: OCRResult[] = Array.isArray(data.words)
     ctx.save();
     ctx.fillStyle = "rgba(255, 255, 0, 0.3)";
     ctx.fillRect(
-      result.bbox.x0,
-      result.bbox.y0,
-      result.bbox.x1 - result.bbox.x0,
-      result.bbox.y1 - result.bbox.y0
+      result.boundingBox.x0,
+      result.boundingBox.y0,
+      result.boundingBox.x1 - result.boundingBox.x0,
+      result.boundingBox.y1 - result.boundingBox.y0
     );
     ctx.restore();
   }
