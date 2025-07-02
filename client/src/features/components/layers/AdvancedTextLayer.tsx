@@ -18,7 +18,6 @@ export interface AdvancedTextLayerProps {
 
 const AdvancedTextLayer: React.FC<AdvancedTextLayerProps> = ({
   textBoxes,
-  textLayerElements,
   selectedBoxIds,
   onSelect,
   onMultiSelect,
@@ -69,7 +68,7 @@ const AdvancedTextLayer: React.FC<AdvancedTextLayerProps> = ({
 
   return (
     <div 
-      className="absolute inset-0 z-20 pointer-events-auto"
+      className="relative w-full h-full"
       onClick={handleBackgroundClick}
       onDoubleClick={handleDoubleClick}
     >
@@ -87,7 +86,7 @@ const AdvancedTextLayer: React.FC<AdvancedTextLayerProps> = ({
       ))}
     </div>
   );
-};
+}; // <- This closing brace was missing
 
 // TextBoxElement component to render individual text boxes
 interface TextBoxElementProps {
@@ -106,8 +105,6 @@ const TextBoxElement: React.FC<TextBoxElementProps> = ({
   onSelect,
   onMultiSelect,
   onUpdate,
-  onRemove,
-  fontList,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);

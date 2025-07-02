@@ -40,7 +40,7 @@ export default function Home() {
       </div>
 
       {/* PDF Editor container fills available space */}
-      <div className="flex-1 flex flex-col w-full overflow-auto">
+      <div className="flex-1 min-h-0 w-full relative overflow-auto bg-white">
         <PDFEditorContainer />
       </div>
 

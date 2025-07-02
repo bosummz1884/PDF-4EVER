@@ -9,7 +9,7 @@ import FillableFormLayer from "@layers/FillableFormLayer";
 import AdvancedTextLayer from "@layers/AdvancedTextLayer";
 import OCRLayer from "@/features/components/layers/OCRLayer";
 import EraserLayer from "@/features/components/layers/EraserLayer";
-import { FormField, Annotation, WhiteoutBlock, TextBox, OCRResult, FontInfo, DEFAULT_FONT_INFO, TextElement } from "../../types/pdf-types";
+import { FormField, Annotation, WhiteoutBlock, TextBox, OCRResult, FontInfo, DEFAULT_FONT_INFO } from "../../types/pdf-types";
 import PDFToolbar from "../../features/components/PDFToolbar";
 import PDFSidebar from "../../features/components/PDFSidebar";
 import SignatureTool from "../../features/components/tools/SignatureTool";
@@ -75,7 +75,6 @@ export default function PDFEditorContainer({
   // ---- ANNOTATIONS ----
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [annotationColor, setAnnotationColor] = useState("#FFFF00");
-  const [strokeWidth, setStrokeWidth] = useState(2);
 
   // ---- WHITEOUT ----
   const [whiteoutMode, setWhiteoutMode] = useState(false);
@@ -89,11 +88,10 @@ export default function PDFEditorContainer({
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(0);
   const [zoom, setZoom] = useState<number>(100);
-  const [showControls, setShowControls] = useState<boolean>(true);
+  const [showControls] = useState<boolean>(true);
   
   // ---- TEXT BOXES & ADVANCED TEXT LAYER ----
   const [nextId, setNextId] = useState<number>(1);
-  const [showTextBoxManager, setShowTextBoxManager] = useState(false);
   const [textLayerElements, setTextLayerElements] = useState<any[]>([]);
   const [ocrResults, setOcrResults] = useState<OCRResult[]>([]);
   const [detectedFormFields, setDetectedFormFields] = useState<any[]>([]);
@@ -107,7 +105,6 @@ export default function PDFEditorContainer({
   ]);
   const [selectedFont, setSelectedFont] = useState<FontInfo>(DEFAULT_FONT_INFO);
   const [loadingFonts, setLoadingFonts] = useState(false);
-  const [embeddedFonts, setEmbeddedFonts] = useState<any>({});
 
   const onFontChange = (font: FontInfo | string) => {
     if (typeof font === "string") {
@@ -133,13 +130,9 @@ export default function PDFEditorContainer({
   const [formFields, setFormFields] = useState<FormField[]>([]);
   const [fieldValues, setFieldValues] = useState<{ [key: string]: string }>({});
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
-  const [focusedFieldId, setFocusedFieldId] = useState<string | null>(null);
-
   // ---- OCR ----
   const [isProcessingOcr, setIsProcessingOcr] = useState(false);
-  const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
-  const [ocrBlocks, setOcrBlocks] = useState<any[]>([]);
 
   // ---- IMAGE & IMAGE TOOL ----
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -153,21 +146,16 @@ export default function PDFEditorContainer({
 
   // ---- LINE TOOL ----
   const [lineStrokeWidth, setLineStrokeWidth] = useState(2);
-  const [showLineDropdown, setShowLineDropdown] = useState(false);
   const [lineColor, setLineColor] = useState("#000000");
   const [currentDrawStart, setCurrentDrawStart] = useState<{ x: number; y: number } | null>(null);
   const [isDrawingLine, setIsDrawingLine] = useState(false);
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
 
   // ---- UI/TOOL CONTROL ----
-  const [showShapeDropdown, setShowShapeDropdown] = useState(false);
-  const [showHighlightDropdown, setShowHighlightDropdown] = useState(false);
   const [highlightColor, setHighlightColor] = useState("#FFFF00");
-  const [selectedShape, setSelectedShape] = useState<"rectangle" | "circle" | "checkmark" | "x-mark">("rectangle");
 
   // ---- PAGE/MERGE/SPLIT ----
   const [mergeFiles, setMergeFiles] = useState<any[]>([]);
-  const [selectedPages, setSelectedPages] = useState<number[]>([]);
 
   // ---- HISTORY (UNDO/REDO) ----
   const [history, setHistory] = useState<any[]>([
@@ -404,7 +392,7 @@ export default function PDFEditorContainer({
     const coords = getCanvasCoordinates(event);
     
     switch (currentTool) {
-      case "text":
+      case "text": {
         const newTextBox: Omit<TextBox, "id"> = {
           x: coords.x,
           y: coords.y,
@@ -422,12 +410,12 @@ export default function PDFEditorContainer({
           underline: false,
           strikeThrough: false,
           size: 16,
-          font: selectedFont.family
+          font: selectedFont.family,
         };
         handleAdd(newTextBox);
-        break;
+        break;}
         
-      case "signature":
+      case "signature": {
         if (signatureName) {
           handlePlaceSignature({
             x: coords.x,
@@ -436,7 +424,7 @@ export default function PDFEditorContainer({
             font: signatureFont
           });
         }
-        break;
+        break;}
         
       case "form":
         if (newFieldType) {
@@ -910,8 +898,7 @@ const handleWhiteoutBlocksChange = (blocks: WhiteoutBlock[]) => {
       />
 
  {/* Main Content */}
-<div className="flex-1 flex flex-col">
-  {/* Toolbar */}
+ <div className="flex-1 min-h-0 w-full relative overflow-auto bg-white">  {/* Toolbar */}
   <PDFToolbar
     currentTool={currentTool}
     onToolChange={handleToolChange}
@@ -963,304 +950,305 @@ const handleWhiteoutBlocksChange = (blocks: WhiteoutBlock[]) => {
   />
 
   {/* PDF Viewer */}
-  <div className="flex-1 relative overflow-auto bg-white">
-    {renderingError ? (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <p className="text-red-500 mb-4">{renderingError}</p>
-          <Button onClick={() => fileInputRef.current?.click()}>
-            Load PDF
-          </Button>
-        </div>
+<div className="flex-1 min-h-0 w-full relative overflow-auto bg-white">
+  {renderingError ? (
+    <div className="flex items-center justify-center h-full">
+      <div className="text-center">
+        <p className="text-red-500 mb-4">{renderingError}</p>
+        <Button onClick={() => fileInputRef.current?.click()}>
+          Load PDF
+        </Button>
       </div>
-    ) : !pdfDocument ? (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <p className="text-gray-500 mb-4">No PDF loaded</p>
-          <Button onClick={() => fileInputRef.current?.click()}>
-            Load PDF
-          </Button>
-        </div>
+    </div>
+  ) : !pdfDocument ? (
+    <div className="flex items-center justify-center h-full">
+      <div className="text-center">
+        <p className="text-gray-500 mb-4">No PDF loaded</p>
+        <Button onClick={() => fileInputRef.current?.click()}>
+          Load PDF
+        </Button>
       </div>
-    ) : (
-      <div className="relative">
-        {/* Loading overlay */}
-        {isLoading && (
-          <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-        )}
+    </div>
+  ) : (
+    <div className="relative w-full max-w-full mx-auto">
+     
 
-        {/* Main canvas */}
-        <canvas
-          ref={canvasRef}
-          onClick={handleCanvasClick}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          style={{ cursor: getCursorForTool(currentTool) }}
-          className="block mx-auto shadow-lg"
+      {/* Main canvas */}
+      <canvas
+        ref={canvasRef}
+        onClick={handleCanvasClick}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        style={{
+          cursor: getCursorForTool(currentTool),
+          display: "block",
+          width: "100%",
+          maxWidth: "100%",
+          height: "auto",
+        }}
+        className="block mx-auto shadow-lg w-full max-w-full"
+      />
+
+      {/* Annotation canvas overlay */}
+      <canvas
+        ref={annotationCanvasRef}
+        className="absolute top-0 left-0 pointer-events-none w-full max-w-full"
+        style={{
+          width: "100%",
+          maxWidth: "100%",
+          height: "auto",
+        }}
+      />
+
+      {/* Text Layer */}
+      <AdvancedTextLayer
+        textBoxes={textBoxes.filter(box => box.page === currentPage)}
+        textLayerElements={textLayerElements}
+        selectedBoxIds={selectedBoxIds}
+        onSelect={handleSelect}
+        onMultiSelect={handleMultiSelect}
+        onClearSelection={handleClearSelection}
+        onUpdate={handleUpdate}
+        onRemove={handleRemove}
+        onAdd={handleAdd}
+        currentPage={currentPage}
+        canvasRef={canvasRef}
+        fontList={availableFontList}
+      />
+
+      {/* Whiteout Layer */}
+      <WhiteoutLayer
+        whiteoutBlocks={whiteoutBlocks}
+        setWhiteoutBlocks={setWhiteoutBlocks}
+        selectedBlockId={selectedWhiteoutBlockId}
+        onSelect={handleWhiteoutSelect}
+        onUpdate={handleWhiteoutUpdate}
+        onRemove={handleWhiteoutDelete}
+        onAdd={handleWhiteoutAdd}
+        isActive={currentTool === "whiteout"}
+        currentPage={currentPage}
+        canvasRef={canvasRef}
+        scale={zoom / 100}
+        page={currentPage}
+        onBlocksChange={handleWhiteoutBlocksChange}
+      />
+
+      {/* Fillable Form Layer */}
+      {activeMode === "forms" && (
+        <FillableFormLayer
+          file={null}
+          pdfDocument={pdfDocument}
+          currentPage={currentPage}
+          onFieldsDetected={handleFormFieldsDetected}
+          onSave={handleFormDataSave}
+          detectedFormFields={detectedFormFields}
+          className={className}
         />
+      )}
 
-        {/* Annotation canvas overlay */}
-        <canvas
-          ref={annotationCanvasRef}
-          className="absolute top-0 left-0 pointer-events-none"
-          style={{
-            width: canvasRef.current?.style.width,
-            height: canvasRef.current?.style.height,
+      {/* OCR Layer */}
+      {currentTool === "ocr" && (
+        <OCRLayer
+          ocrResults={ocrResults.filter(result => result.page === currentPage)}
+          selectedBlockId={selectedBlockId}
+          onSelect={setSelectedBlockId}
+          onExtract={handleOCRExtract}
+          onEdit={(id: string) => {
+            /* Implement if needed */
           }}
-        />
-
-        {/* Text Layer */}
-        <AdvancedTextLayer
-          textBoxes={textBoxes.filter(box => box.page === currentPage)}
-          textLayerElements={textLayerElements}
-          selectedBoxIds={selectedBoxIds}
-          onSelect={handleSelect}
-          onMultiSelect={handleMultiSelect}
-          onClearSelection={handleClearSelection}
-          onUpdate={handleUpdate}
-          onRemove={handleRemove}
-          onAdd={handleAdd}
-          currentPage={currentPage}
           canvasRef={canvasRef}
-          fontList={availableFontList}
-        />
-
-        {/* Whiteout Layer */}
-        <WhiteoutLayer
-          whiteoutBlocks={whiteoutBlocks}
-          setWhiteoutBlocks={setWhiteoutBlocks}
-          selectedBlockId={selectedWhiteoutBlockId}
-          onSelect={handleWhiteoutSelect}
-          onUpdate={handleWhiteoutUpdate}
-          onRemove={handleWhiteoutDelete}
-          onAdd={handleWhiteoutAdd}
-          isActive={currentTool === "whiteout"}
           currentPage={currentPage}
-          canvasRef={canvasRef}
-          scale={zoom / 100}
-          page={currentPage}
-          onBlocksChange={handleWhiteoutBlocksChange}
         />
+      )}
 
-        {/* Fillable Form Layer */}
-        {activeMode === "forms" && (
-          <FillableFormLayer
-            file={null}
-            pdfDocument={pdfDocument}
-            currentPage={currentPage}
-            onFieldsDetected={handleFormFieldsDetected}
-            onSave={handleFormDataSave}
-            detectedFormFields={detectedFormFields}
-            className={className}
-          />
-        )}
-
-        {/* OCR Layer */}
-        {currentTool === "ocr" && (
-          <OCRLayer
-            ocrResults={ocrResults.filter(result => result.page === currentPage)}
-            selectedBlockId={selectedBlockId}
-            onSelect={setSelectedBlockId}
-            onExtract={handleOCRExtract}
-            onEdit={(id: string) => {
-              /* You may want to implement a single-argument edit handler here */
-            }}
-            canvasRef={canvasRef}
-            currentPage={currentPage}
-          />
-        )}
-
-        {/* Eraser Layer */}
-        {currentTool === "eraser" && (
-          <EraserLayer
+      {/* Eraser Layer */}
+      {currentTool === "eraser" && (
+        <EraserLayer
           canvasRef={canvasRef}
           currentPage={currentPage}
           eraserSize={eraserSize}
           onErase={handleErase}
           currentTool={currentTool}
           setEraserSize={setEraserSize}
-          />
-        )}
-      </div>
-    )}
-  </div>
-
-  {/* Page Navigation */}
-  {pdfDocument && showControls && (
-    <div className="border-t bg-white p-4 flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage <= 1}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <span className="text-sm">
-          Page {currentPage} of {totalPages}
-        </span>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage >= totalPages}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => handleZoomChange(zoom - 25)}
-          disabled={zoom <= 25}
-        >
-          <ZoomOut className="h-4 w-4" />
-        </Button>
-        <span className="text-sm min-w-[60px] text-center">
-          {zoom}%
-        </span>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => handleZoomChange(zoom + 25)}
-          disabled={zoom >= 400}
-        >
-          <ZoomIn className="h-4 w-4" />
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={handleExport}
-          disabled={!pdfDocument}
-        >
-          <Download className="h-4 w-4 mr-2" />
-          Export
-        </Button>
-      </div>
+        />
+      )}
     </div>
   )}
+</div>
 
-  {/* Managers and Dialogs */}
-  <AnnotationManager
-    annotations={annotations}
-    textBoxes={textBoxes}
-    whiteoutBlocks={whiteoutBlocks}
-    textElements={textElements}
-    onSelectAnnotation={handleAnnotationSelect}
-    onDeleteAnnotation={handleAnnotationDelete}
-    onSelectTextBox={id => setSelectedTextBoxId(id)}
-    onDeleteTextBox={handleRemove}
-    onSelectWhiteoutBlock={handleWhiteoutSelect}
-    onDeleteWhiteoutBlock={handleWhiteoutDelete}
-    pdfDocument={pdfDocument}
-    currentPage={currentPage}
-    totalPages={totalPages}
-    canvasRef={canvasRef}
-    zoom={zoom}
-  />
+{/* Page Navigation */}
+{pdfDocument && showControls && (
+  <div className="border-t bg-white p-4 flex items-center justify-between">
+    <div className="flex items-center gap-2">
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => handlePageChange(currentPage - 1)}
+        disabled={currentPage <= 1}
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </Button>
+      <span className="text-sm">
+        Page {currentPage} of {totalPages}
+      </span>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => handlePageChange(currentPage + 1)}
+        disabled={currentPage >= totalPages}
+      >
+        <ChevronRight className="h-4 w-4" />
+      </Button>
+    </div>
+
+    <div className="flex items-center gap-2">
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => handleZoomChange(zoom - 25)}
+        disabled={zoom <= 25}
+      >
+        <ZoomOut className="h-4 w-4" />
+      </Button>
+      <span className="text-sm min-w-[60px] text-center">
+        {zoom}%
+      </span>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => handleZoomChange(zoom + 25)}
+        disabled={zoom >= 400}
+      >
+        <ZoomIn className="h-4 w-4" />
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={handleExport}
+        disabled={!pdfDocument}
+      >
+        <Download className="h-4 w-4 mr-2" />
+        Export
+      </Button>
+    </div>
+  </div>
+)}
+
+{/* Managers and Dialogs */}
+<AnnotationManager
+  annotations={annotations}
+  textBoxes={textBoxes}
+  whiteoutBlocks={whiteoutBlocks}
+  textElements={textElements}
+  onSelectAnnotation={handleAnnotationSelect}
+  onDeleteAnnotation={handleAnnotationDelete}
+  onSelectTextBox={id => setSelectedTextBoxId(id)}
+  onDeleteTextBox={handleRemove}
+  onSelectWhiteoutBlock={handleWhiteoutSelect}
+  onDeleteWhiteoutBlock={handleWhiteoutDelete}
+  pdfDocument={pdfDocument}
+  currentPage={currentPage}
+  totalPages={totalPages}
+  canvasRef={canvasRef}
+  zoom={zoom}
+/>
 
 <TextBoxManager
-    textBoxes={textBoxes}
-    setTextBoxes={setTextBoxes}
-    selectedTextBox={selectedTextBoxId}
-    setSelectedTextBox={setSelectedTextBoxId}
-    canvasRef={canvasRef}
-    currentPage={currentPage}
-    zoom={zoom}
-    onRemove={handleRemoveTextBox}
-    onAdd={handleAddTextBox}
-    onFontChange={onFontChange}
-    fontList={availableFontList}
-    selectedFont={selectedFont}
-    onTextBoxUpdate={handleTextBoxUpdate}
-    originalPdfData={originalFileData}
-    showControls={showControls}
-  />
+  textBoxes={textBoxes}
+  setTextBoxes={setTextBoxes}
+  selectedTextBox={selectedTextBoxId}
+  setSelectedTextBox={setSelectedTextBoxId}
+  canvasRef={canvasRef}
+  currentPage={currentPage}
+  zoom={zoom}
+  onRemove={handleRemoveTextBox}
+  onAdd={handleAddTextBox}
+  onFontChange={onFontChange}
+  fontList={availableFontList}
+  selectedFont={selectedFont}
+  onTextBoxUpdate={handleTextBoxUpdate}
+  originalPdfData={originalFileData}
+  showControls={showControls}
+/>
 
 <FontManager
-    selectedFont={selectedFont.name}
-    onFontChange={(font: string) => {
-      const match = availableFontList.find(f => f.name === font);
-      setSelectedFont(match || DEFAULT_FONT_INFO);
+  selectedFont={selectedFont.name}
+  onFontChange={(font: string) => {
+    const match = availableFontList.find(f => f.name === font);
+    setSelectedFont(match || DEFAULT_FONT_INFO);
+  }}
+  fontSize={fontSize}
+  onFontSizeChange={setFontSize}
+  fontWeight={fontWeight}
+  onFontWeightChange={setFontWeight}
+  fontStyle={fontStyle}
+  onFontStyleChange={setFontStyle}
+  showAdvanced={showAdvanced}
+/>
+
+{/* Signature Dialog */}
+{showSignatureDialog && (
+  <SignatureTool
+    signatureName={signatureName}
+    setSignatureName={setSignatureName}
+    signatureFont={signatureFont}
+    setSignatureFont={setSignatureFont}
+    showSignatureDialog={showSignatureDialog}
+    setShowSignatureDialog={setShowSignatureDialog}
+    onPlaceSignature={(placement: { x: number; y: number }) => {
+      handlePlaceSignature({
+        x: placement.x,
+        y: placement.y,
+        text: signatureName,
+        font: signatureFont
+      });
     }}
-    fontSize={fontSize}
-    onFontSizeChange={setFontSize}
-    fontWeight={fontWeight}
-    onFontWeightChange={setFontWeight}
-    fontStyle={fontStyle}
-    onFontStyleChange={setFontStyle}
-    showAdvanced={showAdvanced}
+    currentPage={currentPage}
+    annotationColor={annotationColor}
+    onNameChange={setSignatureName}
+    onFontChange={setSignatureFont}
   />
+)}
 
-  {/* Signature Dialog */}
-  {showSignatureDialog && (
-    <SignatureTool
-      signatureName={signatureName}
-      setSignatureName={setSignatureName}
-      signatureFont={signatureFont}
-      setSignatureFont={setSignatureFont}
-      showSignatureDialog={showSignatureDialog}
-      setShowSignatureDialog={setShowSignatureDialog}
-      onPlaceSignature={(placement: { x: number; y: number }) => {
-        handlePlaceSignature({
-          x: placement.x,
-          y: placement.y,
-          text: signatureName,
-          font: signatureFont
-        });
-      }}
-      currentPage={currentPage}
-      annotationColor={annotationColor}
-      onNameChange={setSignatureName}
-      onFontChange={setSignatureFont}
-    />
-  )}
-
-  {/* Image Tool - Remove this section if ImageTool component doesn't exist */}
-  {currentTool === "image" && selectedImage && (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-4 rounded-lg">
-        <h3>Image Tool</h3>
-        <img src={selectedImage} alt={imageName} className="max-w-xs max-h-xs" />
-        <div className="flex gap-2 mt-4">
-          <Button onClick={() => {
-            // Handle image placement logic here
-            setSelectedImage(null);
-            setImageName("");
-            setCurrentTool("select");
-          }}>
-            Place Image
-          </Button>
-          <Button variant="outline" onClick={() => {
-            setSelectedImage(null);
-            setImageName("");
-            setCurrentTool("select");
-          }}>
-            Cancel
-          </Button>
-        </div>
+{/* Image Tool - Remove this section if ImageTool component doesn't exist */}
+{currentTool === "image" && selectedImage && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white p-4 rounded-lg">
+      <h3>Image Tool</h3>
+      <img src={selectedImage} alt={imageName} className="max-w-xs max-h-xs" />
+      <div className="flex gap-2 mt-4">
+        <Button onClick={() => {
+          // Handle image placement logic here
+          setSelectedImage(null);
+          setImageName("");
+          setCurrentTool("select");
+        }}>
+          Place Image
+        </Button>
+        <Button variant="outline" onClick={() => {
+          setSelectedImage(null);
+          setImageName("");
+          setCurrentTool("select");
+        }}>
+          Cancel
+        </Button>
       </div>
     </div>
-  )}
-
-  {/* OCR Tool */}
-  {currentTool === "ocr" && (
-    <OCRTool
-      isProcessing={isProcessingOcr}
-      onTextDetected={results => setOcrResults(results)}
-      onTextExtracted={text => {/* Handle extracted text if needed */}}
-      pdfDocument={pdfDocument}
-      canvasRef={canvasRef}
-      currentPage={currentPage}
-    />
-  )}
   </div>
-      </div>
-    );
-  };
+)}
+
+{/* OCR Tool */}
+{currentTool === "ocr" && (
+  <OCRTool
+    isProcessing={isProcessingOcr}
+    onTextDetected={results => setOcrResults(results)}
+    onTextExtracted={text => {/* Handle extracted text if needed */}}
+    pdfDocument={pdfDocument}
+    canvasRef={canvasRef}
+    currentPage={currentPage}
+  />
+)}
+</div>  
+</div>
+  )}
