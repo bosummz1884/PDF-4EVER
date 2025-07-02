@@ -34,7 +34,11 @@ export default function Home() {
               </div>
             </div>
           </header>
-
+          {isMobile && (
+            <div className="bg-blue-100 text-blue-800 px-4 py-2 text-center">
+                   Welcome to the mobile version!
+            </div>
+              )}
           {/* Full-height PDF Editor - always available */}
           <div className="flex-1 overflow-hidden">
             <PDFEditorContainer />

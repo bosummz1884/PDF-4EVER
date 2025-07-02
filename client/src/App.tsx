@@ -21,11 +21,12 @@ export default function App() {
       <BrowserRouter>
         {/* Toasts (global UI notifications) */}
         <Toaster />
+        {isMobile && <div>Welcome, mobile user!</div>}
 
         {/* App Content */}
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/editor" element={<PDFEditorContainer isMobile={isMobile} />} />
+          <Route path="/editor" element={<PDFEditorContainer />} />
           <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="/terms-of-service" element={<TermsOfServicePage />} />
           <Route path="*" element={<NotFoundPage />} />
