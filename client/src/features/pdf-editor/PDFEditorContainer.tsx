@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AnnotationManager from "@/components/managers/AnnotationManager";
@@ -9,7 +9,7 @@ import FillableFormLayer from "@layers/FillableFormLayer";
 import AdvancedTextLayer from "@layers/AdvancedTextLayer";
 import OCRLayer from "@/features/components/layers/OCRLayer";
 import EraserLayer from "@/features/components/layers/EraserLayer";
-import { FormField, Annotation, WhiteoutBlock, TextBox, OCRResult, FontInfo, DEFAULT_FONT_INFO } from "../../types/pdf-types";
+import { FormField, Annotation, WhiteoutBlock, TextBox, OCRResult, FontInfo, DEFAULT_FONT_INFO, TextElement } from "../../types/pdf-types";
 import PDFToolbar from "../../features/components/PDFToolbar";
 import PDFSidebar from "../../features/components/PDFSidebar";
 import SignatureTool from "../../features/components/tools/SignatureTool";
@@ -18,14 +18,11 @@ import { pdfjsLib } from "@/lib/pdfWorker";
 
 // ---- Props Interface ----
 interface PDFEditorContainerProps { 
-  user?: any;
-  isMobile?: boolean;
   className?: string;
+  isMobile?: boolean;
 }
 
 export default function PDFEditorContainer({
-  user,
-  isMobile,
   className,
 }: PDFEditorContainerProps) {
   const [originalFileData, setOriginalFileData] = useState<Uint8Array | null>(null);

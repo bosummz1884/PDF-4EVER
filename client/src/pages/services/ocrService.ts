@@ -90,7 +90,7 @@ const ocrResults: OCRResult[] = Array.isArray(data.words)
       const arrayBuffer = await file.arrayBuffer();
       const pdf: any = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       let allResults: OCRResult[] = [];
-      let allText: string[] = [];
+      const allText: string[] = [];
       let previewUrl: string | undefined;
 
       for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
