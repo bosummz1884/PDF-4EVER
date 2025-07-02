@@ -1,6 +1,13 @@
 import React, { useRef, useState } from "react";
 import { PDFDocument } from "pdf-lib";
 
+export type ImageToolMode =
+  | "compress"
+  | "crop"
+  | "gallery"
+  | "merge"
+  | "resize"
+  | "toPdf";
 
 function ImageCompressor({ onCompressed }: { onCompressed?: (blob: Blob) => void }) {
   const handleCompress = async () => {
@@ -398,4 +405,30 @@ function ImageToPdf({ onGenerated }: { onGenerated?: (pdfBytes: Uint8Array) => v
   );
 }
 
-export default { ImageCompressor, ImageCropper, ImageGallery, ImageMerger, ImageResizer, ImageToPdf };
+const ImageTool: React.FC = () => {
+  // You can make this fancier later, but here’s a simple switcher:
+  const [mode, setMode] = useState<ImageToolMode>("gallery");
+
+  return (
+    <div>
+      {/* Buttons to select the tool */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+        <button onClick={() => setMode("gallery")}>Gallery</button>
+        <button onClick={() => setMode("compress")}>Compress</button>
+        <button onClick={() => setMode("crop")}>Crop</button>
+        <button onClick={() => setMode("merge")}>Merge</button>
+        <button onClick={() => setMode("resize")}>Resize</button>
+        <button onClick={() => setMode("toPdf")}>To PDF</button>
+      </div>
+      {/* Render the selected tool */}
+      {mode === "gallery" && <ImageGallery />}
+      {mode === "compress" && <ImageCompressor />}
+      {mode === "crop" && <ImageCropper />}
+      {mode === "merge" && <ImageMerger />}
+      {mode === "resize" && <ImageResizer />}
+      {mode === "toPdf" && <ImageToPdf />}
+    </div>
+  );
+};
+
+export default ImageTool;

@@ -10,15 +10,14 @@ import FillableFormLayer from "@layers/FillableFormLayer";
 import AdvancedTextLayer from "@layers/AdvancedTextLayer";
 import OCRLayer from "@/features/components/layers/OCRLayer";
 import EraserLayer from "@/features/components/layers/EraserLayer";
-import { FormField, Annotation, WhiteoutBlock, TextBox, OCRResult, FontInfo, DEFAULT_FONT_INFO, FontManagerProps } from "../../types/pdf-types";
+import { FormField, Annotation, WhiteoutBlock, TextBox, OCRResult, FontInfo, DEFAULT_FONT_INFO } from "../../types/pdf-types";
 import PDFToolbar from "../../features/components/PDFToolbar";
 import PDFSidebar from "../../features/components/PDFSidebar";
-
-// ---- DUMMY/PLACEHOLDER COMPONENTS: Replace with real ones when you build them
-const SignatureTool = (props: any) => null;
-const ImageTool = (props: any) => null;
-const FormTool = (props: any) => null;
-const OCRTool = (props: any) => null;
+import SignatureTool from "../../features/components/tools/SignatureTool";
+import  ImageTool from "../../features/components/tools/ImageTool";
+import OCRTool from "../../features/components/tools/OCRTool";
+import { pdfjsLib } from "@/lib/pdfWorker";
+import { usePDFFonts } from "../../features/hooks/usePDFFonts";
 
 // ---- Props Interface ----
 interface PDFEditorContainerProps { 
@@ -86,7 +85,6 @@ export default function PDFEditorContainer({
 
   // ---- WHITEOUT ----
   const [whiteoutMode, setWhiteoutMode] = useState(false);
-
   const [textBoxes, setTextBoxes] = useState<TextBox[]>([]);
   const [whiteoutBlocks, setWhiteoutBlocks] = useState<WhiteoutBlock[]>([]);
   const [textElements, setTextElements] = useState<{ [page: number]: any[] }>({});
@@ -98,8 +96,9 @@ export default function PDFEditorContainer({
   const [totalPages, setTotalPages] = useState<number>(0);
   const [zoom, setZoom] = useState<number>(100);
   const [showControls, setShowControls] = useState<boolean>(true);
-
+  
   // ---- TEXT BOXES & ADVANCED TEXT LAYER ----
+  const [nextId, setNextId] = useState<number>(1);
   const [showTextBoxManager, setShowTextBoxManager] = useState(false);
   const [textLayerElements, setTextLayerElements] = useState<any[]>([]);
   const [ocrResults, setOcrResults] = useState<OCRResult[]>([]);
@@ -112,20 +111,24 @@ export default function PDFEditorContainer({
     { name: "Times New Roman", family: "'Times New Roman', serif", loaded: true, style: "normal", weight: "normal" },
     { name: "Courier New", family: "'Courier New', monospace", loaded: true, style: "normal", weight: "normal" }
   ]);
-  const [loadingFonts, setLoadingFonts] = useState(false);
   const [selectedFont, setSelectedFont] = useState<FontInfo>(DEFAULT_FONT_INFO);
+  const [loadingFonts, setLoadingFonts] = useState(false);
+  const [embeddedFonts, setEmbeddedFonts] = useState<any>({});
 
-  const onFontChange = (fontName: string) => {
-    setSelectedFont({
-      ...selectedFont,
-      name: fontName,
-    });
+  const onFontChange = (font: FontInfo | string) => {
+    if (typeof font === "string") {
+      const match = availableFontList.find(f => f.name === font);
+      setSelectedFont(match || DEFAULT_FONT_INFO);
+    } else {
+      setSelectedFont(font);
+    }
   };
+  
 
   const [fontSize, setFontSize] = useState(14);
   const [fontWeight, setFontWeight] = useState<"normal" | "bold">("normal");
   const [fontStyle, setFontStyle] = useState<"normal" | "italic">("normal");
-  const [showAdvanced, setShowAdvanced] = useState<boolean>(false); // or true if you want open by default
+  const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
 
   // ---- SIGNATURES ----
   const [signatureName, setSignatureName] = useState("");
@@ -152,6 +155,7 @@ export default function PDFEditorContainer({
   const [eraserPosition, setEraserPosition] = useState({ x: 0, y: 0 });
   const [eraserSize, setEraserSize] = useState(20);
   const [isErasing, setIsErasing] = useState(false);
+  
 
   // ---- LINE TOOL ----
   const [lineStrokeWidth, setLineStrokeWidth] = useState(2);
@@ -185,69 +189,6 @@ export default function PDFEditorContainer({
   const [historyIndex, setHistoryIndex] = useState(0);
   const [isUndoRedoInProgress, setIsUndoRedoInProgress] = useState(false);
 
-  const renderPage = async (pdf: any, pageNumber: number) => {
-    if (!canvasRef.current) return;
-    try {
-      const page = await pdf.getPage(pageNumber);
-      const scale = zoom / 100;
-      const viewport = page.getViewport({ scale, rotation });
-      const canvas = canvasRef.current;
-      const context = canvas.getContext("2d");
-      if (!context) return;
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
-      context.clearRect(0, 0, canvas.width, canvas.height);
-      await page.render({ canvasContext: context, viewport }).promise;
-    } catch (error) {
-      setRenderingError(`Failed to render page ${pageNumber}`);
-    }
-  };
-
-  // Select a single box
-  const handleSelect = (id: string) => {
-    setSelectedBoxIds(new Set([id]));
-  };
-
-  // Multi-select boxes (adds to current selection)
-  const handleMultiSelect = (id: string) => {
-    setSelectedBoxIds(prev => {
-      const next = new Set(prev);
-      next.add(id);
-      return next;
-    });
-  };
-
-  // Clear all selection
-  const handleClearSelection = () => {
-    setSelectedBoxIds(new Set());
-  };
-
-  // Update a textbox
-  const handleUpdate = (id: string, updates: Partial<TextBox>) => {
-    setTextBoxes(prev =>
-      prev.map(box =>
-        box.id === id ? { ...box, ...updates } : box
-      )
-    );
-  };
-
-  // Remove a textbox
-  const handleRemove = (id: string) => {
-    setTextBoxes(prev => prev.filter(box => box.id !== id));
-    setSelectedBoxIds(prev => {
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
-    });
-  };
-
-  // Add a new textbox (you must assign it an id)
-  const handleAdd = (box: Omit<TextBox, "id">) => {
-    const id = `textbox_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-    const newBox: TextBox = { ...box, id };
-    setTextBoxes(prev => [...prev, newBox]);
-  };
-
   // ---- NEW FIELD TYPE for FormTool ----
   const [newFieldType, setNewFieldType] = useState<string>("");
 
@@ -261,6 +202,7 @@ export default function PDFEditorContainer({
   // ---- EFFECTS ----
   const previousStateRef = useRef<string>("");
 
+  // Save state to history
   useEffect(() => {
     if (isUndoRedoInProgress) return;
     const currentState = JSON.stringify({
@@ -307,388 +249,1019 @@ export default function PDFEditorContainer({
     isUndoRedoInProgress,
   ]);
 
+  // Render page when PDF or page changes
   useEffect(() => {
     if (pdfDocument && currentPage) {
       renderPage(pdfDocument, currentPage);
     }
   }, [pdfDocument, currentPage, zoom, rotation]);
 
+  // Clear rendering error when file changes
   useEffect(() => {
     if (originalFileData) setRenderingError(null);
   }, [originalFileData]);
 
-  useEffect(() => {}, [selectedFont]);
-  useEffect(() => {}, [annotations, currentPage]);
-  useEffect(() => {}, [whiteoutBlocks, currentPage]);
-  useEffect(() => {}, [textElements, currentPage]);
-
-  // ---- HANDLERS ----
-  const handleExportPDF = async () => {
-    if (!pdfDocument || !originalFileData) return;
-    setIsLoading(true);
+  // ---- CORE FUNCTIONS ----
+  const renderPage = async (pdf: any, pageNumber: number) => {
+    if (!canvasRef.current) return;
     try {
-      const { PDFDocument } = await import("pdf-lib");
-      const pdfDoc = await PDFDocument.load(originalFileData);
-      // Optionally: add annotations, text boxes, etc, here
-      const pdfBytes = await pdfDoc.save();
-      const blob = new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" });
+      setIsLoading(true);
+      const page = await pdf.getPage(pageNumber);
+      const scale = zoom / 100;
+      const viewport = page.getViewport({ scale, rotation });
+      const canvas = canvasRef.current;
+      const context = canvas.getContext("2d");
+      if (!context) return;
+      
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      
+      await page.render({ canvasContext: context, viewport }).promise;
+      setRenderingError(null);
+    } catch (error) {
+      console.error("Error rendering page:", error);
+      setRenderingError(`Failed to render page ${pageNumber}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load PDF from file
+  const loadPDF = async (file: File) => {
+    try {
+      setIsLoading(true);
+      setFileName(file.name);
+      
+      const arrayBuffer = await file.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      setOriginalFileData(uint8Array);
+      
+      const pdf = await pdfjsLib.getDocument({ data: uint8Array }).promise;
+      setPdfDocument(pdf);
+      setTotalPages(pdf.numPages);
+      setCurrentPage(1);
+      
+      await renderPage(pdf, 1);
+    } catch (error) {
+      console.error("Error loading PDF:", error);
+      setRenderingError("Failed to load PDF file");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
+  // ---- SELECTION HANDLERS ----
+  const handleSelect = (id: string) => {
+    setSelectedBoxIds(new Set([id]));
+  };
+
+  const handleMultiSelect = (id: string) => {
+    setSelectedBoxIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+ // Add a new text box, auto-select it
+  const handleAddTextBox = () => {
+    const newId = nextId.toString();
+    const newTextBox: TextBox = {
+      id: newId,
+      text: `Text Box ${newId}`
+      , x: 200,
+      y: 200,
+      width: 150,
+      height: 50,
+      fontSize: 16,
+      fontStyle: "normal",
+      fontWeight: "normal",
+      page: currentPage,
+      font: "Arial",
+      size: 16,
+      color: "#000000",     
+    };
+    setTextBoxes(prev => [...prev, newTextBox]);
+    setSelectedBoxIds(new Set([newId])); // Auto-select the new box
+    setNextId(prev => prev + 1);
+  };
+
+  // Remove all selected text boxes
+  const handleRemoveTextBox = () => {
+    setTextBoxes(prev => prev.filter(box => !selectedBoxIds.has(box.id)));
+    setSelectedBoxIds(new Set());
+  };
+  
+
+  const handleClearSelection = () => {
+    setSelectedBoxIds(new Set());
+    setSelectedAnnotationId(null);
+    setSelectedTextBoxId(null);
+    setSelectedWhiteoutBlockId(null);
+    setSelectedFieldId(null);
+  };
+
+  // ---- TEXT BOX HANDLERS ----
+  const handleUpdate = (id: string, updates: Partial<TextBox>) => {
+    setTextBoxes(prev =>
+      prev.map(box =>
+        box.id === id ? { ...box, ...updates } : box
+      )
+    );
+  };
+
+  const handleRemove = (id: string) => {
+    setTextBoxes(prev => prev.filter(box => box.id !== id));
+    setSelectedBoxIds(prev => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  };
+
+  const handleAdd = (box: Omit<TextBox, "id">) => {
+    const id = `textbox_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    const newBox: TextBox = { ...box, id };
+    setTextBoxes(prev => [...prev, newBox]);
+  };
+
+  // ---- MOUSE EVENT HANDLERS ----
+  const getCanvasCoordinates = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    return {
+      x: (event.clientX - rect.left) * scaleX,
+      y: (event.clientY - rect.top) * scaleY
+    };
+  };
+
+  const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    const coords = getCanvasCoordinates(event);
+    
+    switch (currentTool) {
+      case "text":
+        const newTextBox: Omit<TextBox, "id"> = {
+          x: coords.x,
+          y: coords.y,
+          width: 200,
+          height: 30,
+          text: "New Text",
+          fontSize,
+          fontFamily: selectedFont.family,
+          color: "#000000",
+          page: currentPage,
+          rotation: 0,
+          opacity: 1,
+          bold: fontWeight === "bold",
+          italic: fontStyle === "italic",
+          underline: false,
+          strikeThrough: false,
+          size: 16,
+          font: selectedFont.family
+        };
+        handleAdd(newTextBox);
+        break;
+        
+      case "signature":
+        if (signatureName) {
+          handlePlaceSignature({
+            x: coords.x,
+            y: coords.y,
+            text: signatureName,
+            font: signatureFont
+          });
+        }
+        break;
+        
+      case "form":
+        if (newFieldType) {
+          const newField: FormField = {
+            id: `field_${Date.now()}`,
+            type: newFieldType as any,
+            x: coords.x,
+            y: coords.y,
+            width: 100,
+            height: 30,
+            page: currentPage,
+            value: "",
+            placeholder: `New ${newFieldType} field`,
+            required: false,
+            rect: {
+              x: coords.x,
+              y: coords.y,
+              width: 100,
+              height: 30,
+            },
+            options: newFieldType === "select" ? ["Option 1", "Option 2"] : undefined
+          };
+          handleFormFieldAdd(newField);
+        }
+        break;
+    }
+  };
+
+  const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    const coords = getCanvasCoordinates(event);
+    
+    if (currentTool === "line") {
+      setCurrentDrawStart(coords);
+      setIsDrawingLine(true);
+    } else if (currentTool === "eraser") {
+      setIsErasing(true);
+      setEraserPosition(coords);
+      handleErase(coords.x, coords.y, eraserSize);
+
+    }
+  };
+
+  const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    const coords = getCanvasCoordinates(event);
+    setMousePosition(coords);
+    
+    if (currentTool === "eraser" && isErasing) {
+      setEraserPosition(coords);
+      handleErase(coords.x, coords.y, eraserSize);
+    }
+  };
+
+  const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    const coords = getCanvasCoordinates(event);
+    
+    if (currentTool === "line" && isDrawingLine && currentDrawStart) {
+      const newAnnotation: Annotation = {
+        id: `line_${Date.now()}`,
+        type: "line",
+        x: currentDrawStart.x,
+        y: currentDrawStart.y,
+        width: coords.x - currentDrawStart.x,
+        height: coords.y - currentDrawStart.y,
+        page: currentPage,
+        color: lineColor,
+        strokeWidth: lineStrokeWidth,
+        opacity: 1,
+        points: [currentDrawStart.x, currentDrawStart.y, coords.x, coords.y],
+        fontSize: 16, 
+      };
+      handleAnnotationAdd(newAnnotation);
+      setIsDrawingLine(false);
+      setCurrentDrawStart(null);
+    } else if (currentTool === "eraser") {
+      setIsErasing(false);
+    }
+  };
+
+  // ---- TOOL-SPECIFIC HANDLERS ----
+  const handleTextBoxUpdate = (id: string, updates: Partial<TextBox>) => {
+    setTextBoxes(prev =>
+      prev.map(tb => tb.id === id ? { ...tb, ...updates } : tb)
+    );
+  };
+  
+
+  const handleErase = (x: number, y: number, size: number) => {
+    // Remove annotations within eraser radius
+    setAnnotations(prev => prev.filter(annotation => {
+      if (annotation.page !== currentPage) return true;
+      const distance = Math.sqrt(
+        Math.pow(annotation.x - x, 2) + Math.pow(annotation.y - y, 2)
+      );
+      return distance > size;
+    }));
+  
+    // Remove text boxes within eraser radius
+    setTextBoxes(prev => prev.filter(textBox => {
+      if (textBox.page !== currentPage) return true;
+      const distance = Math.sqrt(
+        Math.pow(textBox.x - x, 2) + Math.pow(textBox.y - y, 2)
+      );
+      return distance > size;
+    }));
+  };
+  
+
+  const handleOCRTextExtract = async (coords: { x: number; y: number, width: number, height: number }) => {
+    if (!pdfDocument) return;
+    
+    try {
+      setIsProcessingOcr(true);
+      // This would integrate with an OCR service
+      // For now, we'll create a placeholder result
+      const newOCRResult: OCRResult = {
+        id: `ocr_${Date.now()}`,
+        text: "Extracted text from OCR",
+        confidence: 0.95,
+        boundingBox: coords,
+        page: currentPage
+      };
+      setOcrResults(prev => [...prev, newOCRResult]);
+    } catch (error) {
+      console.error("OCR extraction failed:", error);
+    } finally {
+      setIsProcessingOcr(false);
+    }
+  };
+
+  // ---- FORM HANDLERS ----
+  const handleFormDataSave = (fields: FormField[]) => {
+    const values = fields.reduce((acc, field) => {
+      acc[field.id] = String(field.value ?? "");
+      return acc;
+    }, {} as { [key: string]: string });
+    setFieldValues(values);
+    console.log("Form data saved:", values);
+  };
+  
+  const handleFormFieldsDetected = (fields: FormField[]) => {
+    setFormFields(fields);
+    setDetectedFormFields(fields);
+  };
+
+  // ---- SIGNATURE HANDLERS ----
+  const handlePlaceSignature = (signature: { x: number; y: number; text: string; font: string }) => {
+    const newTextBox: Omit<TextBox, "id"> = {
+      x: signature.x,
+      y: signature.y,
+      width: 200,
+      height: 50,
+      text: signature.text,
+      fontSize: 24,
+      fontFamily: signature.font,
+      color: "#000000",
+      page: currentPage,
+      rotation: 0,
+      bold: false,
+      italic: true,
+      underline: false,
+      font: signature.font,
+      size: 16,
+
+    };
+    handleAdd(newTextBox);
+    setShowSignatureDialog(false);
+  };
+
+  // ---- IMAGE HANDLERS ----
+  const handleImagePlace = (image: { x: number; y: number; width: number; height: number; src: string; name: string }) => {
+    // For now, we'll add it as a special annotation
+    const newAnnotation: Annotation = {
+      id: `image_${Date.now()}`,
+      type: "image" as any,
+      x: image.x,
+      y: image.y,
+      width: image.width,
+      height: image.height,
+      page: currentPage,
+      color: "#000000",
+      strokeWidth: 0,
+      opacity: 1,
+      imageData: image.src,
+      points: [],
+      fontSize: 16,
+    };
+    handleAnnotationAdd(newAnnotation);
+  };
+
+  // ---- OCR HANDLERS ----
+  const handleOCRExtract = async (area: { x: number; y: number; width: number; height: number }) => {
+    await handleOCRTextExtract(area);
+  };
+
+  const handleOCRResultEdit = (id: string, newText: string) => {
+    setOcrResults(prev => prev.map(result => 
+      result.id === id ? { ...result, text: newText } : result
+    ));
+  };
+
+  // ---- ANNOTATION HANDLERS ----
+  const handleAnnotationAdd = (annotation: Annotation) => {
+    setAnnotations(prev => [...prev, annotation]);
+  };
+
+  const handleAnnotationUpdate = (id: string, updates: Partial<Annotation>) => {
+    setAnnotations(prev => prev.map(ann => 
+      ann.id === id ? { ...ann, ...updates } : ann
+    ));
+  };
+
+  const handleAnnotationDelete = (id: string | null) => {
+    setAnnotations(prev => prev.filter(ann => ann.id !== id));
+    if (selectedAnnotationId === id) {
+      setSelectedAnnotationId(null);
+    }
+  };
+
+  const handleAnnotationSelect = (id: string | null) => {
+    setSelectedAnnotationId(id);
+    handleClearSelection();
+  };
+  
+  // ---- WHITEOUT HANDLERS ----
+
+  const handleWhiteoutDelete = (id: string | null) => {
+    setWhiteoutBlocks(prev => prev.filter(block => block.id !== id));
+    if (selectedWhiteoutBlockId === id) {
+      setSelectedWhiteoutBlockId(null);
+    }
+  };
+  const handleWhiteoutSelect = (id: string | null) => {
+    setSelectedWhiteoutBlockId(id);
+    // Clear other selections
+    setSelectedBoxIds(new Set());
+    setSelectedAnnotationId(null);
+    setSelectedTextBoxId(null);
+    setSelectedFieldId(null);
+  };
+
+  const handleWhiteoutUpdate = (id: string, updates: Partial<WhiteoutBlock>) => {
+  setWhiteoutBlocks(prev => 
+    prev.map(block => 
+      block.id === id ? { ...block, ...updates } : block
+    )
+  );
+};
+const handleWhiteoutRemove = (id: string | null) => {
+  setWhiteoutBlocks(prev => prev.filter(block => block.id !== id));
+  if (selectedWhiteoutBlockId === id) {
+    setSelectedWhiteoutBlockId(null);
+  }
+};
+const handleWhiteoutAdd = (blockData: Omit<WhiteoutBlock, 'id'>) => {
+  const newBlock: WhiteoutBlock = {
+    ...blockData,
+    id: `whiteout-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  };
+  setWhiteoutBlocks(prev => [...prev, newBlock]);
+};
+
+const handleWhiteoutBlocksChange = (blocks: WhiteoutBlock[]) => {
+  console.log('Whiteout blocks changed:', blocks.length);
+  localStorage.setItem('whiteout-blocks', JSON.stringify(blocks));
+  setHistory(history)
+};
+
+  // ---- FORM FIELD HANDLERS ----
+  const handleFormFieldAdd = (field: FormField) => {
+    setFormFields(prev => [...prev, field]);
+  };
+
+  const handleFormFieldUpdate = (id: string, updates: Partial<FormField>) => {
+    setFormFields(prev => prev.map(field => 
+      field.id === id ? { ...field, ...updates } : field
+    ));
+  };
+
+  const handleFormFieldDelete = (id: string | null) => {
+    setFormFields(prev => prev.filter(field => field.id !== id));
+    if (selectedFieldId === id) {
+      setSelectedFieldId(null);
+    }
+  };
+
+  const handleFormFieldSelect = (id: string | null) => {
+    setSelectedFieldId(id);
+    handleClearSelection();
+  };
+
+  const handleFormFieldValueChange = (id: string, value: string) => {
+    setFieldValues(prev => ({ ...prev, [id]: value }));
+    handleFormFieldUpdate(id, { value });
+  };
+
+  // ---- NAVIGATION HANDLERS ----
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  const handleZoomChange = (newZoom: number) => {
+    setZoom(Math.max(25, Math.min(400, newZoom)));
+  };
+
+  const handleRotate = () => {
+    setRotation(prev => (prev + 90) % 360);
+  };
+
+  // ---- HISTORY HANDLERS ----
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      setIsUndoRedoInProgress(true);
+      const prevState = history[historyIndex - 1];
+      setAnnotations(prevState.annotations);
+      setTextElements(prevState.textElements);
+      setFormFields(prevState.formFields);
+      setTextBoxes(prevState.textBoxes);
+      setWhiteoutBlocks(prevState.whiteoutBlocks);
+      setTextLayerElements(prevState.textLayerElements);
+      setHistoryIndex(prev => prev - 1);
+      setTimeout(() => setIsUndoRedoInProgress(false), 100);
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      setIsUndoRedoInProgress(true);
+      const nextState = history[historyIndex + 1];
+      setAnnotations(nextState.annotations);
+      setTextElements(nextState.textElements);
+      setFormFields(nextState.formFields);
+      setTextBoxes(nextState.textBoxes);
+      setWhiteoutBlocks(nextState.whiteoutBlocks);
+      setTextLayerElements(nextState.textLayerElements);
+      setHistoryIndex(prev => prev + 1);
+      setTimeout(() => setIsUndoRedoInProgress(false), 100);
+    }
+  };
+
+  // ---- FILE HANDLERS ----
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type === "application/pdf") {
+      loadPDF(file);
+    }
+  };
+
+  const handleMergeFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    setMergeFiles(prev => [...prev, ...files]);
+  };
+
+  const handleExport = async () => {
+    if (!originalFileData) return;
+    
+    try {
+      // This would integrate with a PDF generation library
+      // For now, we'll just download the original file
+      const blob = new Blob([new Uint8Array(originalFileData)], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "exported.pdf";
-      link.click();
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName || "edited-document.pdf";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
-      setRenderingError("Failed to export PDF.");
+      console.error("Export failed:", error);
     }
-    setIsLoading(false);
   };
 
-  const handleToolChange = (tool: typeof currentTool) => setCurrentTool(tool);
-  const exportPDF = handleExportPDF;
-
-  // Navigation
-  const goToPreviousPage = () => { if (currentPage > 1) setCurrentPage(currentPage - 1); };
-  const goToNextPage = () => { if (currentPage < totalPages) setCurrentPage(currentPage + 1); };
-  const handleZoomIn = () => setZoom(Math.min(200, zoom + 25));
-  const handleZoomOut = () => setZoom(Math.max(50, zoom - 25));
-  const handleResetError = () => setRenderingError(null);
-  const toggleWhiteoutMode = () => setWhiteoutMode(prev => !prev);
-  const loadMoreFonts = () => {};
-
-  // Placeholders for all required handlers
-  const handleCanvasClick = () => {};
-  const handleMouseDown = () => {};
-  const handleMouseMove = () => {};
-  const handleMouseUp = () => {};
-  const handleTextBoxUpdate = () => {};
-  const handleErase = () => {};
-  const handleOCRTextExtract = () => {};
-  const handleFormDataSave = () => {};
-  const handleFormFieldsDetected = () => {};
-  const handlePlaceSignature = () => {};
-  const handleImagePlace = () => {};
-  const handleOCRExtract = () => {};
-  const handleFileUpload = (file: File) => {};
-  const savePDF = () => {};
-
-  // Annotation handlers
-  const handleAnnotationAdd = (annotation: Annotation) => setAnnotations(prev => [...prev, annotation]);
-  const handleAnnotationRemove = (id: string) => setAnnotations(prev => prev.filter(a => a.id !== id));
-  const handleAnnotationsClear = () => setAnnotations([]);
-
-  // Form fields
-  const handleFormFieldsChange = (fields: FormField[]) => setFormFields(fields);
-  const handleFormFieldAdd = (field: FormField) => setFormFields(prev => [...prev, field]);
-  const handleFormFieldRemove = (id: string) => setFormFields(prev => prev.filter(f => f.id !== id));
-
-  // Whiteout
-  const handleWhiteoutBlocksChange = (blocks: any[]) => setWhiteoutBlocks(blocks);
-  const handleWhiteoutBlockAdd = (block: any) => setWhiteoutBlocks(prev => [...prev, block]);
-  const handleWhiteoutBlockRemove = (id: string) => setWhiteoutBlocks(prev => prev.filter(b => b.id !== id));
-
-  const onFontSizeChange = (size: number) => setFontSize(size);
-  const onFontWeightChange = (weight: "normal" | "bold") => setFontWeight(weight);
-  const onFontStyleChange = (style: "normal" | "italic") => setFontStyle(style);
-
-  // Text Elements
-  const handleTextElementsChange = (elements: any[]) => {
-    setTextElements(prev => ({
-      ...prev,
-      [currentPage]: elements,
-    }));
-  };
-  const handleTextElementAdd = (element: any) => {
-    setTextElements(prev => ({
-      ...prev,
-      [currentPage]: [...(prev[currentPage] || []), element],
-    }));
-  };
-  const handleTextElementRemove = (id: string) => {
-    setTextElements(prev => ({
-      ...prev,
-      [currentPage]: (prev[currentPage] || []).filter((el: any) => el.id !== id),
-    }));
+  // ---- TOOL CHANGE HANDLERS ----
+  const handleToolChange = (tool: typeof currentTool) => {
+    setCurrentTool(tool);
+    handleClearSelection();
+    
+    // Reset tool-specific states
+    if (tool !== "whiteout") setWhiteoutMode(false);
+    if (tool !== "signature") setShowSignatureDialog(false);
+    if (tool !== "line") {
+      setIsDrawingLine(false);
+      setCurrentDrawStart(null);
+    }
+    if (tool !== "eraser") setIsErasing(false);
   };
 
-  // Before your return (JSX) in the parent component
-  const onSelect = (id: string) => { /* your logic here */ };
-  const onMultiSelect = (id: string) => { /* your logic here */ };
-  const clearSelection = () => { /* your logic here */ };
-  const onUpdate = (id: string, updates: Partial<TextBox>) => { /* ... */ };
-  const onRemove = (id: string) => { /* ... */ };
-  const onAdd = (box: Omit<TextBox, "id">) => { /* ... */ };
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    // Now you have a File object called `file`
+  const handleModeChange = (mode: typeof activeMode) => {
+    setActiveMode(mode);
+    setCurrentTool("select");
+    handleClearSelection();
   };
 
-  // When a user selects an annotation
-  const handleSelectAnnotation = (id: string | null) => setSelectedAnnotationId(id);
-  const handleDeleteAnnotation = (id: string) => setAnnotations(prev => prev.filter(a => a.id !== id));
-  const handleSelectTextBox = (id: string | null) => setSelectedTextBoxId(id);
-  const handleDeleteTextBox = (id: string) => setTextBoxes(prev => prev.filter(tb => tb.id !== id));
-  const handleSelectWhiteoutBlock = (id: string | null) => setSelectedWhiteoutBlockId(id);
-  const handleDeleteWhiteoutBlock = (id: string) => setWhiteoutBlocks(prev => prev.filter(wb => wb.id !== id));
+  // ---- FONT HANDLERS ----
+  const handleFontLoad = async (fontInfo: FontInfo) => {
+    try {
+      setLoadingFonts(true);
+      // This would load custom fonts
+      // For now, we'll just mark it as loaded
+      setAvailableFontList(prev => prev.map(font => 
+        font.name === fontInfo.name ? { ...font, loaded: true } : font
+      ));
+    } catch (error) {
+      console.error("Font loading failed:", error);
+    } finally {
+      setLoadingFonts(false);
+    }
+  };
 
+  // ---- RENDER ----
   return (
-    <div className={`pdf-editor-container min-h-screen flex flex-col bg-background ${className || ''}`}>
-      {/* Device Info */}
-      <div className="p-2 text-xs text-center text-gray-400">
-        {isMobile ? "Mobile View" : "Desktop View"}
-      </div>
-      {/* Header */}
-      <header className="border-b bg-background/95 backdrop-blur sticky top-0 z-50 shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <img src="/70x70logo.png" alt="PDF4EVER Logo" className="h-10 w-10" />
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-orange-500 bg-clip-text text-transparent">
-              PDF4EVER
-            </span>
-          </div>
-          <nav className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm"><a href="/">Home</a></Button>
-            <Button asChild variant="ghost" size="sm"><a href="/pricing">Pricing</a></Button>
-            <Button asChild variant="ghost" size="sm"><a href="/privacy-policy">Privacy</a></Button>
-            <Button asChild variant="ghost" size="sm"><a href="/terms-of-service">Terms</a></Button>
-          </nav>
-        </div>
-      </header>
-      {/* Toolbar */}
-      <PDFToolbar
-        setCurrentTool={setCurrentTool}
-        setZoom={setZoom}
-        rotation={rotation}
-        setRotation={setRotation}
-        currentTool={currentTool}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        setCurrentPage={setCurrentPage}
-        fileInputRef={fileInputRef}
-        onToolChange={handleToolChange}
-        onUndo={() => {}} // stub: plug your real undo
-        onRedo={() => {}} // stub: plug your real redo
-        canUndo={historyIndex > 0}
-        canRedo={historyIndex < history.length - 1}
-        zoom={zoom}
-        onZoomIn={handleZoomIn}
-        onZoomOut={handleZoomOut}
-        fileName={fileName}
-        onDownload={exportPDF}
-        isLoading={isLoading}
-        selectedFont={selectedFont}
-        onFontChange={setSelectedFont}
-        fontList={availableFontList}
-        onLoadMoreFonts={loadMoreFonts}
-        loadingFonts={loadingFonts}
-        highlightColor={highlightColor}
-        onHighlightColorChange={setHighlightColor}
-        annotationColor={annotationColor}
-        onAnnotationColorChange={setAnnotationColor}
-        lineColor={lineColor}
-        lineStrokeWidth={lineStrokeWidth}
-        onLineColorChange={setLineColor}
-        onLineStrokeWidthChange={setLineStrokeWidth}
-        whiteoutMode={whiteoutMode}
-        onWhiteoutToggle={toggleWhiteoutMode}
-        signatureName={signatureName}
-        signatureFont={signatureFont}
-        setSignatureName={setSignatureName}
-        setSignatureFont={setSignatureFont}
-        showSignatureDialog={showSignatureDialog}
-        setShowSignatureDialog={setShowSignatureDialog}
-        handleFileUpload={handleFileUpload}
-        savePDF={savePDF}
-        setAnnotationColor={setAnnotationColor}
+    <div className={`flex h-screen bg-gray-50 dark:bg-gray-900 ${className}`}>
+      {/* Hidden file inputs */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf"
+        onChange={handleFileUpload}
+        className="hidden"
       />
-      {/* Main Content */}
-      <main className="flex flex-1 w-full overflow-hidden">
-        {/* Sidebar */}
-        <aside className="hidden md:block w-72 bg-gray-100 dark:bg-gray-900 border-r">
-          <PDFSidebar
-            annotations={annotations}
-            textBoxes={textBoxes}
-            whiteoutBlocks={whiteoutBlocks}
-            textElements={textElements}
-            onSelectAnnotation={setSelectedAnnotationId}
-            onDeleteAnnotation={handleDeleteAnnotation}
-            onSelectTextBox={handleSelectTextBox}
-            onDeleteTextBox={handleDeleteTextBox}
-            onSelectWhiteoutBlock={handleSelectWhiteoutBlock}
-            onDeleteWhiteoutBlock={handleDeleteWhiteoutBlock}
+      <input
+        ref={mergeFileInputRef}
+        type="file"
+        accept=".pdf"
+        multiple
+        onChange={handleMergeFileUpload}
+        className="hidden"
+      />
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/*"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              setSelectedImage(event.target?.result as string);
+              setImageName(file.name);
+            };
+            reader.readAsDataURL(file);
+          }
+        }}
+        className="hidden"
+      />
+
+      {/* Sidebar */}
+      <PDFSidebar
+        annotations={annotations}
+        textBoxes={textBoxes}
+        whiteoutBlocks={whiteoutBlocks}
+        textElements={textElements}
+        onSelectAnnotation={handleAnnotationSelect}
+        onDeleteAnnotation={handleAnnotationDelete}
+        onSelectTextBox={(id) => setSelectedTextBoxId(id)}
+        onDeleteTextBox={handleRemove}
+        onSelectWhiteoutBlock={handleWhiteoutSelect}
+        onDeleteWhiteoutBlock={handleWhiteoutDelete}
+        pdfDocument={pdfDocument}
+        currentPage={currentPage}
+        setCurrentPage={handlePageChange}
+        totalPages={totalPages}
+        fileName={fileName}
+      />
+
+ {/* Main Content */}
+<div className="flex-1 flex flex-col">
+  {/* Toolbar */}
+  <PDFToolbar
+    currentTool={currentTool}
+    onToolChange={handleToolChange}
+    onUndo={handleUndo}
+    onRedo={handleRedo}
+    handleFileUpload={
+      // PDFToolbar wants (file: File) => void not (event)
+      (file: File) => { if (file) loadPDF(file); }
+    }
+    canUndo={historyIndex > 0}
+    canRedo={historyIndex < history.length - 1}
+    setCurrentTool={setCurrentTool}
+    zoom={zoom}
+    onZoomIn={() => setZoom(z => Math.min(z + 10, 400))}
+    onZoomOut={() => setZoom(z => Math.max(z - 10, 25))}
+    setZoom={setZoom}
+    rotation={rotation}
+    setRotation={setRotation}
+    fileName={fileName}
+    onDownload={handleExport}
+    isLoading={isLoading}
+    selectedFont={selectedFont} // Pass the FontInfo object, not just the name
+    onFontChange={(font: FontInfo) => {
+      setSelectedFont(font);
+    }}
+    fontList={availableFontList} // Pass the FontInfo array, not string array
+    highlightColor={highlightColor}
+    onHighlightColorChange={setHighlightColor}
+    onAnnotationColorChange={setAnnotationColor}
+    annotationColor={annotationColor}
+    setAnnotationColor={setAnnotationColor}
+    lineColor={lineColor}
+    lineStrokeWidth={lineStrokeWidth}
+    onLineColorChange={setLineColor}
+    onLineStrokeWidthChange={setLineStrokeWidth}
+    whiteoutMode={whiteoutMode}
+    onWhiteoutToggle={() => setWhiteoutMode((prev) => !prev)}
+    signatureName={signatureName}
+    signatureFont={signatureFont}
+    setSignatureName={setSignatureName}
+    setSignatureFont={setSignatureFont}
+    showSignatureDialog={showSignatureDialog}
+    setShowSignatureDialog={setShowSignatureDialog}
+    currentPage={currentPage}
+    totalPages={totalPages}
+    setCurrentPage={setCurrentPage}
+    fileInputRef={fileInputRef}
+    savePDF={handleExport}
+  />
+
+  {/* PDF Viewer */}
+  <div className="flex-1 relative overflow-auto bg-white">
+    {renderingError ? (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">{renderingError}</p>
+          <Button onClick={() => fileInputRef.current?.click()}>
+            Load PDF
+          </Button>
+        </div>
+      </div>
+    ) : !pdfDocument ? (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <p className="text-gray-500 mb-4">No PDF loaded</p>
+          <Button onClick={() => fileInputRef.current?.click()}>
+            Load PDF
+          </Button>
+        </div>
+      </div>
+    ) : (
+      <div className="relative">
+        {/* Loading overlay */}
+        {isLoading && (
+          <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        )}
+
+        {/* Main canvas */}
+        <canvas
+          ref={canvasRef}
+          onClick={handleCanvasClick}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          style={{ cursor: getCursorForTool(currentTool) }}
+          className="block mx-auto shadow-lg"
+        />
+
+        {/* Annotation canvas overlay */}
+        <canvas
+          ref={annotationCanvasRef}
+          className="absolute top-0 left-0 pointer-events-none"
+          style={{
+            width: canvasRef.current?.style.width,
+            height: canvasRef.current?.style.height,
+          }}
+        />
+
+        {/* Text Layer */}
+        <AdvancedTextLayer
+          textBoxes={textBoxes.filter(box => box.page === currentPage)}
+          textLayerElements={textLayerElements}
+          selectedBoxIds={selectedBoxIds}
+          onSelect={handleSelect}
+          onMultiSelect={handleMultiSelect}
+          onClearSelection={handleClearSelection}
+          onUpdate={handleUpdate}
+          onRemove={handleRemove}
+          onAdd={handleAdd}
+          currentPage={currentPage}
+          canvasRef={canvasRef}
+          fontList={availableFontList}
+        />
+
+        {/* Whiteout Layer */}
+        <WhiteoutLayer
+          whiteoutBlocks={whiteoutBlocks}
+          setWhiteoutBlocks={setWhiteoutBlocks}
+          selectedBlockId={selectedWhiteoutBlockId}
+          onSelect={handleWhiteoutSelect}
+          onUpdate={handleWhiteoutUpdate}
+          onRemove={handleWhiteoutDelete}
+          onAdd={handleWhiteoutAdd}
+          isActive={currentTool === "whiteout"}
+          currentPage={currentPage}
+          canvasRef={canvasRef}
+          scale={zoom / 100}
+          page={currentPage}
+          onBlocksChange={handleWhiteoutBlocksChange}
+        />
+
+        {/* Fillable Form Layer */}
+        {activeMode === "forms" && (
+          <FillableFormLayer
+            file={null}
             pdfDocument={pdfDocument}
             currentPage={currentPage}
-            totalPages={totalPages}
-            setCurrentPage={setCurrentPage}
-            fileName={fileName}
+            onFieldsDetected={handleFormFieldsDetected}
+            onSave={handleFormDataSave}
+            detectedFormFields={detectedFormFields}
+            className={className}
           />
-        </aside>
-        {/* Content Area */}
-        <section className="flex-1 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-800">
-          {/* Status Bar */}
-          <div className="flex items-center justify-between w-full px-6 py-3 border-b bg-white dark:bg-gray-800">
-            <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" onClick={goToPreviousPage} disabled={currentPage <= 1}><ChevronLeft className="h-4 w-4" /></Button>
-              <span className="text-sm font-medium">Page {currentPage} of {totalPages}</span>
-              <Button variant="outline" size="sm" onClick={goToNextPage} disabled={currentPage >= totalPages}><ChevronRight className="h-4 w-4" /></Button>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" onClick={handleZoomOut} disabled={zoom <= 50}><ZoomOut className="h-4 w-4" /></Button>
-              <span className="text-sm min-w-14 text-center">{zoom}%</span>
-              <Button variant="outline" size="sm" onClick={handleZoomIn} disabled={zoom >= 200}><ZoomIn className="h-4 w-4" /></Button>
-            </div>
-            <Button variant="default" size="sm" onClick={exportPDF} disabled={isLoading || !pdfDocument}>
-              <Download className="h-4 w-4 mr-1" />
-              {isLoading ? "Exporting..." : "Download"}
-            </Button>
-          </div>
-          {/* Canvas + Layers */}
-          <div className="relative w-full max-w-6xl mx-auto my-6 shadow-lg rounded-lg overflow-hidden bg-white dark:bg-gray-900" style={{ minHeight: 600 }}>
-            {/* Main Rendered PDF Canvas */}
-            <canvas ref={canvasRef} className="block w-full" />
-            {/* Annotation Layer */}
-            <canvas
-              ref={annotationCanvasRef}
-              className="absolute top-0 left-0"
-              onClick={handleCanvasClick}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              style={{
-                cursor: getCursorForTool(currentTool),
-                pointerEvents: "auto",
-                zIndex: 10,
-              }}
-            />
-            {/* LAYERED COMPONENTS */}
-            <AnnotationManager
-              annotations={annotations}
-              textBoxes={textBoxes}
-              whiteoutBlocks={whiteoutBlocks}
-              textElements={textElements}
-              onSelectAnnotation={setSelectedAnnotationId}
-              onDeleteAnnotation={handleDeleteAnnotation}
-              onSelectTextBox={handleSelectTextBox}
-              onDeleteTextBox={handleDeleteTextBox}
-              onSelectWhiteoutBlock={handleSelectWhiteoutBlock}
-              onDeleteWhiteoutBlock={handleDeleteWhiteoutBlock}
-              pdfDocument={pdfDocument}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              canvasRef={annotationCanvasRef}
-              zoom={zoom}
-              showControls={showControls}
-            />
-            <TextBoxManager
-              textBoxes={textBoxes}
-              setTextBoxes={setTextBoxes}
-              selectedTextBox={selectedTextBoxId}
-              setSelectedTextBox={setSelectedTextBoxId}
-              currentPage={currentPage}
-              canvasRef={canvasRef}
-              zoom={zoom / 100}
-              fontList={availableFontList}
-              onFontChange={setSelectedFont}
-              selectedFont={selectedFont}
-              onTextBoxUpdate={handleTextBoxUpdate}
-              originalPdfData={originalFileData}
-              showControls={showTextBoxManager}
-            />
-            <WhiteoutLayer
-              whiteoutBlocks={whiteoutBlocks}
-              setWhiteoutBlocks={setWhiteoutBlocks}
-              isActive={whiteoutMode}
-              currentPage={currentPage}
-              canvasRef={canvasRef}
-              scale={zoom / 100}
-              page={currentPage}
-            />
-            <AdvancedTextLayer
-              textLayerElements={textLayerElements}
-              currentPage={currentPage}
-              canvasRef={canvasRef}
-              textBoxes={textBoxes}
-              fontList={availableFontList}
-              selectedBoxIds={selectedBoxIds}
-              onSelect={handleSelect}
-              onMultiSelect={handleMultiSelect}
-              onClearSelection={handleClearSelection}
-              onUpdate={handleUpdate}
-              onRemove={handleRemove}
-              onAdd={handleAdd}
-            />
-            <EraserLayer
-              eraserSize={eraserSize}
-              setEraserSize={setEraserSize}
-              onErase={handleErase}
-              currentTool={currentTool}
-              currentPage={currentPage}
-              canvasRef={annotationCanvasRef}
-            />
-            <OCRLayer
-              pdfDocument={pdfDocument}
-              currentPage={currentPage}
-              ocrResults={ocrResults}
-              canvasRef={canvasRef}
-            />
-            <FillableFormLayer
-              detectedFormFields={detectedFormFields}
-              currentPage={currentPage}
-              pdfDocument={pdfDocument}
-              onFieldsDetected={handleFormFieldsDetected}
-              onSave={handleFormDataSave}
-              file={new File(["Hello"], "file.txt", { type: "text/plain" })}
-            />
-            {/* Tool Overlays / Dialogs */}
-            <FontManager
-              selectedFont={selectedFont.name}
-              onFontChange={onFontChange}
-              fontSize={fontSize}
-              onFontSizeChange={setFontSize}
-              fontWeight={fontWeight}
-              onFontWeightChange={setFontWeight}
-              fontStyle={fontStyle}
-              onFontStyleChange={setFontStyle}
-              showAdvanced={showAdvanced}
-            />
-            <SignatureTool
-              signatureName={signatureName}
-              setSignatureName={setSignatureName}
-              signatureFont={signatureFont}
-              setSignatureFont={setSignatureFont}
-              showSignatureDialog={showSignatureDialog}
-              setShowSignatureDialog={setShowSignatureDialog}
-              onPlaceSignature={handlePlaceSignature}
-              currentPage={currentPage}
-              annotationColor={annotationColor}
-            />
-            <ImageTool
-              selectedImage={selectedImage}
-              setSelectedImage={setSelectedImage}
-              imageName={imageName}
-              setImageName={setImageName}
-              onImagePlace={handleImagePlace}
-              currentTool={currentTool}
-              canvasRef={annotationCanvasRef}
-            />
-            <FormTool
-              newFieldType={newFieldType}
-              setNewFieldType={setNewFieldType}
-              onFormFieldAdd={handleFormFieldAdd}
-              formFields={formFields}
-              setFormFields={setFormFields}
-              currentPage={currentPage}
-            />
-            <OCRTool
-              pdfDocument={pdfDocument}
-              currentPage={currentPage}
-              onOCRExtract={handleOCRExtract}
-              ocrResults={ocrResults}
-              setOcrResults={setOcrResults}
-            />
-          </div>
-        </section>
-      </main>
+        )}
+
+        {/* OCR Layer */}
+        {currentTool === "ocr" && (
+          <OCRLayer
+            ocrResults={ocrResults.filter(result => result.page === currentPage)}
+            selectedBlockId={selectedBlockId}
+            onSelect={setSelectedBlockId}
+            onExtract={handleOCRExtract}
+            onEdit={(id: string) => {
+              /* You may want to implement a single-argument edit handler here */
+            }}
+            canvasRef={canvasRef}
+            currentPage={currentPage}
+          />
+        )}
+
+        {/* Eraser Layer */}
+        {currentTool === "eraser" && (
+          <EraserLayer
+          canvasRef={canvasRef}
+          currentPage={currentPage}
+          eraserSize={eraserSize}
+          onErase={handleErase}
+          currentTool={currentTool}
+          setEraserSize={setEraserSize}
+          />
+        )}
+      </div>
+    )}
+  </div>
+
+  {/* Page Navigation */}
+  {pdfDocument && showControls && (
+    <div className="border-t bg-white p-4 flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage <= 1}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <span className="text-sm">
+          Page {currentPage} of {totalPages}
+        </span>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage >= totalPages}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => handleZoomChange(zoom - 25)}
+          disabled={zoom <= 25}
+        >
+          <ZoomOut className="h-4 w-4" />
+        </Button>
+        <span className="text-sm min-w-[60px] text-center">
+          {zoom}%
+        </span>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => handleZoomChange(zoom + 25)}
+          disabled={zoom >= 400}
+        >
+          <ZoomIn className="h-4 w-4" />
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleExport}
+          disabled={!pdfDocument}
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Export
+        </Button>
+      </div>
     </div>
-  );
-}
+  )}
+
+  {/* Managers and Dialogs */}
+  <AnnotationManager
+    annotations={annotations}
+    textBoxes={textBoxes}
+    whiteoutBlocks={whiteoutBlocks}
+    textElements={textElements}
+    onSelectAnnotation={handleAnnotationSelect}
+    onDeleteAnnotation={handleAnnotationDelete}
+    onSelectTextBox={id => setSelectedTextBoxId(id)}
+    onDeleteTextBox={handleRemove}
+    onSelectWhiteoutBlock={handleWhiteoutSelect}
+    onDeleteWhiteoutBlock={handleWhiteoutDelete}
+    pdfDocument={pdfDocument}
+    currentPage={currentPage}
+    totalPages={totalPages}
+    canvasRef={canvasRef}
+    zoom={zoom}
+  />
+
+<TextBoxManager
+    textBoxes={textBoxes}
+    setTextBoxes={setTextBoxes}
+    selectedTextBox={selectedTextBoxId}
+    setSelectedTextBox={setSelectedTextBoxId}
+    canvasRef={canvasRef}
+    currentPage={currentPage}
+    zoom={zoom}
+    onRemove={handleRemoveTextBox}
+    onAdd={handleAddTextBox}
+    onFontChange={onFontChange}
+    fontList={availableFontList}
+    selectedFont={selectedFont}
+    onTextBoxUpdate={handleTextBoxUpdate}
+    originalPdfData={originalFileData}
+    showControls={showControls}
+  />
+
+<FontManager
+    selectedFont={selectedFont.name}
+    onFontChange={(font: string) => {
+      const match = availableFontList.find(f => f.name === font);
+      setSelectedFont(match || DEFAULT_FONT_INFO);
+    }}
+    fontSize={fontSize}
+    onFontSizeChange={setFontSize}
+    fontWeight={fontWeight}
+    onFontWeightChange={setFontWeight}
+    fontStyle={fontStyle}
+    onFontStyleChange={setFontStyle}
+    showAdvanced={showAdvanced}
+  />
+
+  {/* Signature Dialog */}
+  {showSignatureDialog && (
+    <SignatureTool
+      signatureName={signatureName}
+      setSignatureName={setSignatureName}
+      signatureFont={signatureFont}
+      setSignatureFont={setSignatureFont}
+      showSignatureDialog={showSignatureDialog}
+      setShowSignatureDialog={setShowSignatureDialog}
+      onPlaceSignature={(placement: { x: number; y: number }) => {
+        handlePlaceSignature({
+          x: placement.x,
+          y: placement.y,
+          text: signatureName,
+          font: signatureFont
+        });
+      }}
+      currentPage={currentPage}
+      annotationColor={annotationColor}
+      onNameChange={setSignatureName}
+      onFontChange={setSignatureFont}
+    />
+  )}
+
+  {/* Image Tool - Remove this section if ImageTool component doesn't exist */}
+  {currentTool === "image" && selectedImage && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-4 rounded-lg">
+        <h3>Image Tool</h3>
+        <img src={selectedImage} alt={imageName} className="max-w-xs max-h-xs" />
+        <div className="flex gap-2 mt-4">
+          <Button onClick={() => {
+            // Handle image placement logic here
+            setSelectedImage(null);
+            setImageName("");
+            setCurrentTool("select");
+          }}>
+            Place Image
+          </Button>
+          <Button variant="outline" onClick={() => {
+            setSelectedImage(null);
+            setImageName("");
+            setCurrentTool("select");
+          }}>
+            Cancel
+          </Button>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* OCR Tool */}
+  {currentTool === "ocr" && (
+    <OCRTool
+      isProcessing={isProcessingOcr}
+      onTextDetected={results => setOcrResults(results)}
+      onTextExtracted={text => {/* Handle extracted text if needed */}}
+      pdfDocument={pdfDocument}
+      canvasRef={canvasRef}
+      currentPage={currentPage}
+    />
+  )}
+  </div>
+      </div>
+    );
+  };

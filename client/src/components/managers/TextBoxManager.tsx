@@ -9,7 +9,7 @@ function deepCopyTextBoxes(boxes: TextBox[]): TextBox[] {
   return boxes.map(box => ({ ...box }));
 }
 
-interface TextBoxManagerProps {
+export interface TextBoxManagerProps {
   initialTextBoxes?: TextBox[];
   onTextBoxesChange?: (boxes: TextBox[]) => void;
   textBoxes: TextBox[];
@@ -22,9 +22,11 @@ interface TextBoxManagerProps {
   fontList: FontInfo[]; // or whatever type you use
   onFontChange: (font: FontInfo) => void;
   selectedFont: FontInfo;
-  onTextBoxUpdate: (textBox: TextBox) => void; // add real type!
+  onTextBoxUpdate: (id: string, updates: Partial<TextBox>) => void;
   originalPdfData: Uint8Array | null;
   showControls: boolean;
+  onAdd: (textBox: TextBox) => void;
+  onRemove: (id: string) => void;
 }
 
 export const TextBoxManager: React.FC<TextBoxManagerProps> = ({

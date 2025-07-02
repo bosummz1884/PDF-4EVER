@@ -1,15 +1,5 @@
 import React, { useState } from 'react';
-import { WhiteoutBlock } from '@/types/pdf-types';
-
-export interface WhiteoutLayerProps {
-  whiteoutBlocks: WhiteoutBlock[];
-  setWhiteoutBlocks: React.Dispatch<React.SetStateAction<WhiteoutBlock[]>>;
-  isActive: boolean;
-  currentPage: number;
-  canvasRef: React.RefObject<HTMLCanvasElement>;
-  scale: number;
-  page: number;
-}
+import { WhiteoutBlock, WhiteoutLayerProps } from '@/types/pdf-types';
 
 export default function WhiteoutLayer({
   whiteoutBlocks,

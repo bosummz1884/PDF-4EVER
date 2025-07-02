@@ -67,7 +67,7 @@ export interface FontInfo {
   size?: number;
   variants?: string[];
   loaded: boolean;
-  fileUrl?: string; // for loaded fonts
+ 
 }
 
 // src/types/FontInfo.ts
@@ -75,7 +75,10 @@ export const DEFAULT_FONT_INFO: FontInfo = {
   name: 'Arial',
   family: 'Arial, Helvetica, sans-serif',
   style: 'normal',
-  weight: 400,
+  weight: "400",
+  loaded: true,
+  size: 12,
+  variants: ["normal", "bold", "italic", "bolditalic"],
 };
 
 
@@ -105,6 +108,8 @@ export interface TextBox {
   fontStyle?: string;     // or "normal" | "italic"
   align?: "left" | "center" | "right";
   rotation?: number;
+  opacity?: number;
+  strikeThrough?: boolean;
 }
 
 // Text Element
@@ -129,6 +134,7 @@ export interface TextElement {
   underline?: boolean;
   textAlign?: "left" | "center" | "right";
   rotation?: number;
+  opacity?: number;
 }
 
 // =======================
@@ -163,6 +169,7 @@ export interface Annotation {
   font?: string;
   imageData?: string;
   imageName?: string;
+  opacity?: number;
 }
 
 // **Optional**: specialized annotation element (for legacy/manager)
@@ -195,11 +202,12 @@ export interface FormField {
   width: number;
   height: number;
   page: number;
-  rect: number[];
+  rect: { x: number; y: number; width: number; height: number };
   options?: string[];
   radioGroup?: string;
   required?: boolean;
   readonly?: boolean;
+  placeholder?: string;
 }
 
 // =======================
@@ -246,11 +254,11 @@ export interface OCRResult {
   id: string;
   text: string;
   confidence: number;
-  bbox: {
-    x0: number;
-    y0: number;
-    x1: number;
-    y1: number;
+  boundingBox: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
   };
   page: number;
 }
@@ -262,6 +270,7 @@ export interface OCRToolProps {
   onTextDetected?: (results: OCRResult[]) => void;
   onTextBoxCreate?: (x: number, y: number, text: string) => void;
   onTextExtracted?: (text: string) => void;
+  isProcessing: boolean;
 }
 
 export interface OCRLanguage {
@@ -279,12 +288,22 @@ export interface SignatureData {
 }
 
 export interface SignatureToolProps {
+  signatureName: string;
+  setSignatureName: (name: string) => void;
+  signatureFont: string;
+  setSignatureFont: (font: string) => void;
+  showSignatureDialog: boolean;
+  setShowSignatureDialog: (open: boolean) => void;
   onSave?: (dataUrl: string) => void;
   onComplete?: (dataUrl: string) => void;
   onSigned?: (result: SignatureData) => void;
   onClose?: () => void;
-  signatureDataUrl?: string;
   onPlace?: (placement: SignaturePlacement) => void;
+  onPlaceSignature: (placement: SignaturePlacement) => void;
+  currentPage: number;
+  annotationColor: string;
+  onNameChange: (name: string) => void;
+  onFontChange: (font: string) => void;
 }
 
 export interface SignaturePlacement {
@@ -339,6 +358,7 @@ export interface AnnotationManagerProps {
   annotations: Annotation[];
   textBoxes: TextBox[];
   whiteoutBlocks: WhiteoutBlock[];
+  selectedId: string;
   textElements: { [page: number]: any[] }; // Replace 'any' with a stricter type if you have one
   onSelectAnnotation: (id: string | null) => void;
   onDeleteAnnotation: (id: string) => void;
@@ -487,14 +507,22 @@ export type AnnotationToolName =
     color: string;
     page: number;
   };
+
   
+ 
   export type WhiteoutLayerProps = {
     whiteoutBlocks: WhiteoutBlock[];
     setWhiteoutBlocks: React.Dispatch<React.SetStateAction<WhiteoutBlock[]>>;
+    selectedBlockId: string | null;
+    onSelect: (id: string) => void;
+    onUpdate: (id: string, updates: Partial<WhiteoutBlock>) => void;
+    onRemove: (id: string) => void;
+    onAdd: (block: Omit<WhiteoutBlock, 'id'>) => void;
     isActive: boolean;
     currentPage: number;
     canvasRef: React.RefObject<HTMLCanvasElement>;
-    scale: number
+    scale: number;
+    page: number;
     onBlocksChange?: (blocks: WhiteoutBlock[]) => void;
   };
 
@@ -514,7 +542,10 @@ export type AnnotationToolName =
     scale: number;
     eraserBlocks: EraserBlock[];
     currentPage: number;
-  }
+    eraserPosition: {
+    x: number;
+    y: number;  
+  }};
 
   export type FieldEntry = {
     id: string;
@@ -532,8 +563,8 @@ export type AnnotationToolName =
     file: File | null;
     pdfDocument?: any;
     currentPage?: number;
-    onFieldsDetected: (fields: FieldEntry[]) => void;
-    onSave: (fields: FieldEntry[]) => void;
+    onFieldsDetected: (fields: FormField[]) => void;
+    onSave: (fields: FormField[]) => void;
     className?: string;
     detectedFormFields: any[];
   }
@@ -543,19 +574,23 @@ export type AnnotationToolName =
     text: string;
     confidence: number;
     bbox: {
-      x0: number;
-      y0: number;
-      x1: number;
-      y1: number;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
     };
     page: number;
   }
   
   export interface OCRProcessorProps {
     pdfDocument?: any;
+    selectedBlockId: string | null;
     ocrResults: OCRResult[];
+    onSelect: (id: string) => void;
     canvasRef: React.RefObject<HTMLCanvasElement>;
     currentPage: number;
+    onExtract?: (area: {x: number, y: number, width: number, height: number}) => void;
+    onEdit?: (id: string) => void;
     onTextDetected?: (results: OCRWord[]) => void;
     onTextBoxCreate?: (x: number, y: number, text: string) => void;
   }
