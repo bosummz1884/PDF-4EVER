@@ -210,8 +210,8 @@ const PDFToolbar: React.FC<PDFToolbarProps> = ({
 
   return (
   <div className="w-full flex justify-center">
-    <div className="flex items-center gap-2 p-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-      {/* File Operations */}
+<div className="flex flex-wrap items-center gap-2 p-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm w-full">
+{/* File Operations */}
       <div className="flex items-center gap-1">
         <input
           ref={fileInputRef}
