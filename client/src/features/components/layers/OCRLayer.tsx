@@ -58,10 +58,10 @@ export default function OCRProcessor({
             text: item.str,
             confidence: 100, // PDF text is 100% confident
             boundingBox: {
-              x0: item.transform[4],
-              y0: item.transform[5],
-              x1: item.transform[4] + item.width,
-              y1: item.transform[5] + item.height,
+              x: item.transform[4],
+              y: item.transform[5],
+              width: item.transform[4] + item.width,
+              height: item.transform[5] + item.height,
             },
             page: currentPage,
           });
@@ -149,7 +149,7 @@ export default function OCRProcessor({
   const createTextBoxFromResult = useCallback(
     (result: OCRWord) => {
       if (onTextBoxCreate) {
-        onTextBoxCreate(result.boundingBox.x0, result.boundingBox.y0, result.text);
+        onTextBoxCreate(result.boundingBox.x, result.boundingBox.y, result.text);
       }
     },
     [onTextBoxCreate],
@@ -167,10 +167,10 @@ export default function OCRProcessor({
       ctx.save();
       ctx.fillStyle = "rgba(255, 255, 0, 0.3)";
       ctx.fillRect(
-        result.boundingBox.x0,
-        result.boundingBox.y0,
-        result.boundingBox.x1 - result.boundingBox.x0,
-        result.boundingBox.y1 - result.boundingBox.y0,
+        result.boundingBox.x,
+        result.boundingBox.y,
+        result.boundingBox.width - result.boundingBox.width,
+        result.boundingBox.height - result.boundingBox.height,
       );
       ctx.restore();
     },

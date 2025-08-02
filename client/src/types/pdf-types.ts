@@ -1,4 +1,4 @@
-// =======================
+import type { PDFDocumentProxy } from 'pdfjs-dist'
 // PDF File Types
 // =======================
 
@@ -14,7 +14,7 @@ export interface PDFFile {
 
 export interface PDFEditorState {
   // Core PDF state
-  pdfDocument: any;
+  pdfDocument: PDFDocumentProxy  |  null;
   originalFileData: Uint8Array | null;
   currentPage: number;
   totalPages: number;
@@ -86,6 +86,108 @@ export const DEFAULT_FONT_INFO: FontInfo = {
 // Text/Annotation Types
 // =======================
 
+export interface FontManagerProps {
+  selectedFont: string;
+  onFontChange: (font: string) => void;
+  fontSize: number;
+  onFontSizeChange: (size: number) => void;
+  fontWeight: "normal" | "bold";
+  onFontWeightChange: (weight: "normal" | "bold") => void;
+  fontStyle: "normal" | "italic";
+  onFontStyleChange: (style: "normal" | "italic") => void;
+  showAdvanced?: boolean;
+}
+
+export interface AnnotationElement {
+  id?: string;
+  type:
+    | "highlight"
+    | "rectangle"
+    | "circle"
+    | "freeform"
+    | "signature"
+    | "line";
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  color?: string | { r: number; g: number; b: number };
+  page: number;
+  strokeWidth: number;
+  points: number[];
+}
+
+export interface Annotation {
+  id: string;
+  type: AnnotationToolName;
+  page: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  color: string;
+  strokeWidth?: number;
+  content?: string;
+  points?: { x: number; y: number }[];
+  rotation?: number;
+  opacity?: number;
+}
+
+export interface AnnotationManagerProps {
+  annotations: Annotation[];
+  textBoxes: TextBox[];
+  whiteoutBlocks: WhiteoutBlock[];
+  selectedId: string;
+  textElements: { [page: number]: TextElement[] }; 
+  onSelectAnnotation: (id: string | null) => void;
+  onDeleteAnnotation: (id: string) => void;
+  onSelectTextBox: (id: string | null) => void;
+  onDeleteTextBox: (id: string) => void;
+  onSelectWhiteoutBlock: (id: string | null) => void;
+  onDeleteWhiteoutBlock: (id: string) => void;
+  pdfDocument: PDFDocumentProxy  |  null;
+  currentPage: number;
+  totalPages: number;
+  canvasRef: React.RefObject<HTMLCanvasElement>;
+  zoom: number;
+  onAnnotationsChange?: (annotations: Annotation[]) => void;
+  showControls?: boolean;
+}
+
+// Add missing types that might be referenced
+export interface TextBox {
+  id: string;
+  page: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  content: string;
+  fontSize: number;
+  fontFamily?: string;
+  color: string;
+  fontWeight?: "normal" | "bold";
+  fontStyle?: "normal" | "italic";
+}
+
+
+export type ToolState =
+  | "select"
+  | "whiteout"
+  | "text"
+  | "highlight"
+  | "rectangle"
+  | "circle"
+  | "freeform"
+  | "form"
+  | "signature"
+  | "eraser"
+  | "checkmark"
+  | "x-mark"
+  | "line"
+  | "image"
+  | "inlineEdit"
+  | "ocr";
 // Textbox
 export interface TextBox {
   id: string;
@@ -94,18 +196,18 @@ export interface TextBox {
   y: number;
   width: number;
   height: number;
-  value?: string;         // Content-editable
-  text?: string;          // Text content
+  value?: string; // Content-editable
+  text?: string; // Text content
   font: string;
-  fontFamily?: string;    // Redundant but common
-  size: number;           // Alias for fontSize
-  fontSize: number;      // Alias for size
+  fontFamily?: string; // Redundant but common
+  size: number; // Alias for fontSize
+  fontSize: number; // Alias for size
   color: string;
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
-  fontWeight?: string;    // or "normal" | "bold"
-  fontStyle?: string;     // or "normal" | "italic"
+  fontWeight?: "normal" | "bold";
+  fontStyle?: "normal" | "italic";
   align?: "left" | "center" | "right";
   rotation?: number;
   opacity?: number;
@@ -141,36 +243,39 @@ export interface TextElement {
 // Annotation Types
 // =======================
 
-// Base type for all annotation shapes (with optional subtypes)
+export type AnnotationToolName =
+  | "select"
+  | "highlight"
+  | "rectangle"
+  | "circle"
+  | "freeform"
+  | "signature"
+  | "text"
+  | "checkmark"
+  | "x-mark"
+  | "line"
+  | "image"
+  | "pen"
+  | "arrow"
+  | "eraser";
+
 export interface Annotation {
   id: string;
-  type:
-    | "highlight"
-    | "rectangle"
-    | "circle"
-    | "freeform"
-    | "signature"
-    | "text"
-    | "checkmark"
-    | "x-mark"
-    | "line"
-    | "image";
+  type: AnnotationToolName;
   page: number;
   x: number;
   y: number;
   width: number;
   height: number;
-  color?: string;
-  strokeWidth: number;
-  points: number[];      // For freeform/signature/line
-  text?: string;          // For text annotation
-  fontSize: number;      // For text annotation
-  src?: string;           // For image/signature
-  font?: string;
-  imageData?: string;
-  imageName?: string;
+  color: string;
+  strokeWidth?: number;
+  content?: string;
+  points?: { x: number; y: number }[];
+  rotation?: number;
   opacity?: number;
 }
+
+// Base type for all annotation shapes (with optional subtypes)
 
 // **Optional**: specialized annotation element (for legacy/manager)
 export interface AnnotationElement {
@@ -264,7 +369,7 @@ export interface OCRResult {
 }
 
 export interface OCRToolProps {
-  pdfDocument?: any;
+  pdfDocument?: PDFDocumentProxy  |  null;
   canvasRef?: React.RefObject<HTMLCanvasElement>;
   currentPage?: number;
   onTextDetected?: (results: OCRResult[]) => void;
@@ -359,14 +464,14 @@ export interface AnnotationManagerProps {
   textBoxes: TextBox[];
   whiteoutBlocks: WhiteoutBlock[];
   selectedId: string;
-  textElements: { [page: number]: any[] }; // Replace 'any' with a stricter type if you have one
+  textElements: { [page: number]: TextElement[] }; 
   onSelectAnnotation: (id: string | null) => void;
   onDeleteAnnotation: (id: string) => void;
   onSelectTextBox: (id: string | null) => void;
   onDeleteTextBox: (id: string) => void;
   onSelectWhiteoutBlock: (id: string | null) => void;
   onDeleteWhiteoutBlock: (id: string) => void;
-  pdfDocument: any; // Use correct type if you have
+  pdfDocument: PDFDocumentProxy  |  null;  
   currentPage: number;
   totalPages: number;
   canvasRef: React.RefObject<HTMLCanvasElement>;
@@ -399,14 +504,14 @@ export interface AuthContextType {
 export interface LoginDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: (user: any, token: string) => void;
+  onSuccess: (user: User, token: string) => void;
   onSwitchToSignup: () => void;
 }
 
 export interface SignupDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: (user: any, token: string) => void;
+  onSuccess: (user: User, token: string) => void;
 }
 
 export interface EditHistoryAction {
@@ -485,19 +590,6 @@ export type BulletType = "circle" | "triangle" | "square";
 export type BulletFill = "filled" | "hollow";
 
 
-export type AnnotationToolName =
-  | "select"
-  | "highlight"
-  | "rectangle"
-  | "circle"
-  | "freeform"
-  | "signature"
-  | "text"
-  | "checkmark"
-  | "x-mark"
-  | "line"
-  | "image"
-
   export type WhiteoutBlock = {
     id: string;
     x: number;
@@ -561,12 +653,12 @@ export type AnnotationToolName =
   
   export interface FillablePDFViewerProps {
     file: File | null;
-    pdfDocument?: any;
+    pdfDocument?: PDFDocumentProxy  |  null;
     currentPage?: number;
     onFieldsDetected: (fields: FormField[]) => void;
     onSave: (fields: FormField[]) => void;
     className?: string;
-    detectedFormFields: any[];
+    detectedFormFields: FormField[];
   }
 
   export type OCRWord = {
@@ -583,7 +675,7 @@ export type AnnotationToolName =
   }
   
   export interface OCRProcessorProps {
-    pdfDocument?: any;
+    pdfDocument?: PDFDocumentProxy  |  null;
     selectedBlockId: string | null;
     ocrResults: OCRResult[];
     onSelect: (id: string) => void;

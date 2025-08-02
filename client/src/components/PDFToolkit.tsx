@@ -7,7 +7,6 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -15,10 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import {
   Upload,
-  Download,
   Split,
   Merge,
   RotateCw,
@@ -26,17 +23,13 @@ import {
   Trash2,
   Plus,
   Copy,
-  Save,
-  FileDown,
   Scissors,
   Combine,
   RefreshCw,
   Shrink,
   Shield,
-  Eye,
   Settings,
 } from "lucide-react";
-import { pdfCore } from "@/lib/pdfCore";
 import { PDFFile, SplitRange } from "../types/pdf-types";
 
 
@@ -57,7 +50,6 @@ export default function PDFToolkit({
   const [mergeOrder, setMergeOrder] = useState<string[]>([]);
   const [compressionLevel, setCompressionLevel] = useState("medium");
   const [rotationAngle, setRotationAngle] = useState(90);
-  const [selectedPages, setSelectedPages] = useState<number[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mergeInputRef = useRef<HTMLInputElement>(null);
