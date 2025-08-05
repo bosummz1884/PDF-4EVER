@@ -1,10 +1,15 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
-const fs = require("fs");
-const path = require("path");
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 try {
-  // Define the source and destination paths using Node's path resolver for reliability
-  const sourceFile = require.resolve("pdfjs-dist/build/pdf.worker.js");
+  // Get the directory name in an ES module context
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+  // Resolve paths using modern ESM-compatible methods
+  const sourceFile = await import.meta.resolve(
+    "pdfjs-dist/build/pdf.worker.js"
+  );
   const destDir = path.resolve(__dirname, "client", "public");
   const destFile = path.resolve(destDir, "pdf.worker.js");
 
@@ -13,10 +18,12 @@ try {
     fs.mkdirSync(destDir, { recursive: true });
   }
 
-  // Copy the file
-  fs.copyFileSync(sourceFile, destFile);
-  console.log("Successfully copied pdf.worker.js to client/public.");
+  // Copy the file from the resolved URL path
+  fs.copyFileSync(fileURLToPath(sourceFile), destFile);
+  console.log(
+    "Successfully copied pdf.worker.js to client/public using ESM script."
+  );
 } catch (error) {
-  console.error("Error copying PDF worker file:", error);
+  console.error("Error copying PDF worker file with ESM script:", error);
   process.exit(1); // Fail the build if the copy fails
 }
