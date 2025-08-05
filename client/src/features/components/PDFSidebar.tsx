@@ -1,58 +1,17 @@
-import React, { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Layers, FileText, Settings } from "lucide-react";
-import { Annotation, TextBox, WhiteoutBlock } from "@/types/pdf-types";
+import React, { useState, useEffect } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { Layers, FileText, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { usePDFEditor } from '.././pdf-editor/PDFEditorContext';
 
-// -------------------
-// Props Interface
-// -------------------
-export interface PDFSidebarProps {
-  annotations: Annotation[];
-  textBoxes: TextBox[];
-  whiteoutBlocks: WhiteoutBlock[];
-  textElements: { [page: number]: any[] };
-  onSelectAnnotation: (id: string | null) => void;
-  onDeleteAnnotation: (id: string) => void;
-  onSelectTextBox: (id: string | null) => void;
-  onDeleteTextBox: (id: string) => void;
-  onSelectWhiteoutBlock: (id: string | null) => void;
-  onDeleteWhiteoutBlock: (id: string) => void;
-  pdfDocument: any; // Should be stricter type, e.g. PDFDocumentProxy if you use pdfjs
-  currentPage: number;
-  setCurrentPage: (page: number) => void;
-  totalPages: number;
-  fileName: string;
-}
-
-// -------------------
-// Component
-// -------------------
-export default function PDFSidebar(props: PDFSidebarProps) {
-  const {
-    annotations,
-    textBoxes,
-    whiteoutBlocks,
-    textElements,
-    onSelectAnnotation,
-    onDeleteAnnotation,
-    onSelectTextBox,
-    onDeleteTextBox,
-    onSelectWhiteoutBlock,
-    onDeleteWhiteoutBlock,
-    pdfDocument,
-    currentPage,
-    setCurrentPage,
-    totalPages,
-    fileName,
-  } = props;
+export default function PDFSidebar() {
+  const { state, dispatch } = usePDFEditor();
+  const { pdfDocument, currentPage, totalPages, annotations } = state;
 
   const [thumbnails, setThumbnails] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState("pages");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Generate thumbnails when PDF document changes
   useEffect(() => {
     if (!pdfDocument) {
       setThumbnails([]);
@@ -66,8 +25,8 @@ export default function PDFSidebar(props: PDFSidebarProps) {
         for (let i = 1; i <= totalPages; i++) {
           const page = await pdfDocument.getPage(i);
           const viewport = page.getViewport({ scale: 0.2 });
-          const canvas = document.createElement("canvas");
-          const context = canvas.getContext("2d");
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
           if (!context) continue;
           canvas.height = viewport.height;
           canvas.width = viewport.width;
@@ -76,7 +35,7 @@ export default function PDFSidebar(props: PDFSidebarProps) {
         }
         setThumbnails(thumbs);
       } catch (error) {
-        console.error("Error generating thumbnails:", error);
+        console.error('Error generating thumbnails:', error);
       } finally {
         setIsLoading(false);
       }
@@ -85,68 +44,37 @@ export default function PDFSidebar(props: PDFSidebarProps) {
     generateThumbnails();
   }, [pdfDocument, totalPages]);
 
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      dispatch({ type: 'SET_CURRENT_PAGE', payload: page });
+    }
+  };
+
+  const currentPageAnnotations = annotations[currentPage] || [];
+
   return (
-    <div className="w-64 border-r bg-white dark:bg-gray-900 flex flex-col">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-        <TabsList className="grid grid-cols-3">
-          <TabsTrigger value="pages">
-            <FileText className="h-4 w-4 mr-1" />
-            Pages
-          </TabsTrigger>
-          <TabsTrigger value="layers">
-            <Layers className="h-4 w-4 mr-1" />
-            Layers
-          </TabsTrigger>
-          <TabsTrigger value="properties">
-            <Settings className="h-4 w-4 mr-1" />
-            Props
-          </TabsTrigger>
+    <div className="w-64 border-r bg-gray-50 dark:bg-black/20 flex flex-col flex-shrink-0">
+      <Tabs defaultValue="pages" className="flex-1 flex flex-col">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="pages"><FileText className="h-4 w-4 mr-1" />Pages</TabsTrigger>
+          <TabsTrigger value="layers"><Layers className="h-4 w-4 mr-1" />Elements</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pages" className="flex-1 flex flex-col p-0">
-          <div className="p-2 border-b flex items-center justify-between">
-            <span className="text-sm font-medium">
-              Page {currentPage} of {totalPages}
-            </span>
-            <div className="flex gap-1">
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage <= 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage >= totalPages}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
           <ScrollArea className="flex-1">
             {isLoading ? (
-              <div className="flex items-center justify-center h-32">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              </div>
+              <div className="flex items-center justify-center h-full p-4 text-sm text-muted-foreground">Loading...</div>
             ) : (
-              <div className="p-2 space-y-2">
+              <div className="p-2 grid grid-cols-2 gap-2">
                 {thumbnails.map((thumbnail, index) => (
                   <div
-                    key={index}
-                    className={`border rounded p-1 cursor-pointer transition-all ${
-                      currentPage === index + 1 ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20" : ""
-                    }`}
-                    onClick={() => setCurrentPage(index + 1)}
+                    key={`thumb-${index}`}
+                    className={`border-2 rounded p-0.5 cursor-pointer transition-all ${currentPage === index + 1 ? 'border-primary' : 'border-transparent hover:border-muted-foreground/50'}`}
+                    onClick={() => goToPage(index + 1)}
                   >
                     <div className="relative">
-                      <img src={thumbnail} alt={`Page ${index + 1}`} className="w-full" />
-                      <div className="absolute bottom-0 right-0 bg-black/70 text-white text-xs px-1 rounded-tl">
-                        {index + 1}
-                      </div>
+                      <img src={thumbnail} alt={`Page ${index + 1}`} className="w-full rounded-sm" />
+                      <div className="absolute bottom-0 right-0 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded-tl-md">{index + 1}</div>
                     </div>
                   </div>
                 ))}
@@ -156,52 +84,39 @@ export default function PDFSidebar(props: PDFSidebarProps) {
         </TabsContent>
 
         <TabsContent value="layers" className="flex-1">
-          <div className="p-4">
-            <h3 className="font-medium mb-2">Document Layers</h3>
-            <div className="space-y-2">
-              <div className="flex items-center">
-                <input type="checkbox" id="layer-text" className="mr-2" defaultChecked />
-                <label htmlFor="layer-text">Text Elements</label>
-              </div>
-              <div className="flex items-center">
-                <input type="checkbox" id="layer-annotations" className="mr-2" defaultChecked />
-                <label htmlFor="layer-annotations">Annotations</label>
-              </div>
-              <div className="flex items-center">
-                <input type="checkbox" id="layer-whiteout" className="mr-2" defaultChecked />
-                <label htmlFor="layer-whiteout">Whiteout</label>
-              </div>
-              <div className="flex items-center">
-                <input type="checkbox" id="layer-base" className="mr-2" defaultChecked />
-                <label htmlFor="layer-base">Base Document</label>
-              </div>
+          <ScrollArea className="h-full">
+            <div className="p-4 space-y-2">
+              <h3 className="font-medium mb-2 text-sm">Elements on Page {currentPage}</h3>
+              {currentPageAnnotations.length > 0 ? (
+                currentPageAnnotations.map(ann => (
+                  <div key={ann.id} className="flex items-center justify-between p-2 border rounded text-xs bg-white dark:bg-black/30 hover:bg-muted">
+                    <span className="capitalize">{ann.type}</span>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6"
+                      onClick={() => dispatch({ type: 'DELETE_ANNOTATION', payload: { page: currentPage, id: ann.id }})}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center text-xs text-muted-foreground py-4">No elements on this page.</div>
+              )}
             </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="properties" className="flex-1">
-          <div className="p-4">
-            <h3 className="font-medium mb-2">Document Properties</h3>
-            <div className="space-y-2 text-sm">
-              <div>
-                <span className="font-medium">Filename:</span> {fileName}
-              </div>
-              <div>
-                <span className="font-medium">Pages:</span> {totalPages}
-              </div>
-            </div>
-          </div>
+          </ScrollArea>
         </TabsContent>
       </Tabs>
+      <div className="p-2 border-t flex items-center justify-between flex-shrink-0">
+        <Button size="icon" variant="ghost" onClick={() => goToPage(currentPage - 1)} disabled={currentPage <= 1}>
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <span className="text-sm font-medium">Page {currentPage} of {totalPages}</span>
+        <Button size="icon" variant="ghost" onClick={() => goToPage(currentPage + 1)} disabled={currentPage >= totalPages}>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
-}
-
-// Helper function to format file size
-function formatFileSize(bytes: number) {
-  if (bytes === 0) return "0 Bytes";
-  const k = 1024;
-  const sizes = ["Bytes", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }

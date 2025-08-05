@@ -1,56 +1,55 @@
-import React from "react"
-import Landing from "./landing";
-import { Button } from "@/components/ui/button";
-import PDFEditorContainer from "@/features/pdf-editor/PDFEditorContainer";
-import { useIsMobile } from "@/features/hooks/use-mobile";
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/layout/ThemeToggle';
+import { PDFEditorProvider } from '@/features/pdf-editor/PDFEditorContext';
+import PDFEditorContainer from '@/features/pdf-editor/PDFEditorContainer';
+import Landing from './landing';
 
-export default function Home() {
-  const isMobile = useIsMobile();
+export default function HomePage() {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Centered and width-capped container */}
-      <div className="w-full max-w-5xl mx-auto flex flex-col flex-1">
-        {/* PDF Editor at the top - always visible */}
-        <div className="border-b bg-white dark:bg-gray-900 w-full">
-          {/* Header */}
-          <header className="border-b bg-white dark:bg-gray-900 px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <img
-                src="/70x70logo.png"
-                alt="PDF4EVER Logo"
-                className="h-8 w-8"
-              />
-              <span className="text-xl font-bold">
-                <span style={{ color: "#005aff" }}>PDF4</span>
-                <span style={{ color: "#ff3900" }}>EVER</span>
-              </span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Button variant="ghost" size="sm">
-                  Sign In
-                </Button>
-                <Button size="sm">Sign Up</Button>
-              </div>
-            </div>
-          </header>
-          {isMobile && (
-            <div className="bg-blue-100 text-blue-800 px-4 py-2 text-center">
-              Welcome to the mobile version!
-            </div>
-          )}
+    <div className="min-h-screen bg-background flex flex-col items-center">
+      {/* Header */}
+      <header className="w-full border-b bg-background sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <Link to="/" className="flex items-center space-x-3">
+            <img src="/70x70logo.png" alt="PDF4EVER Logo" className="h-8 w-8" />
+            <span className="text-xl font-bold">
+              <span className="text-blue-600">PDF4</span>
+              <span className="text-orange-500">EVER</span>
+            </span>
+          </Link>
+          <div className="flex items-center space-x-2">
+            <ThemeToggle />
+            {/* Auth buttons would go here, managed by the AuthProvider */}
+            <Button variant="ghost" size="sm">Sign In</Button>
+            <Button size="sm">Sign Up</Button>
+          </div>
         </div>
-  
-        {/* PDF Editor container */}
-        <div className="flex-1 min-h-0 w-full relative overflow-auto bg-white">
-          <PDFEditorContainer />
+      </header>
+      
+      {/* PDF Editor section */}
+      <div className="w-full border-b shadow-inner-lg bg-gray-100 dark:bg-gray-900">
+        <div className="container mx-auto">
+           <div className="h-[calc(100vh-61px)] max-h-[800px]">
+            <PDFEditorProvider>
+                <PDFEditorContainer />
+            </PDFEditorProvider>
+           </div>
         </div>
       </div>
-  
-      {/* Landing page content below the PDF editor, also width-capped */}
-      <div className="w-full max-w-5xl mx-auto">
+
+      {/* Landing page content below the editor */}
+      <div className="w-full">
         <Landing />
       </div>
+
+      {/* Footer */}
+      <footer className="w-full bg-gray-900 text-white py-8">
+        <div className="container mx-auto px-4 text-center">
+          <p className="text-gray-400">© 2025 PDF4EVER. Privacy-first PDF editing for everyone.</p>
+        </div>
+      </footer>
     </div>
   );
 }

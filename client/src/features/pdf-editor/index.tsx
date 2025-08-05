@@ -11,6 +11,6 @@ export type {
   ToolRegistryContextType 
 } from './toolRegistry';
 
-export { useKeyboardShortcuts } from './useKeyboardShortcuts';
+export { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 export { useToolSettings } from './useToolSettings';
 export type { UseToolSettingsReturn, ToolSettings } from './useToolSettings';

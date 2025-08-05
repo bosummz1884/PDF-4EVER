@@ -1,25 +1,19 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { toolRegistry } from './toolRegistry';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { usePDFEditor } from '@/features/pdf-editor/PDFEditorContext';
-import { toolRegistry } from '@/features/pdf-editor/toolRegistry';
-import { ToolSettings, ToolType } from '@/types/pdf-types';
+import { usePDFEditor } from './PDFEditorContext';
+import { ToolSettings } from '@/types/pdf-types';
 
-export const ToolPanel: React.FC = () => {
-  // 1. Get EVERYTHING from our single source of truth
+export default function ToolPanel() {
   const { state, dispatch } = usePDFEditor();
   const { currentTool, toolSettings } = state;
 
-  // 2. Create a handler that dispatches an action to our central reducer
   const handleSettingChange = <K extends keyof ToolSettings>(key: K, value: ToolSettings[K]) => {
-    dispatch({
-      type: 'UPDATE_TOOL_SETTING',
-      payload: { toolId: currentTool, key, value },
-    });
+    dispatch({ type: 'UPDATE_TOOL_SETTING', payload: { toolId: currentTool, key, value } });
   };
 
-  // 3. Get tool definitions from our static list
   const currentToolData = toolRegistry[currentTool];
   const currentSettings = toolSettings[currentTool];
   const SettingsComponent = currentToolData.component;
@@ -46,7 +40,7 @@ export const ToolPanel: React.FC = () => {
                     size="icon"
                     className="h-12 w-12"
                     title={tool.label}
-                    onClick={() => dispatch({ type: 'SET_CURRENT_TOOL', payload: tool.name as ToolType })}
+                    onClick={() => dispatch({ type: 'SET_CURRENT_TOOL', payload: tool.name })}
                   >
                     {tool.icon}
                   </Button>
@@ -77,6 +71,4 @@ export const ToolPanel: React.FC = () => {
       )}
     </div>
   );
-};
-
-export default ToolPanel;
+}

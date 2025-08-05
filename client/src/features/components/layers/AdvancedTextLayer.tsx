@@ -1,115 +1,55 @@
-import React, { useState, useRef, useEffect } from "react";
-import type { TextBox } from "@/types/pdf-types";
+import React, { useState, useRef, useEffect } from 'react';
+import Draggable from 'react-draggable';
+import { TextElement, PDFEditorAction } from '@/types/pdf-types';
 
-export interface AdvancedTextLayerProps {
-  textBoxes: TextBox[];
-  textLayerElements: any[];
-  selectedBoxIds: Set<string>;
-  onSelect: (id: string) => void;
-  onMultiSelect: (id: string) => void;
-  onClearSelection: () => void;
-  onUpdate: (id: string, updates: Partial<TextBox>) => void;
-  onRemove: (id: string) => void;
-  onAdd: (box: Omit<TextBox, "id">) => void;
-  currentPage: number;
-  canvasRef: React.RefObject<HTMLCanvasElement>;
-  fontList?: any[];
+interface AdvancedTextLayerProps {
+  textElements: TextElement[];
+  selectedElementId: string | null;
+  scale: number;
+  page: number;
+  dispatch: React.Dispatch<PDFEditorAction>;
 }
 
-const AdvancedTextLayer: React.FC<AdvancedTextLayerProps> = ({
-  textBoxes,
-  selectedBoxIds,
-  onSelect,
-  onMultiSelect,
-  onClearSelection,
-  onUpdate,
-  onRemove,
-  onAdd,
-  currentPage,
-  canvasRef,
-  fontList = [],
-}) => {
-  // Filter text boxes for current page
-  const currentPageTextBoxes = textBoxes.filter(box => box.page === currentPage);
-
-  // Handle click on empty area to clear selection
-  const handleBackgroundClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClearSelection();
-    }
+export default function AdvancedTextLayer({ textElements, selectedElementId, scale, page, dispatch }: AdvancedTextLayerProps) {
+  const handleUpdate = (id: string, updates: Partial<TextElement>) => {
+    dispatch({ type: 'UPDATE_TEXT_ELEMENT', payload: { page, id, updates } });
   };
 
-  // Add new text box on double click
-  const handleDoubleClick = (e: React.MouseEvent) => {
-    if (e.target !== e.currentTarget) return;
-
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    onAdd({
-      text: "Double-click to edit",
-      x,
-      y,
-      width: 200,
-      height: 30,
-      fontSize: 16,
-      fontFamily: "Arial",
-      color: "#000000",
-      page: currentPage,
-      rotation: 0,
-      align: "left",
-      font: "Arial",
-      size: 16,
-    });
+  const handleSelect = (id: string) => {
+    dispatch({ type: 'SET_SELECTED_ELEMENT', payload: { id, type: 'text' } });
   };
 
   return (
-    <div 
-      className="relative w-full h-full"
-      onClick={handleBackgroundClick}
-      onDoubleClick={handleDoubleClick}
-    >
-      {currentPageTextBoxes.map(box => (
-        <TextBoxElement
-          key={box.id}
-          box={box}
-          isSelected={selectedBoxIds.has(box.id)}
-          onSelect={onSelect}
-          onMultiSelect={onMultiSelect}
-          onUpdate={onUpdate}
-          onRemove={onRemove}
-          fontList={fontList}
+    <div className="absolute inset-0 pointer-events-none">
+      {textElements.map(element => (
+        <TextBox
+          key={element.id}
+          element={element}
+          isSelected={selectedElementId === element.id}
+          onUpdate={handleUpdate}
+          onSelect={handleSelect}
+          onSaveHistory={() => dispatch({ type: 'SAVE_TO_HISTORY' })}
+          scale={scale}
         />
       ))}
     </div>
   );
-}; // <- This closing brace was missing
-
-// TextBoxElement component to render individual text boxes
-interface TextBoxElementProps {
-  box: TextBox;
-  isSelected: boolean;
-  onSelect: (id: string) => void;
-  onMultiSelect: (id: string) => void;
-  onUpdate: (id: string, updates: Partial<TextBox>) => void;
-  onRemove: (id: string) => void;
-  fontList: any[];
 }
 
-const TextBoxElement: React.FC<TextBoxElementProps> = ({
-  box,
-  isSelected,
-  onSelect,
-  onMultiSelect,
-  onUpdate,
-}) => {
+// Inner component for individual text boxes
+interface TextBoxProps {
+  element: TextElement;
+  isSelected: boolean;
+  onUpdate: (id: string, updates: Partial<TextElement>) => void;
+  onSelect: (id: string) => void;
+  onSaveHistory: () => void;
+  scale: number;
+}
+
+const TextBox: React.FC<TextBoxProps> = ({ element, isSelected, onUpdate, onSelect, onSaveHistory, scale }) => {
   const [isEditing, setIsEditing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Focus textarea when editing starts
   useEffect(() => {
     if (isEditing && textareaRef.current) {
       textareaRef.current.focus();
@@ -117,86 +57,62 @@ const TextBoxElement: React.FC<TextBoxElementProps> = ({
     }
   }, [isEditing]);
 
-  const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (e.ctrlKey || e.metaKey) {
-      onMultiSelect(box.id);
-    } else {
-      onSelect(box.id);
-    }
-  };
-
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsEditing(true);
   };
 
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    onUpdate(box.id, { text: e.target.value });
-  };
-
   const handleBlur = () => {
     setIsEditing(false);
+    onSaveHistory();
   };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Escape") {
-      setIsEditing(false);
-    } else if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      setIsEditing(false);
-    }
+  
+  const textStyle: React.CSSProperties = {
+    fontFamily: element.fontFamily,
+    fontSize: element.fontSize * scale,
+    color: element.color,
+    fontWeight: element.bold ? 'bold' : 'normal',
+    fontStyle: element.italic ? 'italic' : 'normal',
+    textDecoration: element.underline ? 'underline' : 'none',
+    textAlign: element.textAlign,
+    lineHeight: element.lineHeight,
   };
 
   return (
-    <div
-      className={`absolute transform ${isSelected ? "ring-2 ring-blue-500" : ""}`}
-      style={{
-        left: `${box.x}px`,
-        top: `${box.y}px`,
-        width: `${box.width}px`,
-        height: `${box.height}px`,
-        transform: `rotate(${box.rotation || 0}deg)`,
-        cursor: isSelected ? "move" : "pointer",
+    <Draggable
+      position={{ x: element.x * scale, y: element.y * scale }}
+      onStop={(_, data) => {
+          onUpdate(element.id, { x: data.x / scale, y: data.y / scale });
+          onSaveHistory();
       }}
-      onClick={handleClick}
-      onDoubleClick={handleDoubleClick}
+      scale={1}
+      disabled={isEditing}
     >
-      {isEditing ? (
-        <textarea
-          ref={textareaRef}
-          className="w-full h-full p-0 m-0 bg-transparent resize-none outline-none"
-          value={box.text}
-          onChange={handleTextChange}
-          onBlur={handleBlur}
-          onKeyDown={handleKeyDown}
-          style={{
-            fontFamily: box.fontFamily || "Arial",
-            fontSize: `${box.fontSize || 16}px`,
-            color: box.color || "#000000",
-            fontWeight: box.fontWeight || "normal",
-            fontStyle: box.fontStyle || "normal",
-            textAlign: box.align || "left",
-          }}
-        />
-      ) : (
-        <div
-          className="w-full h-full overflow-hidden"
-          style={{
-            fontFamily: box.fontFamily || "Arial",
-            fontSize: `${box.fontSize || 16}px`,
-            color: box.color || "#000000",
-            fontWeight: box.fontWeight || "normal",
-            fontStyle: box.fontStyle || "normal",
-            textAlign: box.align || "left",
-            whiteSpace: "pre-wrap",
-          }}
-        >
-          {box.text}
-        </div>
-      )}
-    </div>
+      <div
+        className={`absolute pointer-events-auto cursor-move ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
+        style={{
+          width: element.width * scale,
+          height: element.height * scale,
+          transform: `rotate(${element.rotation}deg)`,
+        }}
+        onClick={(e) => { e.stopPropagation(); onSelect(element.id); }}
+        onDoubleClick={handleDoubleClick}
+      >
+        {isEditing ? (
+          <textarea
+            ref={textareaRef}
+            value={element.text}
+            onChange={(e) => onUpdate(element.id, { text: e.target.value })}
+            onBlur={handleBlur}
+            className="w-full h-full bg-white/80 resize-none outline-none border-none p-0"
+            style={textStyle}
+          />
+        ) : (
+          <div className="w-full h-full overflow-hidden whitespace-pre-wrap select-none" style={textStyle}>
+            {element.text}
+          </div>
+        )}
+      </div>
+    </Draggable>
   );
 };
-
-export default AdvancedTextLayer;

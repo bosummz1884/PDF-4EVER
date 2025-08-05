@@ -1,36 +1,32 @@
-import React from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Toaster } from "@/components/ui/toast";
-import { useToast } from "@/features/hooks/use-toast";
-import { useIsMobile } from "@/features/hooks/use-mobile";
-import { ThemeProvider } from "@/components/layout/ThemeProvider";
-import HomePage from "@/pages/home";
-import NotFoundPage from "@/pages/not-found";
-import PrivacyPolicyPage from "@/pages/privacy-policy";
-import TermsOfServicePage from "@/pages/terms-of-service";
-import PDFEditorContainer from "@/features/pdf-editor/PDFEditorContainer";
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Toaster } from '@/components/ui/toast';
+import { ThemeProvider } from '@/components/layout/ThemeProvider';
+import { AuthProvider } from '@/components/auth/AuthSystem';
+
+// Import Page Components
+import HomePage from '@/pages/home';
+import PricingPage from '@/pages/pricing';
+import PrivacyPolicyPage from '@/pages/privacy-policy';
+import TermsOfServicePage from '@/pages/terms-of-service';
+import NotFoundPage from '@/pages/not-found';
+import PDFToolkit from './components/PDFToolkit';
 
 export default function App() {
-  const isMobile = useIsMobile();
-
-  // For toasts (global notifications)
-  useToast();
-
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="pdf4ever-theme">
+    <ThemeProvider defaultTheme="dark" storageKey="pdf-app-theme">
       <BrowserRouter>
-        {/* Toasts (global UI notifications) */}
-        <Toaster />
-        {isMobile && <div>Welcome, mobile user!</div>}
-
-        {/* App Content */}
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/editor" element={<PDFEditorContainer />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-          <Route path="/terms-of-service" element={<TermsOfServicePage />} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
+        <AuthProvider>
+          <Toaster />
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/toolkit" element={<PDFToolkit />} />
+            <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>
   );
