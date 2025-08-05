@@ -3,7 +3,7 @@
     "client/src/**/*",
     "shared/**/*",
     "server/**/*",
-    "client/src/types"
+    "types/**/*"
   ],
   "exclude": [
     "node_modules",
