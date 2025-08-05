@@ -1,34 +1,15 @@
-// Configure PDF.js worker
+// src/lib/pdfWorker.ts
 import * as pdfjsLib from "pdfjs-dist";
 
-// Configure the worker to use local file
-pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.js";
+// By importing the worker entry file, Vite will bundle it and provide the correct path.
+// This is the modern and recommended approach for using pdf.js with bundlers.
+import pdfWorker from "pdfjs-dist/build/pdf.worker.entry";
 
-// Enhanced worker initialization with error handling
-let workerInitialized = false;
+// Set the worker source to the imported module.
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
-const initializeWorker = () => {
-  if (workerInitialized) return;
+// The rest of your application can now use pdfjsLib as usual.
+// You no longer need the manual initialization logic.
+console.log("PDF.js worker configured successfully using bundled entry.");
 
-  try {
-    // Verify worker source is set
-    if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.js";
-    }
-    workerInitialized = true;
-    console.log(
-      "PDF.js worker initialized with source:",
-      pdfjsLib.GlobalWorkerOptions.workerSrc
-    );
-  } catch (error) {
-    console.error("PDF.js worker setup error:", error);
-    workerInitialized = true; // Mark as initialized even if failed
-  }
-};
-
-// Initialize worker on module load
-if (typeof window !== "undefined") {
-  initializeWorker();
-}
-
-export { pdfjsLib, initializeWorker };
+export { pdfjsLib };
