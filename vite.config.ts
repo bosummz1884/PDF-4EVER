@@ -4,6 +4,7 @@ import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { visualizer } from "rollup-plugin-visualizer";
 
 // 👇 These two lines REPLACE `__filename` and `__dirname`
 const __filename = fileURLToPath(import.meta.url);
@@ -19,6 +20,7 @@ export default defineConfig({
   plugins: [
     react(),
     runtimeErrorOverlay(),
+    visualizer({ open: true }), // 👈 Add this here
     // If you need the replit plugin, you must use Vite's async config!
     // For now, let's keep it simple and synchronous.
   ],
