@@ -1,15 +1,15 @@
 // src/lib/pdfWorker.ts
 import * as pdfjsLib from "pdfjs-dist";
 
-// By importing the worker entry file, Vite will bundle it and provide the correct path.
-// This is the modern and recommended approach for using pdf.js with bundlers.
-import pdfWorker from "pdfjs-dist/build/pdf.worker.entry";
+// Change the filename here to point to the minified version.
+const workerSrc = "/pdf.worker.min.js";
 
-// Set the worker source to the imported module.
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+// The rest of the configuration remains exactly the same.
+pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
 
-// The rest of your application can now use pdfjsLib as usual.
-// You no longer need the manual initialization logic.
-console.log("PDF.js worker configured successfully using bundled entry.");
+console.log(
+  "PDF.js worker manually initialized with minified source:",
+  pdfjsLib.GlobalWorkerOptions.workerSrc
+);
 
 export { pdfjsLib };
