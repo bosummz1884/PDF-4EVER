@@ -1,14 +1,17 @@
 // src/lib/pdfWorker.ts
 import * as pdfjsLib from "pdfjs-dist";
 
-// Change the filename here to point to the minified version.
-const workerSrc = "/pdf.worker.min.js";
+// This special "?url" import is a Vite directive.
+// It tells Vite to find the worker file in your node_modules,
+// bundle it, and give you back a URL that is guaranteed to be served correctly.
+import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.js?url";
 
-// The rest of the configuration remains exactly the same.
-pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+// Configure PDF.js to use the valid URL that Vite provides.
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
+// This will confirm that Vite is now managing the worker path.
 console.log(
-  "PDF.js worker manually initialized with minified source:",
+  "PDF.js worker configured by Vite with source:",
   pdfjsLib.GlobalWorkerOptions.workerSrc
 );
 
