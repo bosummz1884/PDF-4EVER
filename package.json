@@ -6,7 +6,6 @@
   "scripts": {
     "eslint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "lint:fix": "eslint \"client/src/**/*.{js,jsx,ts,tsx}\" --fix",
-    "postinstall": "node ./copy-worker.js",
     "dev": "concurrently \"npm:dev:server\" \"npm:dev:client\"",
     "dev:server": "NODE_ENV=development tsx server/index.ts",
     "dev:client": "vite",
@@ -88,7 +87,7 @@
     "passport-google-oauth20": "^2.0.0",
     "passport-local": "^1.0.0",
     "pdf-lib": "^1.17.1",
-    "pdfjs-dist": "^5.3.31",
+    "pdfjs-dist": "^5.4.54",
     "react": "^18.3.1",
     "react-color": "^2.19.3",
     "react-colorful": "^5.6.1",
