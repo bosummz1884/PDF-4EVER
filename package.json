@@ -6,7 +6,7 @@
   "scripts": {
     "eslint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "lint:fix": "eslint \"client/src/**/*.{js,jsx,ts,tsx}\" --fix",
-    "postinstall": "cp node_modules/pdfjs-dist/build/pdf.worker.js client/public/pdf.worker.js",
+    "postinstall": "node ./copy-worker.js",
     "dev": "concurrently \"npm:dev:server\" \"npm:dev:client\"",
     "dev:server": "NODE_ENV=development tsx server/index.ts",
     "dev:client": "vite",
