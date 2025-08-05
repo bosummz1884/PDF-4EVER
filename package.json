@@ -9,7 +9,7 @@
     "dev": "concurrently \"npm:dev:server\" \"npm:dev:client\"",
     "dev:server": "NODE_ENV=development tsx server/index.ts",
     "dev:client": "vite",
-    "build": "cp node_modules/pdfjs-dist/build/pdf.worker.min.js client/public/ && vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "build": "cp node_modules/pdfjs-dist/build/pdf.worker.js client/public/pdf.worker.js && vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "cross-env NODE_ENV=production node dist/index.js",
     "check": "tsc",
     "db:push": "drizzle-kit push"
