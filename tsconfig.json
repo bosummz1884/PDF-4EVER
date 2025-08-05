@@ -21,7 +21,8 @@
     "lib": [
       "esnext",
       "dom",
-      "dom.iterable"
+      "dom.iterable",
+      "WebWorker"
     ],
     "jsx": "preserve",
     "esModuleInterop": true,
