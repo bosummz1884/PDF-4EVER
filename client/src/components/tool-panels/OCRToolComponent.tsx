@@ -7,12 +7,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePDFEditor } from '@/features/pdf-editor/PDFEditorContext';
 import { OCRResult } from '@/types/pdf-types';
-import { Upload, Copy, Download, Zap } from 'lucide-react';
+import { Upload, Copy, Zap } from 'lucide-react';
 
 export const OCRToolComponent: React.FC = () => {
   // GET DISPATCH FROM THE CONTEXT
   const { state, dispatch } = usePDFEditor();
-  const { pdfDocument, canvasRef, currentPage } = state;
+  const { canvasRef, currentPage } = state;
 
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);

@@ -1,15 +1,15 @@
 import React, { createContext, useContext, useReducer, useRef, ReactNode } from 'react';
 import { PDFEditorState, PDFEditorAction, ToolType, ToolSettings } from '@/types/pdf-types'; // Import the unified action type
-import { getDocument, PDFDocumentProxy } from 'pdfjs-dist';
+import { getDocument } from 'pdfjs-dist';
 import { toolRegistry } from './toolRegistry';
 import '@/lib/pdfWorker';
-import { savePdfWithAnnotations, triggerDownload } from '@/lib/savePdfWithText';
+import { savePdfWithAnnotations, triggerDownload } from '../../lib/savePdf';
 
 const initialState: PDFEditorState = {
   pdfDocument: null, originalPdfData: null, currentPage: 1, totalPages: 0, scale: 1.0,
   rotation: 0, isLoading: false, fileName: '', annotations: {}, textElements: {},
   formFields: {}, whiteoutBlocks: {}, ocrResults: {}, selectedElementId: null,
-  selectedElementType: null, currentTool: 'select',
+  selectedElementType: null, currentTool: 'select', canvasRef: null,
   toolSettings: Object.values(toolRegistry).reduce((acc, tool) => {
     acc[tool.name] = { ...tool.defaultSettings };
     return acc;

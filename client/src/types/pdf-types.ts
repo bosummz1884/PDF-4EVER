@@ -43,6 +43,7 @@ export interface PDFEditorState {
   toolSettings: Record<ToolType, ToolSettings>;
   history: Partial<PDFEditorState>[];
   historyIndex: number;
+  canvasRef: React.RefObject<HTMLCanvasElement> | null;
 }
 
 
@@ -125,7 +126,7 @@ export interface Annotation {
   strokeWidth?: number;
   strokeColor?: string;
   fillColor?: string;
-  strokeStyle?: "solid" | "dashed" | "dotted";
+  strokeStyle?: 'solid' | 'dashed' | 'dotted' | 'double';
   points?: { x: number; y: number }[];
   content?: string;
   src?: string;
