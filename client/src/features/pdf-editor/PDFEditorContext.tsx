@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useReducer, useRef, ReactNode } from 'react';
-import { PDFEditorState, PDFEditorAction, ToolType, ToolSettings } from '@/types/pdf-types'; // Import the unified action type
-import { getDocument } from 'pdfjs-dist';
+import React, { createContext, useContext, useReducer, useRef, ReactNode, useCallback } from 'react';
+import { PDFEditorState, PDFEditorAction, ToolType, ToolSettings, EditorTool } from '@/types/pdf-types'; // Import the unified action type
+import { getDocument, RenderTask } from 'pdfjs-dist';
 import { toolRegistry } from './toolRegistry';
 import '@/lib/pdfWorker';
 import { savePdfWithAnnotations, triggerDownload } from '../../lib/savePdf';
@@ -10,9 +10,10 @@ const initialState: PDFEditorState = {
   rotation: 0, isLoading: false, fileName: '', annotations: {}, textElements: {},
   formFields: {}, whiteoutBlocks: {}, ocrResults: {}, selectedElementId: null,
   selectedElementType: null, currentTool: 'select', canvasRef: null,
-  toolSettings: Object.values(toolRegistry).reduce((acc, tool) => {
-    acc[tool.name] = { ...tool.defaultSettings };
-    return acc;
+  toolSettings: Object.values(toolRegistry).reduce(
+    (acc: Record<ToolType, ToolSettings>, tool: EditorTool) => { // 👈 2. Add explicit types here
+      acc[tool.name] = { ...tool.defaultSettings };
+      return acc;
   }, {} as Record<ToolType, ToolSettings>),
   history: [], historyIndex: -1,
 };
@@ -92,8 +93,11 @@ export function PDFEditorProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(pdfEditorReducer, initialState);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // 👇 Create a ref to hold the active render task
+  const renderTaskRef = useRef<RenderTask | null>(null);
 
-  const loadPDF = async (file: File) => {
+  const loadPDF = useCallback(async (file: File) => { // 👈 Wrap with useCallback
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
       const arrayBuffer = await file.arrayBuffer();
@@ -104,25 +108,53 @@ export function PDFEditorProvider({ children }: { children: ReactNode }) {
       console.error('Failed to load PDF:', error);
       dispatch({ type: 'SET_LOADING', payload: false });
     }
-  };
+  }, []); // 👈 Empty dependency array means this function is created only once
 
-  const renderPage = async (pageNumber?: number) => {
+  const renderPage = useCallback(async (pageNumber?: number) => { // 👈 Wrap with useCallback
     const pageToRender = pageNumber || state.currentPage;
     if (!state.pdfDocument || !canvasRef.current) return;
-    dispatch({ type: 'SET_LOADING', payload: true });
-    const canvas = canvasRef.current;
-    const page = await state.pdfDocument.getPage(pageToRender);
-    const viewport = page.getViewport({ scale: state.scale, rotation: state.rotation });
-    canvas.height = viewport.height;
-    canvas.width = viewport.width;
-    const context = canvas.getContext('2d');
-    if (context) {
-      await page.render({ canvasContext: context, viewport }).promise;
-    }
-    dispatch({ type: 'SET_LOADING', payload: false });
-  };
 
-  const savePDF = async () => {
+    // 👇 CRITICAL: Cancel any existing render task before starting a new one
+    if (renderTaskRef.current) {
+      renderTaskRef.current.cancel();
+    }
+    
+    dispatch({ type: 'SET_LOADING', payload: true });
+    
+    try {
+      const canvas = canvasRef.current;
+      const page = await state.pdfDocument.getPage(pageToRender);
+      const viewport = page.getViewport({ scale: state.scale, rotation: state.rotation });
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+      const context = canvas.getContext('2d');
+
+      if (context) {
+        // 👇 Store the new render task in our ref
+        const renderTask = page.render({ canvasContext: context, viewport });
+        renderTaskRef.current = renderTask;
+        
+        await renderTask.promise;
+        renderTaskRef.current = null; // Clear the ref on success
+      }
+    } catch (error: RenderTask | unknown) {
+        renderTaskRef.current = null; // Clear the ref on error
+        // pdf.js throws a "RenderingCancelledException" which is expected, ignore it.
+        if (
+            typeof error === 'object' &&
+            error !== null &&
+            'name' in error &&
+            (error as { name: string }).name !== 'RenderingCancelledException'
+        ) {
+            console.error("PDF rendering failed:", error);
+        }
+    } finally {
+        dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  }, [state.pdfDocument, state.currentPage, state.scale, state.rotation]); // 👈 Dependencies for renderPage
+
+  const savePDF = useCallback(async () => { // 👈 Wrap with useCallback
+    // ... (savePDF implementation remains the same)
     if (!state.originalPdfData) {
       alert("No PDF file loaded to save.");
       return;
@@ -141,7 +173,7 @@ export function PDFEditorProvider({ children }: { children: ReactNode }) {
     } finally {
         dispatch({ type: 'SET_LOADING', payload: false });
     }
-  };
+  }, [state.originalPdfData, state.annotations, state.textElements, state.whiteoutBlocks, state.fileName]); // 👈 Dependencies for savePDF
 
   const contextValue = { state, dispatch, canvasRef, fileInputRef, loadPDF, renderPage, savePDF };
   return <PDFEditorContext.Provider value={contextValue}>{children}</PDFEditorContext.Provider>;
