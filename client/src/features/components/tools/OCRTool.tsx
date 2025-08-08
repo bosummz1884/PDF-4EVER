@@ -1,4 +1,10 @@
-import React, { useState, useRef, useCallback, ChangeEvent, DragEvent } from "react";
+import React, {
+  useState,
+  useRef,
+  useCallback,
+  ChangeEvent,
+  DragEvent,
+} from "react";
 import { ocrService, OCR_LANGUAGES } from "@/pages/services/ocrService";
 import { OCRResult, OCRToolProps } from "client/src/types/pdf-types";
 
@@ -21,7 +27,11 @@ const OCRTool: React.FC<OCRToolProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const performOCROnImage = useCallback(
-    async (imageData: string | File, pageNumber: number = 1, totalPages: number = 1) => {
+    async (
+      imageData: string | File,
+      pageNumber: number = 1,
+      totalPages: number = 1,
+    ) => {
       setIsProcessing(true);
       setError(null);
       setProgress(0);
@@ -32,7 +42,7 @@ const OCRTool: React.FC<OCRToolProps> = ({
           selectedLanguage,
           pageNumber,
           totalPages,
-          setProgress
+          setProgress,
         );
 
         if (totalPages === 1) {
@@ -53,7 +63,7 @@ const OCRTool: React.FC<OCRToolProps> = ({
         }
       }
     },
-    [selectedLanguage, onTextDetected, onTextExtracted]
+    [selectedLanguage, onTextDetected, onTextExtracted],
   );
 
   const handlePdfUpload = useCallback(
@@ -61,13 +71,13 @@ const OCRTool: React.FC<OCRToolProps> = ({
       setIsProcessing(true);
       setProgress(0);
       setError(null);
-      
+
       try {
-        const { ocrText, ocrResults: results, previewUrl: preview } = await ocrService.performPDFOCR(
-          file,
-          selectedLanguage,
-          setProgress
-        );
+        const {
+          ocrText,
+          ocrResults: results,
+          previewUrl: preview,
+        } = await ocrService.performPDFOCR(file, selectedLanguage, setProgress);
 
         setExtractedText(ocrText);
         setOcrResults(results);
@@ -81,7 +91,7 @@ const OCRTool: React.FC<OCRToolProps> = ({
         setIsProcessing(false);
       }
     },
-    [selectedLanguage, onTextDetected, onTextExtracted]
+    [selectedLanguage, onTextDetected, onTextExtracted],
   );
 
   const handleFileInput = (): void => fileInputRef.current?.click();
@@ -89,7 +99,7 @@ const OCRTool: React.FC<OCRToolProps> = ({
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
     setError(null);
     setPreviewUrl(null);
     setExtractedText("");
@@ -121,10 +131,8 @@ const OCRTool: React.FC<OCRToolProps> = ({
     setError(null);
 
     try {
-      const { extractedText: pageText, results } = await ocrService.extractPDFText(
-        pdfDocument,
-        currentPage
-      );
+      const { extractedText: pageText, results } =
+        await ocrService.extractPDFText(pdfDocument, currentPage);
 
       setExtractedText(pageText);
       setOcrResults(results);
@@ -155,21 +163,24 @@ const OCRTool: React.FC<OCRToolProps> = ({
   const createTextBoxFromResult = useCallback(
     (result: OCRResult) => {
       if (onTextBoxCreate) {
-        onTextBoxCreate(result.boundingBox.x0, result.boundingBox.y0, result.text);
+        onTextBoxCreate(
+          result.boundingBox.x0,
+          result.boundingBox.y0,
+          result.text,
+        );
       }
     },
-    [onTextBoxCreate]
+    [onTextBoxCreate],
   );
 
   const highlightTextOnCanvas = useCallback(
-  (result: OCRResult) => {
-    if (canvasRef) {
-      ocrService.highlightTextOnCanvas(result, canvasRef);
-    }
-  },
-  [canvasRef]
-);
-
+    (result: OCRResult) => {
+      if (canvasRef) {
+        ocrService.highlightTextOnCanvas(result, canvasRef);
+      }
+    },
+    [canvasRef],
+  );
 
   const handleQuickImageOCR = async () => {
     const input = document.createElement("input");
@@ -198,15 +209,15 @@ const OCRTool: React.FC<OCRToolProps> = ({
   const handleDrop = async (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     if (isProcessing) return;
-    
+
     const file = e.dataTransfer.files[0];
     if (!file) return;
-    
+
     setError(null);
     setPreviewUrl(null);
     setExtractedText("");
     setOcrResults([]);
-    
+
     if (file.type === "application/pdf") {
       await handlePdfUpload(file);
     } else if (file.type.startsWith("image/")) {
@@ -219,26 +230,28 @@ const OCRTool: React.FC<OCRToolProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-oid="mghcfzz">
       <button
         onClick={handleQuickImageOCR}
         className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
         disabled={isProcessing}
+        data-oid="b3uzp7."
       >
         🔎 Extract Text from Image (Quick OCR)
       </button>
-      
+
       <div
         className={`border-2 border-dashed rounded-lg py-6 px-4 cursor-pointer transition-colors ${
-          isProcessing 
-            ? "opacity-60 pointer-events-none" 
+          isProcessing
+            ? "opacity-60 pointer-events-none"
             : "hover:bg-gray-50 border-gray-300"
         }`}
         onClick={handleFileInput}
         onDrop={handleDrop}
-        onDragOver={e => e.preventDefault()}
+        onDragOver={(e) => e.preventDefault()}
         role="button"
         tabIndex={0}
+        data-oid="-s.v5jt"
       >
         <input
           ref={fileInputRef}
@@ -246,129 +259,159 @@ const OCRTool: React.FC<OCRToolProps> = ({
           accept="image/*,application/pdf"
           className="hidden"
           onChange={handleFileChange}
+          data-oid="uborbs-"
         />
-        <div className="flex flex-col items-center">
-          <div className="font-semibold text-gray-700">
+
+        <div className="flex flex-col items-center" data-oid="gq7wqx7">
+          <div className="font-semibold text-gray-700" data-oid="_5vyd15">
             Drag & drop or click to upload an image or PDF
           </div>
-          <div className="text-sm text-gray-500 mt-1">
+          <div className="text-sm text-gray-500 mt-1" data-oid="y313lyc">
             Supported: JPG, PNG, PDF
           </div>
         </div>
       </div>
-      
+
       {previewUrl && (
-        <div className="text-center">
+        <div className="text-center" data-oid="etxm8v5">
           <img
             src={previewUrl}
             alt="Preview"
             className="inline-block max-h-56 border rounded shadow-sm"
+            data-oid="xn-.s.5"
           />
         </div>
       )}
-      
-      <div className="flex flex-wrap gap-2 items-center">
+
+      <div className="flex flex-wrap gap-2 items-center" data-oid="cj-3uej">
         <button
           onClick={extractTextFromPDF}
           disabled={isProcessing || !pdfDocument}
           className="px-3 py-2 bg-gray-600 text-white rounded disabled:opacity-50"
+          data-oid="swtj_5y"
         >
           Extract PDF Text
         </button>
-        
+
         <button
           onClick={performCanvasOCR}
           disabled={isProcessing || !canvasRef?.current}
           className="px-3 py-2 bg-gray-600 text-white rounded disabled:opacity-50"
+          data-oid="tfcym4s"
         >
           OCR Canvas
         </button>
-        
+
         <select
           value={selectedLanguage}
           onChange={(e) => setSelectedLanguage(e.target.value)}
           disabled={isProcessing}
           className="px-2 py-1 border rounded"
+          data-oid="1x-xv_n"
         >
           {OCR_LANGUAGES.map((lang) => (
-            <option key={lang.code} value={lang.code}>
+            <option key={lang.code} value={lang.code} data-oid="_t2-di:">
               {lang.name}
             </option>
           ))}
         </select>
-        
+
         {ocrResults.length > 0 && (
-          <span className="text-sm font-medium text-gray-600">
+          <span
+            className="text-sm font-medium text-gray-600"
+            data-oid=".o7oj:3"
+          >
             {ocrResults.length} text regions found
           </span>
         )}
       </div>
-      
+
       {isProcessing && (
-        <div className="space-y-2">
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
+        <div className="space-y-2" data-oid="vapj0nv">
+          <div
+            className="w-full bg-gray-200 rounded-full h-2"
+            data-oid="-89eqtl"
+          >
+            <div
               className="bg-blue-600 h-2 rounded-full transition-all duration-200"
               style={{ width: `${progress}%` }}
+              data-oid="6zrd95w"
             />
           </div>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600" data-oid="u4vmexo">
             {progress > 0 ? `Processing: ${progress}%` : "Initializing..."}
           </p>
         </div>
       )}
-      
+
       {error && (
-        <div className="text-red-600 text-sm bg-red-50 p-2 rounded">
+        <div
+          className="text-red-600 text-sm bg-red-50 p-2 rounded"
+          data-oid="-tlhdw7"
+        >
           {error}
         </div>
       )}
-      
+
       {extractedText && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <strong className="text-sm">Extracted Text</strong>
-            <button 
+        <div className="space-y-2" data-oid="g8h6kj8">
+          <div className="flex items-center gap-2" data-oid="z:u5myh">
+            <strong className="text-sm" data-oid="608ed5_">
+              Extracted Text
+            </strong>
+            <button
               onClick={copyToClipboard}
               className="text-xs px-2 py-1 bg-gray-100 rounded hover:bg-gray-200"
+              data-oid="r_p9_-c"
             >
               Copy
             </button>
-            <button 
+            <button
               onClick={downloadText}
               className="text-xs px-2 py-1 bg-gray-100 rounded hover:bg-gray-200"
+              data-oid="p8sdtwv"
             >
               Download
             </button>
           </div>
           <textarea
             value={extractedText}
-            onChange={e => setExtractedText(e.target.value)}
+            onChange={(e) => setExtractedText(e.target.value)}
             className="w-full min-h-20 font-mono text-sm border rounded p-2"
             placeholder="Extracted text will appear here..."
+            data-oid="ud.ezf8"
           />
         </div>
       )}
-      
+
       {ocrResults.length > 0 && (
-        <div className="space-y-2">
-          <strong className="text-sm">Detected Text Regions</strong>
-          <div className="max-h-48 overflow-y-auto space-y-2">
+        <div className="space-y-2" data-oid="kwfvfd7">
+          <strong className="text-sm" data-oid="au4tvrh">
+            Detected Text Regions
+          </strong>
+          <div
+            className="max-h-48 overflow-y-auto space-y-2"
+            data-oid="faqbfu6"
+          >
             {ocrResults.map((result) => (
               <div
                 key={result.id}
                 className="flex items-center justify-between p-2 border rounded bg-gray-50"
+                data-oid="uo-sika"
               >
-                <div className="flex-1">
-                  <div className="font-medium text-sm">{result.text}</div>
-                  <div className="text-xs text-gray-500">
+                <div className="flex-1" data-oid="vb1pzn8">
+                  <div className="font-medium text-sm" data-oid="pi2hp0v">
+                    {result.text}
+                  </div>
+                  <div className="text-xs text-gray-500" data-oid="boyao6v">
                     Confidence: {Math.round(result.confidence)}%
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2" data-oid="p909nw4">
                   <button
                     className="text-xs px-2 py-1 bg-yellow-200 rounded hover:bg-yellow-300"
                     onClick={() => highlightTextOnCanvas(result)}
+                    data-oid="sd-eu6_"
                   >
                     Highlight
                   </button>
@@ -376,6 +419,7 @@ const OCRTool: React.FC<OCRToolProps> = ({
                     <button
                       className="text-xs px-2 py-1 bg-blue-200 rounded hover:bg-blue-300"
                       onClick={() => createTextBoxFromResult(result)}
+                      data-oid="3edy-t9"
                     >
                       Add Box
                     </button>

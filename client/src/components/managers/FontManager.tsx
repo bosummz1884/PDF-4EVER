@@ -12,24 +12,67 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Type, Download, Eye, Search } from "lucide-react";
-import { FontInfo, FontManagerProps } from '../../types/pdf-types';
+import { FontInfo, FontManagerProps } from "../../types/pdf-types";
 import { usePDFFonts } from "../../features/hooks/usePDFFonts";
-
 
 // Standard PDF-safe fonts
 const STANDARD_FONTS: FontInfo[] = [
-  { name: "Helvetica", family: "Helvetica", style: "normal", weight: "normal", loaded: true },
-  { name: "Times-Roman", family: "Times", style: "normal", weight: "normal", loaded: true },
-  { name: "Courier", family: "Courier", style: "normal", weight: "normal", loaded: true },
-  { name: "Arial", family: "Arial", style: "normal", weight: "normal", loaded: true },
-  { name: "Georgia", family: "Georgia", style: "normal", weight: "normal", loaded: true },
-  { name: "Verdana", family: "Verdana", style: "normal", weight: "normal", loaded: true },
+  {
+    name: "Helvetica",
+    family: "Helvetica",
+    style: "normal",
+    weight: "normal",
+    loaded: true,
+  },
+  {
+    name: "Times-Roman",
+    family: "Times",
+    style: "normal",
+    weight: "normal",
+    loaded: true,
+  },
+  {
+    name: "Courier",
+    family: "Courier",
+    style: "normal",
+    weight: "normal",
+    loaded: true,
+  },
+  {
+    name: "Arial",
+    family: "Arial",
+    style: "normal",
+    weight: "normal",
+    loaded: true,
+  },
+  {
+    name: "Georgia",
+    family: "Georgia",
+    style: "normal",
+    weight: "normal",
+    loaded: true,
+  },
+  {
+    name: "Verdana",
+    family: "Verdana",
+    style: "normal",
+    weight: "normal",
+    loaded: true,
+  },
 ];
 
 // Popular Google Fonts
 const GOOGLE_FONTS = [
-  "Open Sans", "Roboto", "Lato", "Montserrat", "Source Sans Pro",
-  "Raleway", "Ubuntu", "Nunito", "Poppins", "Merriweather"
+  "Open Sans",
+  "Roboto",
+  "Lato",
+  "Montserrat",
+  "Source Sans Pro",
+  "Raleway",
+  "Ubuntu",
+  "Nunito",
+  "Poppins",
+  "Merriweather",
 ];
 
 export default function FontManager({
@@ -43,25 +86,33 @@ export default function FontManager({
   onFontStyleChange,
   showAdvanced = false,
   pdfDoc,
-}: FontManagerProps & {pdfDoc?: any}) {
+}: FontManagerProps & { pdfDoc?: any }) {
   // State
   const [availableFonts, setAvailableFonts] = useState<FontInfo[]>([]);
   const [loadingFonts, setLoadingFonts] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
-  const [fontPreview, setFontPreview] = useState("The quick brown fox jumps over the lazy dog");
+  const [fontPreview, setFontPreview] = useState(
+    "The quick brown fox jumps over the lazy dog",
+  );
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   // PDF Fonts hook
-  const { embeddedFonts, isLoading: loadingEmbeddedFonts, getFontInfoList } = usePDFFonts(pdfDoc);
+  const {
+    embeddedFonts,
+    isLoading: loadingEmbeddedFonts,
+    getFontInfoList,
+  } = usePDFFonts(pdfDoc);
 
   // Load Google Font
   const loadGoogleFont = useCallback(async (fontName: string) => {
     try {
       // Check if font is already loaded
-      if (document.querySelector(`link[href*="${fontName.replace(/\s+/g, "+")}"]`)) {
+      if (
+        document.querySelector(`link[href*="${fontName.replace(/\s+/g, "+")}"]`)
+      ) {
         return true;
       }
-      
+
       // Create link element for Google Font
       const link = document.createElement("link");
       link.href = `https://fonts.googleapis.com/css2?family=${fontName.replace(/\s+/g, "+")}:wght@300;400;500;600;700&display=swap`;
@@ -81,13 +132,13 @@ export default function FontManager({
   useEffect(() => {
     // Start with standard fonts
     const initialFonts = [...STANDARD_FONTS];
-    
+
     // Add embedded fonts if available
     if (embeddedFonts && getFontInfoList) {
       const pdfFonts = getFontInfoList();
       initialFonts.push(...pdfFonts);
     }
-    
+
     setAvailableFonts(initialFonts);
   }, [embeddedFonts, getFontInfoList]);
 
@@ -95,13 +146,13 @@ export default function FontManager({
   const loadMoreFonts = useCallback(async () => {
     setLoadingFonts(true);
     setLoadProgress(0);
-    
+
     const newFonts: FontInfo[] = [];
-    
+
     for (let i = 0; i < GOOGLE_FONTS.length; i++) {
       const fontName = GOOGLE_FONTS[i];
       setLoadProgress(((i + 1) / GOOGLE_FONTS.length) * 100);
-      
+
       const loaded = await loadGoogleFont(fontName);
       newFonts.push({
         name: fontName,
@@ -109,17 +160,19 @@ export default function FontManager({
         style: "normal",
         weight: "normal",
         loaded,
-        variants: ["300", "400", "500", "600", "700"]
+        variants: ["300", "400", "500", "600", "700"],
       });
     }
-    
-    setAvailableFonts(prev => {
+
+    setAvailableFonts((prev) => {
       // Filter out any duplicates
-      const existingFontNames = prev.map(f => f.name);
-      const uniqueNewFonts = newFonts.filter(f => !existingFontNames.includes(f.name));
+      const existingFontNames = prev.map((f) => f.name);
+      const uniqueNewFonts = newFonts.filter(
+        (f) => !existingFontNames.includes(f.name),
+      );
       return [...prev, ...uniqueNewFonts];
     });
-    
+
     setLoadingFonts(false);
   }, [loadGoogleFont]);
 
@@ -134,20 +187,30 @@ export default function FontManager({
   const selectedFontInfo = availableFonts.find((f) => f.name === selectedFont);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-oid="9mr0dz7">
       {/* Font Selection */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <Select value={selectedFont} onValueChange={onFontChange}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Select font" />
+      <div className="flex items-center gap-2 flex-wrap" data-oid="2ceo108">
+        <Select
+          value={selectedFont}
+          onValueChange={onFontChange}
+          data-oid="15z2x-s"
+        >
+          <SelectTrigger className="w-48" data-oid="2ddq42r">
+            <SelectValue placeholder="Select font" data-oid="1ylwhci" />
           </SelectTrigger>
-          <SelectContent className="max-h-60">
+          <SelectContent className="max-h-60" data-oid="ei87.iv">
             {filteredFonts.map((font) => (
-              <SelectItem key={font.name} value={font.name}>
-                <div className="flex items-center gap-2">
-                  <span style={{ fontFamily: font.family }}>{font.name}</span>
+              <SelectItem key={font.name} value={font.name} data-oid="ekcae8:">
+                <div className="flex items-center gap-2" data-oid="3o8f3ca">
+                  <span style={{ fontFamily: font.family }} data-oid="l58bakc">
+                    {font.name}
+                  </span>
                   {!font.loaded && (
-                    <Badge variant="outline" className="text-xs">
+                    <Badge
+                      variant="outline"
+                      className="text-xs"
+                      data-oid="k7ewap1"
+                    >
                       Not loaded
                     </Badge>
                   )}
@@ -165,6 +228,7 @@ export default function FontManager({
           min={8}
           max={144}
           placeholder="Size"
+          data-oid="f3ahfey"
         />
 
         <Button
@@ -173,8 +237,9 @@ export default function FontManager({
           onClick={() =>
             onFontWeightChange(fontWeight === "bold" ? "normal" : "bold")
           }
+          data-oid="x3c2fi5"
         >
-          <strong>B</strong>
+          <strong data-oid=":ux25dn">B</strong>
         </Button>
 
         <Button
@@ -183,13 +248,19 @@ export default function FontManager({
           onClick={() =>
             onFontStyleChange(fontStyle === "italic" ? "normal" : "italic")
           }
+          data-oid="sk7q111"
         >
-          <em>I</em>
+          <em data-oid="yidq0qs">I</em>
         </Button>
 
         {!loadingFonts && (
-          <Button variant="outline" size="sm" onClick={loadMoreFonts}>
-            <Download className="h-4 w-4 mr-1" />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={loadMoreFonts}
+            data-oid=".j-0oby"
+          >
+            <Download className="h-4 w-4 mr-1" data-oid="ypo4wjo" />
             Load More Fonts
           </Button>
         )}
@@ -197,9 +268,9 @@ export default function FontManager({
 
       {/* Loading Progress */}
       {loadingFonts && (
-        <div className="space-y-2">
-          <Progress value={loadProgress} />
-          <p className="text-sm text-gray-500">
+        <div className="space-y-2" data-oid="c12ddsx">
+          <Progress value={loadProgress} data-oid="22diq5j" />
+          <p className="text-sm text-gray-500" data-oid="nn3093t">
             Loading fonts... {Math.round(loadProgress)}%
           </p>
         </div>
@@ -207,33 +278,40 @@ export default function FontManager({
 
       {/* Advanced Controls */}
       {showAdvanced && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Type className="h-5 w-5" />
+        <Card data-oid="m.mi5d-">
+          <CardHeader data-oid="35.ccgx">
+            <CardTitle className="flex items-center gap-2" data-oid="qxdvxf4">
+              <Type className="h-5 w-5" data-oid="h1ueg21" />
               Font Tools
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4" data-oid="ent:a49">
             {/* Font Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <div className="relative" data-oid="cg6_3cp">
+              <Search
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400"
+                data-oid="6sv8hp6"
+              />
 
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search fonts..."
                 className="pl-10"
+                data-oid="tj49t3i"
               />
             </div>
 
             {/* Font Preview */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Preview Text:</label>
+            <div className="space-y-2" data-oid="pkmd9pb">
+              <label className="text-sm font-medium" data-oid="2:g7_fg">
+                Preview Text:
+              </label>
               <Input
                 value={fontPreview}
                 onChange={(e) => setFontPreview(e.target.value)}
                 placeholder="Enter preview text..."
+                data-oid="2mxxkuc"
               />
 
               {selectedFontInfo && (
@@ -245,6 +323,7 @@ export default function FontManager({
                     fontWeight: fontWeight,
                     fontStyle: fontStyle,
                   }}
+                  data-oid=".uqg:-z"
                 >
                   {fontPreview}
                 </div>
@@ -253,28 +332,39 @@ export default function FontManager({
 
             {/* Font Info */}
             {selectedFontInfo && (
-              <div className="space-y-2 text-sm">
-                <h4 className="font-medium">Font Information:</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <span className="text-gray-500">Family:</span>{" "}
+              <div className="space-y-2 text-sm" data-oid="6s0_ug7">
+                <h4 className="font-medium" data-oid="wg8z4-w">
+                  Font Information:
+                </h4>
+                <div className="grid grid-cols-2 gap-2" data-oid="om0wurx">
+                  <div data-oid="ivmsehf">
+                    <span className="text-gray-500" data-oid="-nw:q_9">
+                      Family:
+                    </span>{" "}
                     {selectedFontInfo.family}
                   </div>
-                  <div>
-                    <span className="text-gray-500">Style:</span>{" "}
+                  <div data-oid="s:svime">
+                    <span className="text-gray-500" data-oid="sprx9z5">
+                      Style:
+                    </span>{" "}
                     {selectedFontInfo.style}
                   </div>
-                  <div>
-                    <span className="text-gray-500">Weight:</span>{" "}
+                  <div data-oid="ehj5vr3">
+                    <span className="text-gray-500" data-oid="0pz:_dp">
+                      Weight:
+                    </span>{" "}
                     {selectedFontInfo.weight}
                   </div>
-                  <div>
-                    <span className="text-gray-500">Status:</span>
+                  <div data-oid="m:._4x5">
+                    <span className="text-gray-500" data-oid="1:nlpxd">
+                      Status:
+                    </span>
                     <Badge
                       variant={
                         selectedFontInfo.loaded ? "default" : "secondary"
                       }
                       className="ml-2"
+                      data-oid="hemhgne"
                     >
                       {selectedFontInfo.loaded ? "Loaded" : "Not Loaded"}
                     </Badge>
@@ -282,14 +372,17 @@ export default function FontManager({
                 </div>
 
                 {selectedFontInfo.variants && (
-                  <div>
-                    <span className="text-gray-500">Available weights:</span>
-                    <div className="flex gap-1 mt-1">
+                  <div data-oid="a7m209-">
+                    <span className="text-gray-500" data-oid="wlavuzq">
+                      Available weights:
+                    </span>
+                    <div className="flex gap-1 mt-1" data-oid="db57bsh">
                       {selectedFontInfo.variants.map((variant) => (
                         <Badge
                           key={variant}
                           variant="outline"
                           className="text-xs"
+                          data-oid="15tzpwz"
                         >
                           {variant}
                         </Badge>
@@ -301,17 +394,17 @@ export default function FontManager({
             )}
 
             {/* Font Statistics */}
-            <div className="text-sm text-gray-500">
-              <p>Available fonts: {availableFonts.length}</p>
-                  <p>
-                  Loaded fonts: {availableFonts.filter((f) => f.loaded).length}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-    );
+            <div className="text-sm text-gray-500" data-oid=".07dh1e">
+              <p data-oid="u26i9ki">Available fonts: {availableFonts.length}</p>
+              <p data-oid="urgl:zs">
+                Loaded fonts: {availableFonts.filter((f) => f.loaded).length}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
 }
 
 // FontFaceObserver polyfill for older browsers
@@ -348,7 +441,9 @@ class FontFaceObserver {
 
       // Set up timeout
       const timer = setTimeout(() => {
-        reject(new Error(`Font '${this.family}' load timed out after ${timeout}ms`));
+        reject(
+          new Error(`Font '${this.family}' load timed out after ${timeout}ms`),
+        );
       }, timeout);
 
       // Check if font is loaded by comparing width with fallback fonts

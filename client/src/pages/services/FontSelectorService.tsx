@@ -1,5 +1,5 @@
-import React from 'react';
-import { useFonts } from '../../contexts/FontContext';
+import React from "react";
+import { useFonts } from "../../contexts/FontContext";
 import { Progress } from "@/components/ui/progress";
 import {
   Select,
@@ -15,7 +15,10 @@ interface FontSelectorProps {
   onFontChange: (font: string) => void;
 }
 
-export default function FontSelector({ selectedFont, onFontChange }: FontSelectorProps) {
+export default function FontSelector({
+  selectedFont,
+  onFontChange,
+}: FontSelectorProps) {
   const { availableFonts, isLoading, loadProgress } = useFonts();
 
   if (isLoading) {

@@ -176,7 +176,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     error,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value} data-oid="d:4zizb">
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 interface AuthDialogsProps {
@@ -239,41 +243,57 @@ export function AuthDialogs({
   };
 
   const defaultTrigger = (
-    <Button variant="outline">
-      <LogIn className="h-4 w-4 mr-2" />
+    <Button variant="outline" data-oid="g.fqn-k">
+      <LogIn className="h-4 w-4 mr-2" data-oid="tns:sh:" />
       Sign In
     </Button>
   );
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger || defaultTrigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Welcome to PDF4EVER</DialogTitle>
+    <Dialog open={open} onOpenChange={setOpen} data-oid="5db5nme">
+      <DialogTrigger asChild data-oid=":06:eh2">
+        {trigger || defaultTrigger}
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md" data-oid="a3lc36d">
+        <DialogHeader data-oid="q5lrqyv">
+          <DialogTitle data-oid="ooq10_x">Welcome to PDF4EVER</DialogTitle>
         </DialogHeader>
 
         <Tabs
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as "login" | "signup")}
+          data-oid="fw7vzfg"
         >
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">Sign In</TabsTrigger>
-            <TabsTrigger value="signup">Sign Up</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2" data-oid="spumd94">
+            <TabsTrigger value="login" data-oid="_a7zm10">
+              Sign In
+            </TabsTrigger>
+            <TabsTrigger value="signup" data-oid="__jeo5g">
+              Sign Up
+            </TabsTrigger>
           </TabsList>
 
           {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
+            <Alert variant="destructive" data-oid="ql:f-vh">
+              <AlertDescription data-oid="wokyb9y">{error}</AlertDescription>
             </Alert>
           )}
 
-          <TabsContent value="login">
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="login-email">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <TabsContent value="login" data-oid="cwufg5v">
+            <form
+              onSubmit={handleLogin}
+              className="space-y-4"
+              data-oid="6lpnn2o"
+            >
+              <div className="space-y-2" data-oid="2fzym9s">
+                <Label htmlFor="login-email" data-oid="fjxq10d">
+                  Email
+                </Label>
+                <div className="relative" data-oid="r:2v56z">
+                  <Mail
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400"
+                    data-oid="gkantpb"
+                  />
 
                   <Input
                     id="login-email"
@@ -283,14 +303,20 @@ export function AuthDialogs({
                     placeholder="Enter your email"
                     className="pl-10"
                     required
+                    data-oid="_e6l9:m"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="login-password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <div className="space-y-2" data-oid="4pvl1o5">
+                <Label htmlFor="login-password" data-oid="ihie-y3">
+                  Password
+                </Label>
+                <div className="relative" data-oid="4r::nu9">
+                  <Lock
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400"
+                    data-oid="ztxtb60"
+                  />
 
                   <Input
                     id="login-password"
@@ -300,34 +326,56 @@ export function AuthDialogs({
                     placeholder="Enter your password"
                     className="pl-10 pr-10"
                     required
+                    data-oid="wn28k6r"
                   />
 
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                    data-oid="r_wzhov"
                   >
                     {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-400" />
+                      <EyeOff
+                        className="h-4 w-4 text-gray-400"
+                        data-oid="me.mb89"
+                      />
                     ) : (
-                      <Eye className="h-4 w-4 text-gray-400" />
+                      <Eye
+                        className="h-4 w-4 text-gray-400"
+                        data-oid="f9ip4pd"
+                      />
                     )}
                   </button>
                 </div>
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading}
+                data-oid=".e5.o56"
+              >
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
           </TabsContent>
 
-          <TabsContent value="signup">
-            <form onSubmit={handleSignup} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="signup-name">Name (Optional)</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <TabsContent value="signup" data-oid="i02m2qc">
+            <form
+              onSubmit={handleSignup}
+              className="space-y-4"
+              data-oid=".tv1-oq"
+            >
+              <div className="space-y-2" data-oid="6ga44j9">
+                <Label htmlFor="signup-name" data-oid="n7gz9sq">
+                  Name (Optional)
+                </Label>
+                <div className="relative" data-oid="buiwz0z">
+                  <User
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400"
+                    data-oid="pvtym7k"
+                  />
 
                   <Input
                     id="signup-name"
@@ -336,14 +384,20 @@ export function AuthDialogs({
                     onChange={(e) => setSignupName(e.target.value)}
                     placeholder="Enter your name"
                     className="pl-10"
+                    data-oid=":k61.n-"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="signup-email">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <div className="space-y-2" data-oid="eosaqdh">
+                <Label htmlFor="signup-email" data-oid="s7ko2km">
+                  Email
+                </Label>
+                <div className="relative" data-oid="2je.mrq">
+                  <Mail
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400"
+                    data-oid="nbe7y6x"
+                  />
 
                   <Input
                     id="signup-email"
@@ -353,14 +407,20 @@ export function AuthDialogs({
                     placeholder="Enter your email"
                     className="pl-10"
                     required
+                    data-oid="968j9h5"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="signup-password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <div className="space-y-2" data-oid="m.okfh5">
+                <Label htmlFor="signup-password" data-oid="ki:.gb:">
+                  Password
+                </Label>
+                <div className="relative" data-oid="pg2i.dw">
+                  <Lock
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400"
+                    data-oid="nfq2w0n"
+                  />
 
                   <Input
                     id="signup-password"
@@ -371,26 +431,39 @@ export function AuthDialogs({
                     className="pl-10 pr-10"
                     required
                     minLength={6}
+                    data-oid="bh7v:0v"
                   />
 
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                    data-oid="4_nu4t0"
                   >
                     {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-400" />
+                      <EyeOff
+                        className="h-4 w-4 text-gray-400"
+                        data-oid="_1hrora"
+                      />
                     ) : (
-                      <Eye className="h-4 w-4 text-gray-400" />
+                      <Eye
+                        className="h-4 w-4 text-gray-400"
+                        data-oid="viol476"
+                      />
                     )}
                   </button>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password">Confirm Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <div className="space-y-2" data-oid="5psiugi">
+                <Label htmlFor="confirm-password" data-oid="j8omqd.">
+                  Confirm Password
+                </Label>
+                <div className="relative" data-oid="jttzb33">
+                  <Lock
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400"
+                    data-oid="vjtqi5k"
+                  />
 
                   <Input
                     id="confirm-password"
@@ -400,10 +473,13 @@ export function AuthDialogs({
                     placeholder="Confirm your password"
                     className="pl-10"
                     required
+                    data-oid="cutdxn6"
                   />
                 </div>
                 {confirmPassword && signupPassword !== confirmPassword && (
-                  <p className="text-sm text-red-500">Passwords do not match</p>
+                  <p className="text-sm text-red-500" data-oid="lijqq_e">
+                    Passwords do not match
+                  </p>
                 )}
               </div>
 
@@ -411,6 +487,7 @@ export function AuthDialogs({
                 type="submit"
                 className="w-full"
                 disabled={isLoading || signupPassword !== confirmPassword}
+                data-oid="8rzi_y:"
               >
                 {isLoading ? "Creating account..." : "Create Account"}
               </Button>
@@ -436,34 +513,50 @@ export function UserMenu({ user }: UserMenuProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="flex items-center gap-2">
-          <User className="h-4 w-4" />
-          <span className="hidden sm:inline">
+    <Dialog open={open} onOpenChange={setOpen} data-oid="hk:6s7z">
+      <DialogTrigger asChild data-oid="tob9pu-">
+        <Button
+          variant="outline"
+          className="flex items-center gap-2"
+          data-oid="7dzsxgz"
+        >
+          <User className="h-4 w-4" data-oid="x-pust1" />
+          <span className="hidden sm:inline" data-oid="6_j8_81">
             {user.name || user.email.split("@")[0]}
           </span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Account</DialogTitle>
+      <DialogContent className="sm:max-w-md" data-oid="y5nu655">
+        <DialogHeader data-oid="hld8bg2">
+          <DialogTitle data-oid="v:x3fm5">Account</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="text-center space-y-2">
-            <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto">
-              <User className="h-8 w-8 text-gray-500" />
+        <div className="space-y-4" data-oid="9c_oorb">
+          <div className="text-center space-y-2" data-oid=":h2tsz7">
+            <div
+              className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto"
+              data-oid="prpjq:9"
+            >
+              <User className="h-8 w-8 text-gray-500" data-oid="4qpwvim" />
             </div>
-            <div>
-              <p className="font-medium">{user.name || "User"}</p>
-              <p className="text-sm text-gray-500">{user.email}</p>
+            <div data-oid="qt54hvh">
+              <p className="font-medium" data-oid="u2wn:bf">
+                {user.name || "User"}
+              </p>
+              <p className="text-sm text-gray-500" data-oid="4seaqkd">
+                {user.email}
+              </p>
             </div>
           </div>
 
-          <div className="border-t pt-4">
-            <Button variant="outline" className="w-full" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
+          <div className="border-t pt-4" data-oid="6b_.d-t">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={handleLogout}
+              data-oid="_1nj3it"
+            >
+              <LogOut className="h-4 w-4 mr-2" data-oid="h2o6yfs" />
               Sign Out
             </Button>
           </div>

@@ -15,12 +15,21 @@ export function ThemeToggle() {
       size="icon"
       onClick={toggleTheme}
       className="h-9 w-9 rounded-lg hover:bg-muted transition-colors"
+      data-oid="zj05xty"
     >
-      <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+      <Sun
+        className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
+        data-oid="v.ru6l:"
+      />
 
-      <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+      <Moon
+        className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
+        data-oid="k1w9vv:"
+      />
 
-      <span className="sr-only">Toggle theme</span>
+      <span className="sr-only" data-oid="3-9_5bi">
+        Toggle theme
+      </span>
     </Button>
   );
 }

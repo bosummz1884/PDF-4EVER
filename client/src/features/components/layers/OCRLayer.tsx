@@ -130,7 +130,6 @@ export default function OCRProcessor({
       setProgress(0);
     }
   }, [canvasRef, currentPage, selectedLanguage, onTextDetected]);
-  
 
   const copyToClipboard = useCallback(() => {
     navigator.clipboard.writeText(extractedText);
@@ -149,7 +148,11 @@ export default function OCRProcessor({
   const createTextBoxFromResult = useCallback(
     (result: OCRWord) => {
       if (onTextBoxCreate) {
-        onTextBoxCreate(result.boundingBox.x, result.boundingBox.y, result.text);
+        onTextBoxCreate(
+          result.boundingBox.x,
+          result.boundingBox.y,
+          result.text,
+        );
       }
     },
     [onTextBoxCreate],
@@ -178,23 +181,24 @@ export default function OCRProcessor({
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-oid="668q-6-">
       {/* OCR Controls */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Eye className="h-5 w-5" />
+      <Card data-oid="pjudxu7">
+        <CardHeader data-oid="cf-zpj_">
+          <CardTitle className="flex items-center gap-2" data-oid="wjbqxam">
+            <Eye className="h-5 w-5" data-oid="t3-gm1g" />
             Text Recognition
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-2 flex-wrap">
+        <CardContent className="space-y-4" data-oid="rwa.p.x">
+          <div className="flex items-center gap-2 flex-wrap" data-oid="wkuht5l">
             <Button
               onClick={extractTextFromPDF}
               disabled={isProcessing || !pdfDocument}
               size="sm"
+              data-oid="gxr1vc2"
             >
-              <FileText className="h-4 w-4 mr-1" />
+              <FileText className="h-4 w-4 mr-1" data-oid="zu9iy8m" />
               Extract PDF Text
             </Button>
 
@@ -203,8 +207,9 @@ export default function OCRProcessor({
               disabled={isProcessing || !canvasRef.current}
               size="sm"
               variant="outline"
+              data-oid="rsib6m."
             >
-              <Zap className="h-4 w-4 mr-1" />
+              <Zap className="h-4 w-4 mr-1" data-oid="_e8.0te" />
               OCR Scan
             </Button>
 
@@ -213,26 +218,31 @@ export default function OCRProcessor({
               onChange={(e) => setSelectedLanguage(e.target.value)}
               className="px-3 py-1 border rounded text-sm"
               disabled={isProcessing}
+              data-oid="ujrsfjx"
             >
               {languages.map((lang) => (
-                <option key={lang.code} value={lang.code}>
+                <option key={lang.code} value={lang.code} data-oid="olk4ydp">
                   {lang.name}
                 </option>
               ))}
             </select>
 
             {ocrResults.length > 0 && (
-              <Badge variant="secondary">
+              <Badge variant="secondary" data-oid="ezlyb7k">
                 {ocrResults.length} text regions found
               </Badge>
             )}
           </div>
 
           {isProcessing && (
-            <div className="space-y-2">
-              <Progress value={progress} className="w-full" />
+            <div className="space-y-2" data-oid="4inhe8e">
+              <Progress
+                value={progress}
+                className="w-full"
+                data-oid="z8s9itb"
+              />
 
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500" data-oid="08mh11a">
                 {progress > 0 ? `Processing: ${progress}%` : "Initializing..."}
               </p>
             </div>
@@ -242,28 +252,42 @@ export default function OCRProcessor({
 
       {/* Results Display */}
       {extractedText && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Extracted Text</span>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={copyToClipboard}>
-                  <Copy className="h-4 w-4 mr-1" />
+        <Card data-oid="n21imv6">
+          <CardHeader data-oid="8uu9s46">
+            <CardTitle
+              className="flex items-center justify-between"
+              data-oid="z.xvn63"
+            >
+              <span data-oid="52tz_c1">Extracted Text</span>
+              <div className="flex gap-2" data-oid="51phg1x">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={copyToClipboard}
+                  data-oid="rh:va0c"
+                >
+                  <Copy className="h-4 w-4 mr-1" data-oid="l7mrj:f" />
                   Copy
                 </Button>
-                <Button size="sm" variant="outline" onClick={downloadText}>
-                  <Download className="h-4 w-4 mr-1" />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={downloadText}
+                  data-oid="u86o0n2"
+                >
+                  <Download className="h-4 w-4 mr-1" data-oid="erdkk:7" />
                   Download
                 </Button>
               </div>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent data-oid="0o8v8.g">
             <Textarea
               value={extractedText}
               onChange={(e) => setExtractedText(e.target.value)}
               className="min-h-32 font-mono text-sm"
               placeholder="Extracted text will appear here..."
+              data-oid="8-j7qcq"
             />
           </CardContent>
         </Card>
@@ -271,29 +295,33 @@ export default function OCRProcessor({
 
       {/* Detected Text Regions */}
       {ocrResults.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Detected Text Regions</CardTitle>
+        <Card data-oid="ujwvlq:">
+          <CardHeader data-oid="p:xf_0c">
+            <CardTitle data-oid="g4kibp0">Detected Text Regions</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-48">
-              <div className="space-y-2">
+          <CardContent data-oid="2j9fc.i">
+            <ScrollArea className="h-48" data-oid="p-mb28:">
+              <div className="space-y-2" data-oid="dwp80rc">
                 {ocrResults.map((result) => (
                   <div
                     key={result.id}
                     className="flex items-center justify-between p-2 border rounded hover:bg-gray-50 dark:hover:bg-gray-800"
+                    data-oid="a83wdmw"
                   >
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{result.text}</p>
-                      <p className="text-xs text-gray-500">
+                    <div className="flex-1" data-oid="1g195bo">
+                      <p className="text-sm font-medium" data-oid="3eh5bcc">
+                        {result.text}
+                      </p>
+                      <p className="text-xs text-gray-500" data-oid="824hw.n">
                         Confidence: {Math.round(result.confidence)}%
                       </p>
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1" data-oid="pxata5.">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => highlightTextOnCanvas(result)}
+                        data-oid="kyrw3o_"
                       >
                         Highlight
                       </Button>
@@ -301,6 +329,7 @@ export default function OCRProcessor({
                         <Button
                           size="sm"
                           onClick={() => createTextBoxFromResult(result)}
+                          data-oid="y__4uho"
                         >
                           Add Box
                         </Button>

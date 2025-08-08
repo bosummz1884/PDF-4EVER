@@ -57,7 +57,7 @@ export function ThemeProvider({
   };
 
   return (
-    <ThemeProviderContext.Provider {...props} value={value}>
+    <ThemeProviderContext.Provider {...props} value={value} data-oid=":qp6u-m">
       {children}
     </ThemeProviderContext.Provider>
   );

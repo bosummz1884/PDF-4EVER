@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
-import Draggable from 'react-draggable';
-import { TextElement, PDFEditorAction } from '@/types/pdf-types';
+import React, { useState, useRef, useEffect } from "react";
+import Draggable from "react-draggable";
+import { TextElement, PDFEditorAction } from "@/types/pdf-types";
 
 interface AdvancedTextLayerProps {
   textElements: TextElement[];
@@ -10,26 +10,33 @@ interface AdvancedTextLayerProps {
   dispatch: React.Dispatch<PDFEditorAction>;
 }
 
-export default function AdvancedTextLayer({ textElements, selectedElementId, scale, page, dispatch }: AdvancedTextLayerProps) {
+export default function AdvancedTextLayer({
+  textElements,
+  selectedElementId,
+  scale,
+  page,
+  dispatch,
+}: AdvancedTextLayerProps) {
   const handleUpdate = (id: string, updates: Partial<TextElement>) => {
-    dispatch({ type: 'UPDATE_TEXT_ELEMENT', payload: { page, id, updates } });
+    dispatch({ type: "UPDATE_TEXT_ELEMENT", payload: { page, id, updates } });
   };
 
   const handleSelect = (id: string) => {
-    dispatch({ type: 'SET_SELECTED_ELEMENT', payload: { id, type: 'text' } });
+    dispatch({ type: "SET_SELECTED_ELEMENT", payload: { id, type: "text" } });
   };
 
   return (
-    <div className="absolute inset-0 pointer-events-none">
-      {textElements.map(element => (
+    <div className="absolute inset-0 pointer-events-none" data-oid="1bp8m81">
+      {textElements.map((element) => (
         <TextBox
           key={element.id}
           element={element}
           isSelected={selectedElementId === element.id}
           onUpdate={handleUpdate}
           onSelect={handleSelect}
-          onSaveHistory={() => dispatch({ type: 'SAVE_TO_HISTORY' })}
+          onSaveHistory={() => dispatch({ type: "SAVE_TO_HISTORY" })}
           scale={scale}
+          data-oid="0rfruz1"
         />
       ))}
     </div>
@@ -46,7 +53,14 @@ interface TextBoxProps {
   scale: number;
 }
 
-const TextBox: React.FC<TextBoxProps> = ({ element, isSelected, onUpdate, onSelect, onSaveHistory, scale }) => {
+const TextBox: React.FC<TextBoxProps> = ({
+  element,
+  isSelected,
+  onUpdate,
+  onSelect,
+  onSaveHistory,
+  scale,
+}) => {
   const [isEditing, setIsEditing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -66,14 +80,14 @@ const TextBox: React.FC<TextBoxProps> = ({ element, isSelected, onUpdate, onSele
     setIsEditing(false);
     onSaveHistory();
   };
-  
+
   const textStyle: React.CSSProperties = {
     fontFamily: element.fontFamily,
     fontSize: element.fontSize * scale,
     color: element.color,
-    fontWeight: element.bold ? 'bold' : 'normal',
-    fontStyle: element.italic ? 'italic' : 'normal',
-    textDecoration: element.underline ? 'underline' : 'none',
+    fontWeight: element.bold ? "bold" : "normal",
+    fontStyle: element.italic ? "italic" : "normal",
+    textDecoration: element.underline ? "underline" : "none",
     textAlign: element.textAlign,
     lineHeight: element.lineHeight,
   };
@@ -82,21 +96,26 @@ const TextBox: React.FC<TextBoxProps> = ({ element, isSelected, onUpdate, onSele
     <Draggable
       position={{ x: element.x * scale, y: element.y * scale }}
       onStop={(_, data) => {
-          onUpdate(element.id, { x: data.x / scale, y: data.y / scale });
-          onSaveHistory();
+        onUpdate(element.id, { x: data.x / scale, y: data.y / scale });
+        onSaveHistory();
       }}
       scale={1}
       disabled={isEditing}
+      data-oid="9t3iwyw"
     >
       <div
-        className={`absolute pointer-events-auto cursor-move ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
+        className={`absolute pointer-events-auto cursor-move ${isSelected ? "ring-2 ring-blue-500 ring-offset-2" : ""}`}
         style={{
           width: element.width * scale,
           height: element.height * scale,
           transform: `rotate(${element.rotation}deg)`,
         }}
-        onClick={(e) => { e.stopPropagation(); onSelect(element.id); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect(element.id);
+        }}
         onDoubleClick={handleDoubleClick}
+        data-oid="fc1st-h"
       >
         {isEditing ? (
           <textarea
@@ -106,9 +125,14 @@ const TextBox: React.FC<TextBoxProps> = ({ element, isSelected, onUpdate, onSele
             onBlur={handleBlur}
             className="w-full h-full bg-white/80 resize-none outline-none border-none p-0"
             style={textStyle}
+            data-oid="gx1n:3d"
           />
         ) : (
-          <div className="w-full h-full overflow-hidden whitespace-pre-wrap select-none" style={textStyle}>
+          <div
+            className="w-full h-full overflow-hidden whitespace-pre-wrap select-none"
+            style={textStyle}
+            data-oid="zz4qbfm"
+          >
             {element.text}
           </div>
         )}

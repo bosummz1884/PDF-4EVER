@@ -9,7 +9,11 @@ export type ImageToolMode =
   | "resize"
   | "toPdf";
 
-function ImageCompressor({ onCompressed }: { onCompressed?: (blob: Blob) => void }) {
+function ImageCompressor({
+  onCompressed,
+}: {
+  onCompressed?: (blob: Blob) => void;
+}) {
   const handleCompress = async () => {
     const input = document.createElement("input");
     input.type = "file";
@@ -38,7 +42,7 @@ function ImageCompressor({ onCompressed }: { onCompressed?: (blob: Blob) => void
             if (blob && onCompressed) onCompressed(blob);
           },
           "image/jpeg",
-          0.7
+          0.7,
         );
       };
     };
@@ -55,8 +59,9 @@ function ImageCompressor({ onCompressed }: { onCompressed?: (blob: Blob) => void
         color: "#000",
         border: "none",
         borderRadius: "6px",
-        cursor: "pointer"
+        cursor: "pointer",
       }}
+      data-oid="xrsmad8"
     >
       📉 Compress Image
     </button>
@@ -66,7 +71,9 @@ function ImageCompressor({ onCompressed }: { onCompressed?: (blob: Blob) => void
 function ImageCropper({ onCropped }: { onCropped?: (blob: Blob) => void }) {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [cropStart, setCropStart] = useState<{ x: number; y: number } | null>(null);
+  const [cropStart, setCropStart] = useState<{ x: number; y: number } | null>(
+    null,
+  );
   const [cropEnd, setCropEnd] = useState<{ x: number; y: number } | null>(null);
 
   const handleImageUpload = () => {
@@ -127,7 +134,17 @@ function ImageCropper({ onCropped }: { onCropped?: (blob: Blob) => void }) {
     tempCanvas.height = height;
     const tempCtx = tempCanvas.getContext("2d");
     if (!tempCtx) return;
-    tempCtx.drawImage(canvasRef.current, x, y, width, height, 0, 0, width, height);
+    tempCtx.drawImage(
+      canvasRef.current,
+      x,
+      y,
+      width,
+      height,
+      0,
+      0,
+      width,
+      height,
+    );
 
     tempCanvas.toBlob((blob) => {
       if (blob && onCropped) onCropped(blob);
@@ -135,11 +152,15 @@ function ImageCropper({ onCropped }: { onCropped?: (blob: Blob) => void }) {
   };
 
   return (
-    <div>
-      <button onClick={handleImageUpload} style={{ marginBottom: 10 }}>
+    <div data-oid="vae4.y7">
+      <button
+        onClick={handleImageUpload}
+        style={{ marginBottom: 10 }}
+        data-oid="t63djfk"
+      >
         🖼️ Upload Image
       </button>
-      <br />
+      <br data-oid="tzr2uqu" />
       <canvas
         ref={canvasRef}
         style={{ border: "1px solid #ccc", cursor: "crosshair" }}
@@ -159,9 +180,15 @@ function ImageCropper({ onCropped }: { onCropped?: (blob: Blob) => void }) {
           setCropEnd({ x: e.clientX - rect.left, y: e.clientY - rect.top });
           drawCropBox();
         }}
+        data-oid="4al3fd6"
       />
-      <br />
-      <button onClick={cropImage} disabled={!cropStart || !cropEnd}>
+
+      <br data-oid="o9-xt9f" />
+      <button
+        onClick={cropImage}
+        disabled={!cropStart || !cropEnd}
+        data-oid="7tf2hqm"
+      >
         ✂️ Crop Selected Area
       </button>
     </div>
@@ -170,20 +197,30 @@ function ImageCropper({ onCropped }: { onCropped?: (blob: Blob) => void }) {
 
 function ImageGallery({
   images = [],
-  onRemove
+  onRemove,
 }: {
   images?: (string | File)[];
   onRemove?: (index: number) => void;
 }) {
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
+    <div
+      style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}
+      data-oid="fpbb5b9"
+    >
       {images.map((img, index) => (
-        <div key={index} style={{ textAlign: "center" }}>
+        <div key={index} style={{ textAlign: "center" }} data-oid="awwavnx">
           <img
             src={typeof img === "string" ? img : URL.createObjectURL(img)}
             alt={`Image ${index + 1}`}
-            style={{ width: 150, height: "auto", border: "1px solid #ccc", borderRadius: 8 }}
+            style={{
+              width: 150,
+              height: "auto",
+              border: "1px solid #ccc",
+              borderRadius: 8,
+            }}
+            data-oid="ox1e57q"
           />
+
           <button
             onClick={() => onRemove && onRemove(index)}
             style={{
@@ -193,8 +230,9 @@ function ImageGallery({
               border: "none",
               borderRadius: 4,
               padding: "6px 10px",
-              cursor: "pointer"
+              cursor: "pointer",
             }}
+            data-oid=":ve-.hz"
           >
             🗑 Remove
           </button>
@@ -222,8 +260,8 @@ function ImageMerger({ onMerged }: { onMerged?: (blob: Blob) => void }) {
               const img = new window.Image();
               img.src = URL.createObjectURL(file);
               img.onload = () => resolve(img);
-            })
-        )
+            }),
+        ),
       );
 
       const maxWidth = Math.max(...images.map((img) => img.width));
@@ -259,8 +297,9 @@ function ImageMerger({ onMerged }: { onMerged?: (blob: Blob) => void }) {
         color: "#fff",
         border: "none",
         borderRadius: "6px",
-        cursor: "pointer"
+        cursor: "pointer",
       }}
+      data-oid="kndgq6k"
     >
       🧩 Merge Images
     </button>
@@ -268,9 +307,12 @@ function ImageMerger({ onMerged }: { onMerged?: (blob: Blob) => void }) {
 }
 
 function ImageResizer({ onResized }: { onResized?: (blob: Blob) => void }) {
-  const [dimensions, setDimensions] = useState<{ width: number; height: number }>({
+  const [dimensions, setDimensions] = useState<{
+    width: number;
+    height: number;
+  }>({
     width: 800,
-    height: 600
+    height: 600,
   });
 
   const handleResize = async () => {
@@ -299,7 +341,7 @@ function ImageResizer({ onResized }: { onResized?: (blob: Blob) => void }) {
             if (blob && onResized) onResized(blob);
           },
           "image/jpeg",
-          0.8
+          0.8,
         );
       };
     };
@@ -308,28 +350,36 @@ function ImageResizer({ onResized }: { onResized?: (blob: Blob) => void }) {
   };
 
   return (
-    <div>
-      <div style={{ marginBottom: 10 }}>
-        <label>
+    <div data-oid=".dn2k14">
+      <div style={{ marginBottom: 10 }} data-oid="2.j:ty2">
+        <label data-oid="4s2i2zm">
           Width:{" "}
           <input
             type="number"
             value={dimensions.width}
             onChange={(e) =>
-              setDimensions({ ...dimensions, width: parseInt(e.target.value) || 0 })
+              setDimensions({
+                ...dimensions,
+                width: parseInt(e.target.value) || 0,
+              })
             }
             style={{ width: 60 }}
+            data-oid="qdhp.2n"
           />
         </label>{" "}
-        <label>
+        <label data-oid="6:hpa0r">
           Height:{" "}
           <input
             type="number"
             value={dimensions.height}
             onChange={(e) =>
-              setDimensions({ ...dimensions, height: parseInt(e.target.value) || 0 })
+              setDimensions({
+                ...dimensions,
+                height: parseInt(e.target.value) || 0,
+              })
             }
             style={{ width: 60 }}
+            data-oid="wslfdzz"
           />
         </label>
       </div>
@@ -341,8 +391,9 @@ function ImageResizer({ onResized }: { onResized?: (blob: Blob) => void }) {
           color: "#fff",
           border: "none",
           borderRadius: "6px",
-          cursor: "pointer"
+          cursor: "pointer",
         }}
+        data-oid="hga5t6m"
       >
         📐 Resize Image
       </button>
@@ -350,7 +401,11 @@ function ImageResizer({ onResized }: { onResized?: (blob: Blob) => void }) {
   );
 }
 
-function ImageToPdf({ onGenerated }: { onGenerated?: (pdfBytes: Uint8Array) => void }) {
+function ImageToPdf({
+  onGenerated,
+}: {
+  onGenerated?: (pdfBytes: Uint8Array) => void;
+}) {
   const handleImageToPdf = async () => {
     const input = document.createElement("input");
     input.type = "file";
@@ -378,7 +433,7 @@ function ImageToPdf({ onGenerated }: { onGenerated?: (pdfBytes: Uint8Array) => v
         x: 0,
         y: 0,
         width: dims.width,
-        height: dims.height
+        height: dims.height,
       });
 
       const pdfBytes = await pdfDoc.save();
@@ -397,8 +452,9 @@ function ImageToPdf({ onGenerated }: { onGenerated?: (pdfBytes: Uint8Array) => v
         color: "#fff",
         border: "none",
         borderRadius: "6px",
-        cursor: "pointer"
+        cursor: "pointer",
       }}
+      data-oid="ja-pje2"
     >
       🖼️ Convert Image to PDF
     </button>
@@ -410,23 +466,38 @@ const ImageTool: React.FC = () => {
   const [mode, setMode] = useState<ImageToolMode>("gallery");
 
   return (
-    <div>
+    <div data-oid="m0p007v">
       {/* Buttons to select the tool */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-        <button onClick={() => setMode("gallery")}>Gallery</button>
-        <button onClick={() => setMode("compress")}>Compress</button>
-        <button onClick={() => setMode("crop")}>Crop</button>
-        <button onClick={() => setMode("merge")}>Merge</button>
-        <button onClick={() => setMode("resize")}>Resize</button>
-        <button onClick={() => setMode("toPdf")}>To PDF</button>
+      <div
+        style={{ display: "flex", gap: 8, marginBottom: 20 }}
+        data-oid="5.ms6qf"
+      >
+        <button onClick={() => setMode("gallery")} data-oid="2q.e2on">
+          Gallery
+        </button>
+        <button onClick={() => setMode("compress")} data-oid="l4fbh0x">
+          Compress
+        </button>
+        <button onClick={() => setMode("crop")} data-oid="3je_-.y">
+          Crop
+        </button>
+        <button onClick={() => setMode("merge")} data-oid="9r6h3e_">
+          Merge
+        </button>
+        <button onClick={() => setMode("resize")} data-oid="atx9a-i">
+          Resize
+        </button>
+        <button onClick={() => setMode("toPdf")} data-oid="1rl.uhg">
+          To PDF
+        </button>
       </div>
       {/* Render the selected tool */}
-      {mode === "gallery" && <ImageGallery />}
-      {mode === "compress" && <ImageCompressor />}
-      {mode === "crop" && <ImageCropper />}
-      {mode === "merge" && <ImageMerger />}
-      {mode === "resize" && <ImageResizer />}
-      {mode === "toPdf" && <ImageToPdf />}
+      {mode === "gallery" && <ImageGallery data-oid="po04mya" />}
+      {mode === "compress" && <ImageCompressor data-oid="s.src35" />}
+      {mode === "crop" && <ImageCropper data-oid="v9ccldn" />}
+      {mode === "merge" && <ImageMerger data-oid="hmqk:jh" />}
+      {mode === "resize" && <ImageResizer data-oid="55lc-0f" />}
+      {mode === "toPdf" && <ImageToPdf data-oid="qg86yyv" />}
     </div>
   );
 };

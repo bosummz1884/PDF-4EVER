@@ -1,8 +1,11 @@
 import React, { useRef, useState, MouseEvent, useCallback } from "react";
 import SignatureCanvas from "react-signature-canvas";
 import { signatureService } from "@/pages/services/signatureService";
-import { SignatureData, SignatureToolProps, SignaturePlacement } from "client/src/types/pdf-types";
-
+import {
+  SignatureData,
+  SignatureToolProps,
+  SignaturePlacement,
+} from "client/src/types/pdf-types";
 
 const SignaturePad: React.FC<{
   onSave?: (dataUrl: string) => void;
@@ -31,7 +34,7 @@ const SignaturePad: React.FC<{
     if (!sigCanvas.current || sigCanvas.current.isEmpty()) return;
     const dataUrl = sigCanvas.current.getTrimmedCanvas().toDataURL("image/png");
     const signatureData = signatureService.createSignatureData(dataUrl);
-    
+
     onSave?.(dataUrl);
     onComplete?.(dataUrl);
     onSigned?.(signatureData);
@@ -39,7 +42,10 @@ const SignaturePad: React.FC<{
   }, [onSave, onComplete, onSigned, clear]);
 
   return (
-    <div className="border-2 border-dashed border-gray-400 rounded-lg p-4 bg-white max-w-full mx-auto">
+    <div
+      className="border-2 border-dashed border-gray-400 rounded-lg p-4 bg-white max-w-full mx-auto"
+      data-oid="ox05nz9"
+    >
       <SignatureCanvas
         ref={sigCanvas}
         penColor="black"
@@ -49,17 +55,24 @@ const SignaturePad: React.FC<{
           height,
           className: "border rounded bg-gray-100",
         }}
+        data-oid="45hr3m3"
       />
-      <div className="mt-4 flex justify-center gap-4 flex-wrap">
+
+      <div
+        className="mt-4 flex justify-center gap-4 flex-wrap"
+        data-oid="pb:pit-"
+      >
         <button
           onClick={clear}
           className="px-4 py-2 font-bold border-none rounded bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer"
+          data-oid="tu_emb8"
         >
           Clear
         </button>
         <button
           onClick={handleSave}
           className="px-4 py-2 font-bold border-none rounded bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer"
+          data-oid="al09pns"
         >
           Save
         </button>
@@ -67,6 +80,7 @@ const SignaturePad: React.FC<{
           <button
             onClick={onClose}
             className="px-4 py-2 font-bold border-none rounded bg-gray-600 text-white hover:bg-gray-700 cursor-pointer"
+            data-oid="lag2utn"
           >
             Cancel
           </button>
@@ -83,24 +97,35 @@ const SignatureDragLayer: React.FC<{
 }> = ({ signatureDataUrl, onPlace, currentPage = 1 }) => {
   const [positions, setPositions] = useState<SignaturePlacement[]>([]);
 
-  const handleClick = useCallback((e: MouseEvent<HTMLDivElement>) => {
-    if (!signatureDataUrl) return;
-    const bounds = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-    const x = e.clientX - bounds.left;
-    const y = e.clientY - bounds.top;
+  const handleClick = useCallback(
+    (e: MouseEvent<HTMLDivElement>) => {
+      if (!signatureDataUrl) return;
+      const bounds = (
+        e.currentTarget as HTMLDivElement
+      ).getBoundingClientRect();
+      const x = e.clientX - bounds.left;
+      const y = e.clientY - bounds.top;
 
-    const newSig = signatureService.createSignaturePlacement(
-      x, y, signatureDataUrl, 150, 75, currentPage
-    );
-    
-    setPositions(prev => [...prev, newSig]);
-    onPlace?.(newSig);
-  }, [signatureDataUrl, onPlace, currentPage]);
+      const newSig = signatureService.createSignaturePlacement(
+        x,
+        y,
+        signatureDataUrl,
+        150,
+        75,
+        currentPage,
+      );
+
+      setPositions((prev) => [...prev, newSig]);
+      onPlace?.(newSig);
+    },
+    [signatureDataUrl, onPlace, currentPage],
+  );
 
   return (
-    <div 
+    <div
       className="relative w-full h-full border-2 border-dashed border-gray-400 bg-gray-50 min-h-48 cursor-crosshair"
       onClick={handleClick}
+      data-oid="rq1_7id"
     >
       {positions.map((sig, i) => (
         <img
@@ -114,6 +139,7 @@ const SignatureDragLayer: React.FC<{
             width: sig.width,
             height: sig.height,
           }}
+          data-oid="6wf46ta"
         />
       ))}
     </div>
@@ -121,22 +147,30 @@ const SignatureDragLayer: React.FC<{
 };
 
 const SignatureTool: React.FC<SignatureToolProps> = (props) => {
-  const [signatureUrl, setSignatureUrl] = useState<string | undefined>(undefined);
+  const [signatureUrl, setSignatureUrl] = useState<string | undefined>(
+    undefined,
+  );
   const [dragMode, setDragMode] = useState<boolean>(false);
 
-  const handleSave = useCallback((dataUrl: string) => {
-    setSignatureUrl(dataUrl);
-    const signatureData = signatureService.createSignatureData(dataUrl);
-    
-    props.onSave?.(dataUrl);
-    props.onComplete?.(dataUrl);
-    props.onSigned?.(signatureData);
-    setDragMode(true);
-  }, [props]);
+  const handleSave = useCallback(
+    (dataUrl: string) => {
+      setSignatureUrl(dataUrl);
+      const signatureData = signatureService.createSignatureData(dataUrl);
 
-  const handleDragPlaced = useCallback((placement: SignaturePlacement) => {
-    props.onPlace?.(placement);
-  }, [props]);
+      props.onSave?.(dataUrl);
+      props.onComplete?.(dataUrl);
+      props.onSigned?.(signatureData);
+      setDragMode(true);
+    },
+    [props],
+  );
+
+  const handleDragPlaced = useCallback(
+    (placement: SignaturePlacement) => {
+      props.onPlace?.(placement);
+    },
+    [props],
+  );
 
   const handleClose = useCallback(() => {
     setSignatureUrl(undefined);
@@ -145,7 +179,7 @@ const SignatureTool: React.FC<SignatureToolProps> = (props) => {
   }, [props]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-oid="m67_jkz">
       {!dragMode && (
         <SignaturePad
           onSave={handleSave}
@@ -155,21 +189,25 @@ const SignatureTool: React.FC<SignatureToolProps> = (props) => {
           showCancel={!!props.onClose}
           width={500}
           height={200}
+          data-oid="kttk3qr"
         />
       )}
       {dragMode && signatureUrl && (
-        <div className="space-y-4">
-          <div className="font-semibold text-gray-700">
+        <div className="space-y-4" data-oid="x-hymjl">
+          <div className="font-semibold text-gray-700" data-oid="ba0z2ds">
             Click anywhere on the document below to place your signature:
           </div>
-          <SignatureDragLayer 
-            signatureDataUrl={signatureUrl} 
+          <SignatureDragLayer
+            signatureDataUrl={signatureUrl}
             onPlace={handleDragPlaced}
+            data-oid="jl0qepk"
           />
-          <div className="flex justify-center">
+
+          <div className="flex justify-center" data-oid="d.idrpe">
             <button
               onClick={handleClose}
               className="px-4 py-2 font-bold border-none rounded bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer"
+              data-oid=".iguw3u"
             >
               Done
             </button>

@@ -10,6 +10,7 @@ const Pagination = ({ className, ...props }: React.ComponentProps<"nav">) => (
     aria-label="pagination"
     className={cn("mx-auto flex w-full justify-center", className)}
     {...props}
+    data-oid="9xw24l9"
   />
 );
 
@@ -23,6 +24,7 @@ const PaginationContent = React.forwardRef<
     ref={ref}
     className={cn("flex flex-row items-center gap-1", className)}
     {...props}
+    data-oid="kaoy7hx"
   />
 ));
 PaginationContent.displayName = "PaginationContent";
@@ -31,7 +33,7 @@ const PaginationItem = React.forwardRef<
   HTMLLIElement,
   React.ComponentProps<"li">
 >(({ className, ...props }, ref) => (
-  <li ref={ref} className={cn("", className)} {...props} />
+  <li ref={ref} className={cn("", className)} {...props} data-oid="4nkj5p4" />
 ));
 PaginationItem.displayName = "PaginationItem";
 
@@ -56,6 +58,7 @@ const PaginationLink = ({
       className,
     )}
     {...props}
+    data-oid="_c_ws7f"
   />
 );
 
@@ -70,9 +73,10 @@ const PaginationPrevious = ({
     size="default"
     className={cn("gap-1 pl-2.5", className)}
     {...props}
+    data-oid="zmx3r2r"
   >
-    <ChevronLeft className="h-4 w-4" />
-    <span>Previous</span>
+    <ChevronLeft className="h-4 w-4" data-oid="hhxo51r" />
+    <span data-oid="vn:ghir">Previous</span>
   </PaginationLink>
 );
 
@@ -87,9 +91,10 @@ const PaginationNext = ({
     size="default"
     className={cn("gap-1 pr-2.5", className)}
     {...props}
+    data-oid=":6thm16"
   >
-    <span>Next</span>
-    <ChevronRight className="h-4 w-4" />
+    <span data-oid="7ev85yb">Next</span>
+    <ChevronRight className="h-4 w-4" data-oid="rhjl-7-" />
   </PaginationLink>
 );
 
@@ -103,9 +108,12 @@ const PaginationEllipsis = ({
     aria-hidden
     className={cn("flex h-9 w-9 items-center justify-center", className)}
     {...props}
+    data-oid="h_wvahj"
   >
-    <MoreHorizontal className="h-4 w-4" />
-    <span className="sr-only">More pages</span>
+    <MoreHorizontal className="h-4 w-4" data-oid="lx0u.86" />
+    <span className="sr-only" data-oid="-y:la7-">
+      More pages
+    </span>
   </span>
 );
 
