@@ -1,10 +1,8 @@
-// src/services/OCRService.ts - Using Augmented Types
+// src/services/OCRService.ts - Build Fixed
 
-import { createWorker, PSM, Worker, Word, Page } from "tesseract.js"; // We can now safely import 'Page'
-import {
-  getDocument,
-  PDFDocumentProxy,
-} from "pdfjs-dist/types/src/display/api";
+import { createWorker, PSM, Worker, Word, Page } from "tesseract.js";
+// CORRECTED: Changed the import to use the main library entry point
+import { getDocument, PDFDocumentProxy } from "pdfjs-dist";
 import { OCRResult, OCRLanguage } from "@/types/pdf-types";
 import "@/lib/pdfWorker";
 
@@ -53,7 +51,6 @@ export class OCRService {
         tessedit_pageseg_mode: PSM.AUTO,
       });
 
-      // This is now fully type-safe because of our augmentation file.
       const { data }: { data: Page } = await worker.recognize(imageData);
 
       const ocrResults: OCRResult[] = (data.words || [])
@@ -80,8 +77,6 @@ export class OCRService {
     }
   }
 
-  // ... the rest of the file remains exactly the same
-  
   public async performPDFOCR(
     file: File,
     language: string = "eng",
