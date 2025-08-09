@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import  ToolType  from "../pdf-editor/toolRegistry";
+import { ToolType }  from "@/types/pdf-types";
 
 export interface ToolSettings {
   [key: string]: any;

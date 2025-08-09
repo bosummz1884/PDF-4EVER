@@ -1,14 +1,13 @@
-// src/services/OCRService.ts - The corrected and type-safe version
+// src/services/OCRService.ts - Using Augmented Types
 
-import { createWorker, PSM, Worker, Word, Page } from "tesseract.js";
+import { createWorker, PSM, Worker, Word, Page } from "tesseract.js"; // We can now safely import 'Page'
 import {
   getDocument,
   PDFDocumentProxy,
 } from "pdfjs-dist/types/src/display/api";
 import { OCRResult, OCRLanguage } from "@/types/pdf-types";
-import "@/lib/pdfWorker"; // Ensures the PDF.js worker is configured
+import "@/lib/pdfWorker";
 
-// This is the single source of truth for languages, exported for the UI component.
 export const OCR_LANGUAGES: OCRLanguage[] = [
   { code: "eng", name: "English" },
   { code: "spa", name: "Spanish" },
@@ -54,6 +53,7 @@ export class OCRService {
         tessedit_pageseg_mode: PSM.AUTO,
       });
 
+      // This is now fully type-safe because of our augmentation file.
       const { data }: { data: Page } = await worker.recognize(imageData);
 
       const ocrResults: OCRResult[] = (data.words || [])
@@ -80,6 +80,8 @@ export class OCRService {
     }
   }
 
+  // ... the rest of the file remains exactly the same
+  
   public async performPDFOCR(
     file: File,
     language: string = "eng",
@@ -139,14 +141,12 @@ export class OCRService {
       const results: OCRResult[] = [];
 
       textContent.items.forEach((item, index) => {
-        // This is the type guard. We check if 'str' exists on the item
-        // to confirm it's a TextItem before processing it.
         if ("str" in item && item.str.trim()) {
           extractedText += item.str + " ";
           results.push({
             id: `pdf-text-${index}`,
             text: item.str,
-            confidence: 100, // PDF text extraction is 100% confident
+            confidence: 100,
             boundingBox: {
               x0: item.transform[4],
               y0: item.transform[5],
@@ -175,8 +175,8 @@ export class OCRService {
     if (!ctx) return;
 
     ctx.save();
-    ctx.globalAlpha = 0.4; // Control transparency
-    ctx.fillStyle = "#FFD700"; // A nice yellow color
+    ctx.globalAlpha = 0.4;
+    ctx.fillStyle = "#FFD700";
     ctx.fillRect(
       result.boundingBox.x0,
       result.boundingBox.y0,
