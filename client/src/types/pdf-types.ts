@@ -202,6 +202,18 @@ export interface WhiteoutBlock {
   color?: string; 
 }
 
+export interface ImageElement {
+  id: string;
+  page: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  src: string; // This will be a Base64 Data URL
+  rotation: number;
+  opacity?: number; // ADD THIS LINE
+}
+
 // =========================
 // Service & Utility Types
 // =========================

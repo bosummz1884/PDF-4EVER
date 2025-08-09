@@ -158,6 +158,7 @@ export const toolRegistry: Record<ToolType, EditorTool> = {
     defaultSettings: { color: "#FFFFFF", opacity: 1 },
     description: "Cover areas of the document",
   },
+  
   image: {
     name: "image",
     label: "Image",
@@ -165,7 +166,10 @@ export const toolRegistry: Record<ToolType, EditorTool> = {
     component: ImageToolComponent,
     category: "media",
     shortcut: "I",
-    defaultSettings: { opacity: 1 },
+    defaultSettings: {
+        opacity: 1,
+        rotation: 0 
+    },
     description: "Insert images onto the document",
   },
   signature: {
