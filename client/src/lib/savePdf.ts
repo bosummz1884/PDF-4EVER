@@ -1,14 +1,21 @@
-import { PDFDocument, StandardFonts, rgb, Color } from 'pdf-lib';
-import { Annotation, TextElement, WhiteoutBlock } from '@/types/pdf-types';
-import { loadAndEmbedFonts } from './loadFonts';
+// src/lib/savePdf.ts
 
-// Correctly typed helper to parse hex colors into a format pdf-lib understands.
-// It now returns a `Color` object from `pdf-lib` and handles opacity separately.
+// CORRECTED: Imported RotationTypes from pdf-lib and our custom ImageElement type
+import { PDFDocument, StandardFonts, rgb, Color, RotationTypes } from "pdf-lib";
+import {
+  Annotation,
+  TextElement,
+  WhiteoutBlock,
+  ImageElement,
+} from "@/types/pdf-types";
+import { loadAndEmbedFonts } from "./loadFonts";
+
+// This helper function remains the same
 function parseColor(colorStr?: string): { color: Color; opacity: number } {
-  if (!colorStr) return { color: rgb(0, 0, 0), opacity: 1 }; // Default to black
-  if (colorStr === 'transparent') return { color: rgb(0, 0, 0), opacity: 0 };
+  if (!colorStr) return { color: rgb(0, 0, 0), opacity: 1 };
+  if (colorStr === "transparent") return { color: rgb(0, 0, 0), opacity: 0 };
 
-  const hex = colorStr.replace('#', '');
+  const hex = colorStr.replace("#", "");
   if (hex.length === 6) {
     const r = parseInt(hex.slice(0, 2), 16) / 255;
     const g = parseInt(hex.slice(2, 4), 16) / 255;
@@ -18,11 +25,6 @@ function parseColor(colorStr?: string): { color: Color; opacity: number } {
   return { color: rgb(0, 0, 0), opacity: 1 };
 }
 
-
-/**
- * The main saving function. It takes the original PDF data and all user-created elements,
- * draws them onto the PDF pages, and returns the new file as a Uint8Array.
- */
 export async function savePdfWithAnnotations(
   originalPdfData: Uint8Array,
   textElements: TextElement[],
@@ -39,10 +41,11 @@ export async function savePdfWithAnnotations(
     const pageNum = i + 1;
     const { height: pageHeight } = page.getSize();
 
-    // 1. Draw Annotations (Shapes and Highlights)
+    // Sections for Annotations, Text, and Whiteout Blocks remain unchanged...
+    // 1. Draw Annotations
     const pageAnnotations = annotations.filter((a) => a.page === pageNum);
     for (const ann of pageAnnotations) {
-      const y = pageHeight - ann.y - ann.height; // Y-axis is inverted in pdf-lib
+      const y = pageHeight - ann.y - ann.height;
 
       const { color: fillColor, opacity: fillOpacity } = parseColor(
         ann.fillColor
@@ -119,6 +122,7 @@ export async function savePdfWithAnnotations(
       });
     }
 
+    // 4. Draw Image Elements
     const pageImageElements = imageElements.filter(
       (img) => img.page === pageNum
     );
@@ -147,7 +151,9 @@ export async function savePdfWithAnnotations(
         y: pageHeight - img.y - img.height,
         width: img.width,
         height: img.height,
-        rotate: { type: "degrees", angle: -img.rotation },
+        // CORRECTED: Used the RotationTypes enum from pdf-lib
+        rotate: { type: RotationTypes.Degrees, angle: -img.rotation },
+        opacity: img.opacity ?? 1,
       });
     }
   }
@@ -155,13 +161,10 @@ export async function savePdfWithAnnotations(
   return await pdfDoc.save();
 }
 
-/**
- * Triggers a file download in the browser.
- */
 export function triggerDownload(bytes: Uint8Array, filename: string) {
   const blob = new Blob([new Uint8Array(bytes)], { type: "application/pdf" });
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   link.href = url;
   link.download = filename;
   document.body.appendChild(link);

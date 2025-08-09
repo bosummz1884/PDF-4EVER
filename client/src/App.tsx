@@ -10,7 +10,6 @@ import PricingPage from "@/pages/pricing";
 import PrivacyPolicyPage from "@/pages/privacy-policy";
 import TermsOfServicePage from "@/pages/terms-of-service";
 import NotFoundPage from "@/pages/not-found";
-import PDFToolkit from "./components/PDFToolkit";
 
 export default function App() {
   return (
@@ -29,11 +28,7 @@ export default function App() {
               data-oid="blb0mui"
             />
 
-            <Route
-              path="/toolkit"
-              element={<PDFToolkit data-oid="-:zuix." />}
-              data-oid="-9_q8mi"
-            />
+
 
             <Route
               path="/pricing"

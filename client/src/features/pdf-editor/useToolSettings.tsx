@@ -1,13 +1,19 @@
-import { useState, useCallback } from "react";
-import { ToolType }  from "@/types/pdf-types";
+// src/features/pdf-editor/useToolSettings.tsx
 
-export interface ToolSettings {
-  [key: string]: any;
-}
+import { useState, useCallback } from "react";
+// CORRECTED: Imported the master ToolSettings type
+import { ToolType, ToolSettings } from "@/types/pdf-types";
+
+// REMOVED: The local, permissive ToolSettings interface is gone.
 
 export interface UseToolSettingsReturn {
   getSettings: (toolId: ToolType) => ToolSettings;
-  updateSetting: (toolId: ToolType, key: string, value: any) => void;
+  // CORRECTED: The 'updateSetting' signature is now generic and fully type-safe.
+  updateSetting: <K extends keyof ToolSettings>(
+    toolId: ToolType,
+    key: K,
+    value: ToolSettings[K]
+  ) => void;
   resetSettings: (toolId: ToolType) => void;
   exportSettings: () => string;
   importSettings: (settingsJson: string) => boolean;
@@ -26,8 +32,14 @@ export const useToolSettings = (
     [settings, defaultSettings],
   );
 
+  // CORRECTED: The implementation now uses generics, ensuring 'key' is a valid
+  // property of ToolSettings and 'value' matches its type. No 'any' is used.
   const updateSetting = useCallback(
-    (toolId: ToolType, key: string, value: any) => {
+    <K extends keyof ToolSettings>(
+      toolId: ToolType,
+      key: K,
+      value: ToolSettings[K]
+    ) => {
       setSettings((prev) => ({
         ...prev,
         [toolId]: {
@@ -55,7 +67,9 @@ export const useToolSettings = (
 
   const importSettings = useCallback((settingsJson: string) => {
     try {
-      const importedSettings = JSON.parse(settingsJson);
+      // While JSON.parse is inherently 'any', we immediately cast it
+      // to the expected type to maintain internal type safety.
+      const importedSettings = JSON.parse(settingsJson) as Record<ToolType, ToolSettings>;
       setSettings(importedSettings);
       return true;
     } catch (error) {
