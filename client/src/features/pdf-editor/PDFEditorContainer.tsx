@@ -1,4 +1,6 @@
-import React, { useCallback, useEffect, useState } from "react";
+// src/features/pdf-editor/PDFEditorContainer.tsx
+
+import React, { useCallback, useEffect, useState, useRef } from "react"; // Added useRef
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Home, Upload } from "lucide-react";
@@ -7,7 +9,8 @@ import { useKeyboardShortcuts } from "@/features/hooks/useKeyboardShortcuts";
 import PDFSidebar from "../../features/components/PDFSidebar";
 import ToolPanel from "./ToolPanel";
 import AdvancedTextLayer from "../components/layers/AdvancedTextLayer";
-import { Annotation, WhiteoutBlock, ToolType } from "@/types/pdf-types";
+import { Annotation, WhiteoutBlock, ToolType, ImageElement, TextElement } from "@/types/pdf-types";
+import ImageLayer from "../components/layers/ImageLayer";
 
 export default function PDFEditorContainer() {
   const {
@@ -34,6 +37,9 @@ export default function PDFEditorContainer() {
   const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(
     null,
   );
+  
+  // ADDED: Ref for the hidden image input
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (state.pdfDocument) {
@@ -55,6 +61,15 @@ export default function PDFEditorContainer() {
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
+      // UPDATED: Prevent interactions on other layers like images
+      if ((e.target as HTMLElement).closest(".draggable-text-box, .react-rnd")) return;
+      
+      // ADDED: Trigger image upload if image tool is active
+      if (currentTool === 'image') {
+          imageInputRef.current?.click();
+          return; // Stop further processing for the image tool
+      }
+
       // Prevent drawing when interacting with the text layer
       if ((e.target as HTMLElement).closest(".draggable-text-box")) return;
 
@@ -78,6 +93,7 @@ export default function PDFEditorContainer() {
         });
       }
     },
+    // UPDATED: Added currentTool to dependency array
     [currentPage, currentTool, toolSettings, scale],
   );
 
@@ -86,7 +102,49 @@ export default function PDFEditorContainer() {
       if (!startPoint) return;
       const coords = getCanvasCoordinates(e);
 
-      if (drawingShape) {
+      // ERASER TOOL LOGIC
+      if (currentTool === 'eraser') {
+        const eraserSize = toolSettings.eraser?.size || 20;
+        const eraserRect = {
+          x: coords.x - eraserSize / 2,
+          y: coords.y - eraserSize / 2,
+          width: eraserSize,
+          height: eraserSize,
+        };
+
+        // Check for intersections with annotations
+        const pageAnnotations = state.annotations[currentPage] || [];
+        for (const ann of pageAnnotations) {
+          const annRect = { x: ann.x, y: ann.y, width: ann.width, height: ann.height };
+          if (
+            eraserRect.x < annRect.x + annRect.width &&
+            eraserRect.x + eraserRect.width > annRect.x &&
+            eraserRect.y < annRect.y + annRect.height &&
+            eraserRect.y + eraserRect.height > annRect.y
+          ) {
+            dispatch({ type: 'DELETE_ANNOTATION', payload: { page: currentPage, id: ann.id } });
+          }
+        }
+        
+        // Check for intersections with text elements
+        const pageTextElements = state.textElements[currentPage] || [];
+        for (const text of pageTextElements) {
+          const textRect = { x: text.x, y: text.y, width: text.width, height: text.height };
+           if (
+            eraserRect.x < textRect.x + textRect.width &&
+            eraserRect.x + eraserRect.width > textRect.x &&
+            eraserRect.y < textRect.y + textRect.height &&
+            eraserRect.y + eraserRect.height > textRect.y
+          ) {
+            dispatch({ type: 'DELETE_TEXT_ELEMENT', payload: { page: currentPage, id: text.id } });
+          }
+        }
+
+        // Add logic for other element types (whiteout, etc.) here in the future
+
+      } 
+      // SHAPE DRAWING LOGIC (remains the same)
+      else if (drawingShape) {
         if (drawingShape.type === "line") {
           setDrawingShape({
             ...drawingShape,
@@ -104,11 +162,38 @@ export default function PDFEditorContainer() {
         }
       }
     },
-    [startPoint, drawingShape, scale],
+    [startPoint, drawingShape, scale, currentTool, toolSettings, state.annotations, state.textElements, currentPage, dispatch],
   );
 
   const handleMouseUp = useCallback(() => {
-    if (
+    // UPDATED: Merged text tool logic with shape drawing logic
+    if (currentTool === "text" && startPoint) {
+      if (drawingShape?.width === 0 && drawingShape?.height === 0) {
+        const settings = toolSettings[currentTool];
+        const newTextElement: TextElement = {
+          id: `text-${Date.now()}`,
+          page: currentPage,
+          text: "New Text Box",
+          x: startPoint.x,
+          y: startPoint.y,
+          width: 200,
+          height: 20,
+          fontFamily: settings.fontFamily || 'Helvetica',
+          fontSize: settings.fontSize || 16,
+          color: settings.color || '#000000',
+          bold: !!settings.bold,
+          italic: !!settings.italic,
+          underline: !!settings.underline,
+          textAlign: settings.textAlign || 'left',
+          lineHeight: settings.lineHeight || 1.2,
+          rotation: 0,
+        };
+
+        dispatch({ type: 'ADD_TEXT_ELEMENT', payload: { page: currentPage, element: newTextElement } });
+        dispatch({ type: 'SET_SELECTED_ELEMENT', payload: { id: newTextElement.id, type: 'text' } });
+        dispatch({ type: "SAVE_TO_HISTORY" });
+      }
+    } else if (
       drawingShape &&
       startPoint &&
       (drawingShape.width !== 0 || drawingShape.height !== 0)
@@ -133,7 +218,7 @@ export default function PDFEditorContainer() {
     }
     setDrawingShape(null);
     setStartPoint(null);
-  }, [drawingShape, startPoint, dispatch, currentPage]);
+  }, [drawingShape, startPoint, dispatch, currentPage, currentTool, toolSettings]);
 
   const handleFileUpload = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,6 +227,37 @@ export default function PDFEditorContainer() {
     },
     [loadPDF],
   );
+  
+  // ADDED: New handler for image uploads
+  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+          const src = event.target?.result as string;
+          
+          const img = new Image();
+          img.onload = () => {
+              const newImageElement: ImageElement = {
+                  id: `image-${Date.now()}`,
+                  page: currentPage,
+                  src,
+                  x: 100, // Default placement
+                  y: 100,
+                  width: img.width > 200 ? 200 : img.width,
+                  height: img.width > 200 ? (img.height * 200 / img.width) : img.height,
+                  rotation: 0,
+              };
+              dispatch({ type: 'ADD_IMAGE_ELEMENT', payload: { page: currentPage, element: newImageElement } });
+              dispatch({ type: 'SAVE_TO_HISTORY' });
+          }
+          img.src = src;
+      };
+      reader.readAsDataURL(file);
+
+      e.target.value = "";
+  }, [currentPage, dispatch]);
 
   useKeyboardShortcuts({
     onUndo: () => dispatch({ type: "UNDO" }),
@@ -149,13 +265,16 @@ export default function PDFEditorContainer() {
     onSave: savePDF,
     onDelete: () => {
       if (selectedElementId && selectedElementType) {
+        // UPDATED: Added DELETE_IMAGE_ELEMENT
         const actionType =
           `DELETE_${selectedElementType.toUpperCase()}_ELEMENT` as
             | "DELETE_ANNOTATION"
-            | "DELETE_TEXT_ELEMENT";
+            | "DELETE_TEXT_ELEMENT"
+            | "DELETE_IMAGE_ELEMENT";
         if (
           actionType === "DELETE_ANNOTATION" ||
-          actionType === "DELETE_TEXT_ELEMENT"
+          actionType === "DELETE_TEXT_ELEMENT" ||
+          actionType === "DELETE_IMAGE_ELEMENT"
         ) {
           dispatch({
             type: actionType,
@@ -173,59 +292,62 @@ export default function PDFEditorContainer() {
   const currentPageAnnotations = state.annotations[currentPage] || [];
   const currentPageTextElements = state.textElements[currentPage] || [];
   const currentPageWhiteoutBlocks = state.whiteoutBlocks[currentPage] || [];
+  // ADDED: Get current page image elements from state
+  const currentPageImageElements = state.imageElements?.[currentPage] || [];
 
   return (
     <div
       className="h-full w-full bg-gray-200 flex flex-col font-sans"
-      data-oid="e2wgam-"
     >
       <header
         className="bg-white border-b p-2 flex items-center justify-between flex-shrink-0"
-        data-oid="ijicege"
       >
-        <div className="flex items-center gap-2" data-oid="xwmcy_1">
-          <Button asChild size="sm" variant="outline" data-oid="6c5pcp9">
-            <Link to="/" data-oid="6iwe4nk">
-              <Home className="h-4 w-4 mr-2" data-oid="67qdwq4" />
+        <div className="flex items-center gap-2">
+          <Button asChild size="sm" variant="outline">
+            <Link to="/">
+              <Home className="h-4 w-4 mr-2" />
               Home
             </Link>
           </Button>
           <Button
             onClick={() => fileInputRef.current?.click()}
             size="sm"
-            data-oid="rvppyyy"
           >
-            <Upload className="h-4 w-4 mr-2" data-oid="2pk84iy" />
+            <Upload className="h-4 w-4 mr-2" />
             Upload PDF
           </Button>
-          {/* CORRECTED LINE: The onChange handler is now correctly assigned */}
+          {/* ADDED: Hidden input for image uploads */}
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/png, image/jpeg"
+            className="hidden"
+            onChange={handleImageUpload}
+          />
           <input
             ref={fileInputRef}
             type="file"
             accept=".pdf"
             className="hidden"
             onChange={handleFileUpload}
-            data-oid="n.bizz3"
           />
         </div>
         {state.fileName && (
           <span
             className="text-sm font-medium text-gray-600 truncate max-w-xs"
-            data-oid="u5fi9wu"
           >
             {state.fileName}
           </span>
         )}
-        <div data-oid="ttcmoik">
+        <div>
           {/* Placeholder for other header items like User Menu */}
         </div>
       </header>
 
-      <div className="flex-1 flex overflow-hidden" data-oid="yzk5xyb">
-        <PDFSidebar data-oid="uyd5_5l" />
+      <div className="flex-1 flex overflow-hidden">
+        <PDFSidebar />
         <main
           className="flex-1 flex items-center justify-center overflow-auto p-8 bg-gray-300 dark:bg-gray-800"
-          data-oid="6:q2:jl"
         >
           {state.pdfDocument ? (
             <div
@@ -234,16 +356,13 @@ export default function PDFEditorContainer() {
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               style={{ transform: `rotate(${state.rotation}deg)` }}
-              data-oid="c.n.h4g"
             >
-              <canvas ref={canvasRef} className="block" data-oid="88eedbo" />
-              <div className="absolute inset-0" data-oid="g44w0ry">
+              <canvas ref={canvasRef} className="block" />
+              <div className="absolute inset-0">
                 {" "}
-                {/* Removed pointer-events-none */}
                 {/* Render non-interactive elements */}
                 <div
                   className="absolute inset-0 pointer-events-none"
-                  data-oid="e3:ou5y"
                 >
                   {currentPageAnnotations.map((ann) => (
                     <div
@@ -266,7 +385,6 @@ export default function PDFEditorContainer() {
                             : `${ann.cornerRadius || 0}px`,
                         opacity: ann.opacity || 1,
                       }}
-                      data-oid="dnxeui8"
                     />
                   ))}
                   {currentPageWhiteoutBlocks.map((block) => (
@@ -278,9 +396,8 @@ export default function PDFEditorContainer() {
                         top: block.y * scale,
                         width: block.width * scale,
                         height: block.height * scale,
-                        backgroundColor: "white",
+                        backgroundColor: block.color || "#FFFFFF",
                       }}
-                      data-oid="nghpsz-"
                     />
                   ))}
                   {drawingShape && (
@@ -298,7 +415,6 @@ export default function PDFEditorContainer() {
                             ? "50%"
                             : `${drawingShape.cornerRadius || 0}px`,
                       }}
-                      data-oid="nghiea4"
                     />
                   )}
                 </div>
@@ -309,25 +425,31 @@ export default function PDFEditorContainer() {
                   scale={scale}
                   page={currentPage}
                   dispatch={dispatch}
-                  data-oid="2ijbr6v"
+                />
+                {/* ADDED: Render interactive image layer */}
+                <ImageLayer
+                  imageElements={currentPageImageElements}
+                  selectedElementId={selectedElementId}
+                  scale={scale}
+                  page={currentPage}
+                  dispatch={dispatch}
                 />
               </div>
             </div>
           ) : (
             <div
               className="text-center text-muted-foreground"
-              data-oid=".ska18p"
             >
-              <h2 className="text-xl font-semibold mb-2" data-oid="t-j7lgf">
+              <h2 className="text-xl font-semibold mb-2">
                 Welcome to the Editor
               </h2>
-              <p data-oid="q3a8lj9">
+              <p>
                 Click &quot;Upload PDF&quot; in the header to begin.
               </p>
             </div>
           )}
         </main>
-        <ToolPanel data-oid="2:1jut6" />
+        <ToolPanel />
       </div>
     </div>
   );

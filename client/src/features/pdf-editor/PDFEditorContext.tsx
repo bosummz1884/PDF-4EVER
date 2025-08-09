@@ -32,6 +32,7 @@ const initialState: PDFEditorState = {
   formFields: {},
   whiteoutBlocks: {},
   ocrResults: {},
+  imageElements: {},
   selectedElementId: null,
   selectedElementType: null,
   currentTool: "select",
@@ -111,6 +112,42 @@ function pdfEditorReducer(
           ...state.annotations,
           [action.payload.page]: (
             state.annotations[action.payload.page] || []
+          ).filter((el) => el.id !== action.payload.id),
+        },
+      };
+
+      case "ADD_IMAGE_ELEMENT":
+      return {
+        ...state,
+        imageElements: {
+          ...state.imageElements,
+          [action.payload.page]: [
+            ...(state.imageElements[action.payload.page] || []),
+            action.payload.element,
+          ],
+        },
+      };
+    case "UPDATE_IMAGE_ELEMENT":
+      return {
+        ...state,
+        imageElements: {
+          ...state.imageElements,
+          [action.payload.page]: (
+            state.imageElements[action.payload.page] || []
+          ).map((el) =>
+            el.id === action.payload.id
+              ? { ...el, ...action.payload.updates }
+              : el,
+          ),
+        },
+      };
+    case "DELETE_IMAGE_ELEMENT":
+      return {
+        ...state,
+        imageElements: {
+          ...state.imageElements,
+          [action.payload.page]: (
+            state.imageElements[action.payload.page] || []
           ).filter((el) => el.id !== action.payload.id),
         },
       };
@@ -366,11 +403,13 @@ export function PDFEditorProvider({ children }: { children: ReactNode }) {
       const allAnnotations = Object.values(state.annotations).flat();
       const allTextElements = Object.values(state.textElements).flat();
       const allWhiteoutBlocks = Object.values(state.whiteoutBlocks).flat();
+      const allImageElements = Object.values(state.imageElements).flat();
       const savedPdfBytes = await savePdfWithAnnotations(
         state.originalPdfData,
         allTextElements,
         allAnnotations,
         allWhiteoutBlocks,
+        allImageElements,
       );
       const newFilename = state.fileName.replace(".pdf", "-edited.pdf");
       triggerDownload(savedPdfBytes, newFilename);
@@ -388,6 +427,7 @@ export function PDFEditorProvider({ children }: { children: ReactNode }) {
     state.textElements,
     state.whiteoutBlocks,
     state.fileName,
+    state.imageElements,
   ]); // 👈 Dependencies for savePDF
 
   const contextValue = {

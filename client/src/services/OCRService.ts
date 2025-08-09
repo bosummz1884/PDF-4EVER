@@ -1,24 +1,52 @@
-import { createWorker, PSM, Worker } from 'tesseract.js';
-import { getDocument } from 'pdfjs-dist';
-import { OCRResult } from '@/types/pdf-types';
-import '@/lib/pdfWorker'; // Ensures worker is configured
+// src/services/OCRService.ts - The corrected and type-safe version
 
-class OCRService {
+import { createWorker, PSM, Worker, Word, Page } from "tesseract.js";
+import {
+  getDocument,
+  PDFDocumentProxy,
+} from "pdfjs-dist/types/src/display/api";
+import { OCRResult, OCRLanguage } from "@/types/pdf-types";
+import "@/lib/pdfWorker"; // Ensures the PDF.js worker is configured
+
+// This is the single source of truth for languages, exported for the UI component.
+export const OCR_LANGUAGES: OCRLanguage[] = [
+  { code: "eng", name: "English" },
+  { code: "spa", name: "Spanish" },
+  { code: "fra", name: "French" },
+  { code: "deu", name: "German" },
+  { code: "chi_sim", name: "Chinese (Simplified)" },
+  { code: "jpn", name: "Japanese" },
+  { code: "kor", name: "Korean" },
+  { code: "rus", name: "Russian" },
+  { code: "ara", name: "Arabic" },
+  { code: "por", name: "Portuguese" },
+];
+
+export class OCRService {
+  private static instance: OCRService;
+
+  public static getInstance(): OCRService {
+    if (!OCRService.instance) {
+      OCRService.instance = new OCRService();
+    }
+    return OCRService.instance;
+  }
+
   public async performOCR(
     imageData: Tesseract.ImageLike,
-    language: string,
-    pageNumber: number,
-    totalPages: number,
-    progressCallback?: (progress: number) => void,
+    language: string = "eng",
+    pageNumber: number = 1,
+    totalPages: number = 1,
+    progressCallback?: (progress: number) => void
   ): Promise<{ ocrText: string; ocrResults: OCRResult[] }> {
     const worker: Worker = await createWorker(language, 1, {
-        logger: (m) => {
-             if (m.status === 'recognizing text' && progressCallback) {
-                const pageProgress = m.progress / totalPages;
-                const totalProgress = ((pageNumber - 1) / totalPages) + pageProgress;
-                progressCallback(Math.round(totalProgress * 100));
-            }
-        },
+      logger: (m) => {
+        if (m.status === "recognizing text" && progressCallback) {
+          const pageProgress = m.progress / totalPages;
+          const totalProgress = (pageNumber - 1) / totalPages + pageProgress;
+          progressCallback(Math.round(totalProgress * 100));
+        }
+      },
     });
 
     try {
@@ -26,11 +54,11 @@ class OCRService {
         tessedit_pageseg_mode: PSM.AUTO,
       });
 
-      const { data } = await worker.recognize(imageData) as { data: { words?: Array<{ text: string; confidence: number; bbox: { x0: number; y0: number; x1: number; y1: number } }>, text?: string } };
+      const { data }: { data: Page } = await worker.recognize(imageData);
 
       const ocrResults: OCRResult[] = (data.words || [])
-        .filter(word => word.text.trim() && word.confidence > 30)
-        .map((word, index) => ({
+        .filter((word: Word) => word.text.trim() && word.confidence > 30)
+        .map((word: Word, index: number) => ({
           id: `ocr-${pageNumber}-${index}`,
           text: word.text,
           confidence: word.confidence,
@@ -43,20 +71,24 @@ class OCRService {
           page: pageNumber,
         }));
 
-      return { ocrText: data.text || '', ocrResults };
+      return { ocrText: data.text || "", ocrResults };
     } catch (error) {
-        console.error("OCR recognition failed:", error);
-        throw new Error("OCR recognition failed.");
+      console.error("OCR recognition failed:", error);
+      throw new Error("OCR recognition failed.");
     } finally {
-        await worker.terminate();
+      await worker.terminate();
     }
   }
 
   public async performPDFOCR(
     file: File,
-    language: string,
-    progressCallback?: (progress: number) => void,
-  ): Promise<{ ocrText: string; ocrResults: OCRResult[]; previewUrl?: string }> {
+    language: string = "eng",
+    progressCallback?: (progress: number) => void
+  ): Promise<{
+    ocrText: string;
+    ocrResults: OCRResult[];
+    previewUrl?: string;
+  }> {
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await getDocument({ data: arrayBuffer }).promise;
     let allResults: OCRResult[] = [];
@@ -66,27 +98,93 @@ class OCRService {
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const viewport = page.getViewport({ scale: 1.5 });
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
       if (!context) continue;
 
       canvas.width = viewport.width;
       canvas.height = viewport.height;
       await page.render({ canvasContext: context, viewport }).promise;
-      const imageData = canvas.toDataURL('image/png');
+      const imageData = canvas.toDataURL("image/png");
 
       if (i === 1) previewUrl = imageData;
 
       const { ocrText, ocrResults } = await this.performOCR(
-        imageData, language, i, pdf.numPages, progressCallback
+        imageData,
+        language,
+        i,
+        pdf.numPages,
+        progressCallback
       );
 
       allText.push(ocrText);
       allResults = allResults.concat(ocrResults);
     }
 
-    return { ocrText: allText.join('\n\n'), ocrResults: allResults, previewUrl };
+    return {
+      ocrText: allText.join("\n\n"),
+      ocrResults: allResults,
+      previewUrl,
+    };
+  }
+
+  public async extractPDFText(
+    pdfDocument: PDFDocumentProxy,
+    currentPage: number
+  ): Promise<{ extractedText: string; results: OCRResult[] }> {
+    try {
+      const page = await pdfDocument.getPage(currentPage);
+      const textContent = await page.getTextContent();
+      let extractedText = "";
+      const results: OCRResult[] = [];
+
+      textContent.items.forEach((item, index) => {
+        // This is the type guard. We check if 'str' exists on the item
+        // to confirm it's a TextItem before processing it.
+        if ("str" in item && item.str.trim()) {
+          extractedText += item.str + " ";
+          results.push({
+            id: `pdf-text-${index}`,
+            text: item.str,
+            confidence: 100, // PDF text extraction is 100% confident
+            boundingBox: {
+              x0: item.transform[4],
+              y0: item.transform[5],
+              x1: item.transform[4] + (item.width || 0),
+              y1: item.transform[5] + (item.height || 0),
+            },
+            page: currentPage,
+          });
+        }
+      });
+
+      return { extractedText: extractedText.trim(), results };
+    } catch (error) {
+      console.error("PDF text extraction error:", error);
+      throw new Error("PDF text extraction failed.");
+    }
+  }
+
+  public highlightTextOnCanvas(
+    result: OCRResult,
+    canvasRef: React.RefObject<HTMLCanvasElement>
+  ): void {
+    if (!canvasRef?.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.save();
+    ctx.globalAlpha = 0.4; // Control transparency
+    ctx.fillStyle = "#FFD700"; // A nice yellow color
+    ctx.fillRect(
+      result.boundingBox.x0,
+      result.boundingBox.y0,
+      result.boundingBox.x1 - result.boundingBox.x0,
+      result.boundingBox.y1 - result.boundingBox.y0
+    );
+    ctx.restore();
   }
 }
 
-export const ocrService = new OCRService();
+export const ocrService = OCRService.getInstance();

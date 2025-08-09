@@ -38,12 +38,13 @@ export interface PDFEditorState {
   whiteoutBlocks: { [page: number]: WhiteoutBlock[] };
   ocrResults: { [page: number]: OCRResult[] };
   selectedElementId: string | null;
-  selectedElementType: "annotation" | "text" | "form" | "whiteout" | null;
+  selectedElementType: "annotation" | "text" | "form" | "whiteout" | "image" | null;
   currentTool: ToolType;
   toolSettings: Record<ToolType, ToolSettings>;
   history: Partial<PDFEditorState>[];
   historyIndex: number;
   canvasRef: React.RefObject<HTMLCanvasElement> | null;
+  imageElements: { [page: number]: ImageElement[] };
 }
 
 
@@ -61,8 +62,21 @@ export type PDFEditorAction =
       type: "SET_SELECTED_ELEMENT";
       payload: {
         id: string | null;
-        type: "annotation" | "text" | "form" | "whiteout" | null;
-      };
+        type: "annotation" | "text" | "form" | "whiteout" | "image" | null;
+      }; 
+    }
+  | {
+      type: "ADD_IMAGE_ELEMENT";
+      payload: { page: number; element: ImageElement };
+    }
+  | {
+      type: "UPDATE_IMAGE_ELEMENT";
+      payload: { page: number; id: string; updates: Partial<ImageElement> };
+    }
+  | { type: "DELETE_IMAGE_ELEMENT"; payload: { page: number; id: string } }
+  | {
+      type: "ADD_TEXT_ELEMENT";
+      payload: { page: number; element: TextElement };
     }
   | {
       type: "ADD_ANNOTATION";
@@ -185,6 +199,7 @@ export interface WhiteoutBlock {
   y: number;
   width: number;
   height: number;
+  color?: string; 
 }
 
 // =========================
@@ -211,6 +226,11 @@ export interface OCRResult {
     y1: number;
   };
   page: number;
+}
+
+export interface OCRLanguage {
+  code: string;
+  name: string;
 }
 
 export interface SignatureData {
@@ -294,6 +314,7 @@ export interface EditorTool {
 }
 
 export interface FontManagerProps {
+  // ADD THIS ENTIRE INTERFACE
   selectedFont: string;
   onFontChange: (font: string) => void;
   fontSize: number;
@@ -320,4 +341,27 @@ export interface SignatureToolProps {
   onPlace: (placement: SignaturePlacement) => void;
   onClose: () => void;
   currentPage: number;
+
+}
+
+export interface FontInfo {
+  // ADD THIS ENTIRE INTERFACE
+  name: string;
+  family: string;
+  style: string;
+  weight: string;
+  loaded: boolean;
+  variants?: string[];
+}
+
+export interface ImageElement {
+  // ADD THIS ENTIRE INTERFACE
+  id: string;
+  page: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  src: string; // This will be a Base64 Data URL
+  rotation: number;
 }

@@ -27,7 +27,8 @@ export async function savePdfWithAnnotations(
   originalPdfData: Uint8Array,
   textElements: TextElement[],
   annotations: Annotation[],
-  whiteoutBlocks: WhiteoutBlock[]
+  whiteoutBlocks: WhiteoutBlock[],
+  imageElements: ImageElement[]
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.load(originalPdfData);
   const fontMap = await loadAndEmbedFonts(pdfDoc);
@@ -39,12 +40,16 @@ export async function savePdfWithAnnotations(
     const { height: pageHeight } = page.getSize();
 
     // 1. Draw Annotations (Shapes and Highlights)
-    const pageAnnotations = annotations.filter(a => a.page === pageNum);
+    const pageAnnotations = annotations.filter((a) => a.page === pageNum);
     for (const ann of pageAnnotations) {
       const y = pageHeight - ann.y - ann.height; // Y-axis is inverted in pdf-lib
-      
-      const { color: fillColor, opacity: fillOpacity } = parseColor(ann.fillColor);
-      const { color: strokeColor, opacity: borderOpacity } = parseColor(ann.strokeColor || ann.color);
+
+      const { color: fillColor, opacity: fillOpacity } = parseColor(
+        ann.fillColor
+      );
+      const { color: strokeColor, opacity: borderOpacity } = parseColor(
+        ann.strokeColor || ann.color
+      );
       const highlightOpacity = ann.opacity || 0.3;
 
       const baseOptions = {
@@ -53,24 +58,32 @@ export async function savePdfWithAnnotations(
         borderOpacity: borderOpacity,
       };
 
-      if (ann.type === 'rectangle') {
+      if (ann.type === "rectangle") {
         page.drawRectangle({
           ...baseOptions,
-          x: ann.x, y, width: ann.width, height: ann.height,
+          x: ann.x,
+          y,
+          width: ann.width,
+          height: ann.height,
           color: fillColor,
           opacity: fillOpacity,
         });
-      } else if (ann.type === 'highlight') {
+      } else if (ann.type === "highlight") {
         page.drawRectangle({
-            x: ann.x, y, width: ann.width, height: ann.height,
-            color: parseColor(ann.color).color,
-            opacity: highlightOpacity,
+          x: ann.x,
+          y,
+          width: ann.width,
+          height: ann.height,
+          color: parseColor(ann.color).color,
+          opacity: highlightOpacity,
         });
-      } else if (ann.type === 'circle') {
+      } else if (ann.type === "circle") {
         page.drawEllipse({
           ...baseOptions,
-          x: ann.x + ann.width / 2, y: y + ann.height / 2,
-          xScale: ann.width / 2, yScale: ann.height / 2,
+          x: ann.x + ann.width / 2,
+          y: y + ann.height / 2,
+          xScale: ann.width / 2,
+          yScale: ann.height / 2,
           color: fillColor,
           opacity: fillOpacity,
         });
@@ -78,27 +91,64 @@ export async function savePdfWithAnnotations(
     }
 
     // 2. Draw Text Elements
-    const pageTextElements = textElements.filter(t => t.page === pageNum);
+    const pageTextElements = textElements.filter((t) => t.page === pageNum);
     for (const text of pageTextElements) {
-        const font = fontMap[text.fontFamily] || await pdfDoc.embedFont(StandardFonts.Helvetica);
-        page.drawText(text.text, {
-            x: text.x,
-            y: pageHeight - text.y - text.fontSize,
-            font,
-            size: text.fontSize,
-            color: parseColor(text.color).color,
-            lineHeight: text.lineHeight * text.fontSize,
-        });
+      const font =
+        fontMap[text.fontFamily] ||
+        (await pdfDoc.embedFont(StandardFonts.Helvetica));
+      page.drawText(text.text, {
+        x: text.x,
+        y: pageHeight - text.y - text.fontSize,
+        font,
+        size: text.fontSize,
+        color: parseColor(text.color).color,
+        lineHeight: text.lineHeight * text.fontSize,
+      });
     }
 
     // 3. Draw Whiteout Blocks
-    const pageWhiteoutBlocks = whiteoutBlocks.filter(w => w.page === pageNum);
+    const pageWhiteoutBlocks = whiteoutBlocks.filter((w) => w.page === pageNum);
     for (const block of pageWhiteoutBlocks) {
-        page.drawRectangle({
-            x: block.x, y: pageHeight - block.y - block.height,
-            width: block.width, height: block.height,
-            color: rgb(1, 1, 1),
-        });
+      const { color: blockColor } = parseColor(block.color || "#FFFFFF");
+      page.drawRectangle({
+        x: block.x,
+        y: pageHeight - block.y - block.height,
+        width: block.width,
+        height: block.height,
+        color: blockColor,
+      });
+    }
+
+    const pageImageElements = imageElements.filter(
+      (img) => img.page === pageNum
+    );
+    for (const img of pageImageElements) {
+      const imageBytes = Uint8Array.from(atob(img.src.split(",")[1]), (c) =>
+        c.charCodeAt(0)
+      );
+      let pdfImage;
+
+      if (
+        img.src.startsWith("data:image/jpeg") ||
+        img.src.startsWith("data:image/jpg")
+      ) {
+        pdfImage = await pdfDoc.embedJpg(imageBytes);
+      } else if (img.src.startsWith("data:image/png")) {
+        pdfImage = await pdfDoc.embedPng(imageBytes);
+      } else {
+        console.warn(
+          `Unsupported image type for ${img.id}. Only JPG and PNG are supported.`
+        );
+        continue;
+      }
+
+      page.drawImage(pdfImage, {
+        x: img.x,
+        y: pageHeight - img.y - img.height,
+        width: img.width,
+        height: img.height,
+        rotate: { type: "degrees", angle: -img.rotation },
+      });
     }
   }
 
