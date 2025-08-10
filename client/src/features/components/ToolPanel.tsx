@@ -1,17 +1,17 @@
+// src/features/pdf-editor/ToolPanel.tsx
+
 import React from "react";
+import { toolRegistry } from ".././pdf-editor/toolRegistry";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { usePDFEditor } from "@/features/pdf-editor/PDFEditorContext";
-import { toolRegistry } from "@/features/pdf-editor/toolRegistry";
-import { ToolSettings, ToolType } from "@/types/pdf-types";
+import { usePDFEditor } from ".././pdf-editor/PDFEditorContext";
+import { ToolSettings } from "@/types/pdf-types";
 
-export const ToolPanel: React.FC = () => {
-  // 1. Get EVERYTHING from our single source of truth
+export default function ToolPanel() {
   const { state, dispatch } = usePDFEditor();
   const { currentTool, toolSettings } = state;
 
-  // 2. Create a handler that dispatches an action to our central reducer
   const handleSettingChange = <K extends keyof ToolSettings>(
     key: K,
     value: ToolSettings[K],
@@ -22,7 +22,6 @@ export const ToolPanel: React.FC = () => {
     });
   };
 
-  // 3. Get tool definitions from our static list
   const currentToolData = toolRegistry[currentTool];
   const currentSettings = toolSettings[currentTool];
   const SettingsComponent = currentToolData.component;
@@ -32,72 +31,60 @@ export const ToolPanel: React.FC = () => {
   );
 
   return (
-    <div
-      className="w-80 bg-gray-50 dark:bg-black/20 border-l flex flex-col flex-shrink-0"
-      data-oid="ji.csg_"
-    >
-      <div className="p-4 border-b" data-oid="p0bc-06">
-        <h2 className="text-lg font-semibold" data-oid="td-1hsl">
-          Tools
-        </h2>
+    <div className="w-80 bg-gray-50 dark:bg-black/20 border-l flex flex-col flex-shrink-0">
+      {/* Container for the scrollable tool list */}
+      <div className="flex-1 flex flex-col min-h-0">
+        <div className="p-4 border-b">
+          <h2 className="text-lg font-semibold">Tools</h2>
+        </div>
+        
+        {/* This ScrollArea will now take up the remaining space */}
+        <ScrollArea className="flex-1">
+          <div className="p-4 space-y-4">
+            {categories.map((category) => (
+              <div key={category}>
+                <h3 className="text-sm font-medium text-muted-foreground mb-3 capitalize">
+                  {category}
+                </h3>
+                <div className="grid grid-cols-5 gap-2">
+                  {Object.values(toolRegistry)
+                    .filter((tool) => tool.category === category)
+                    .map((tool) => (
+                      <Button
+                        key={tool.name}
+                        variant={currentTool === tool.name ? "default" : "outline"}
+                        size="icon"
+                        className="h-12 w-12"
+                        title={tool.label}
+                        onClick={() =>
+                          dispatch({ type: "SET_CURRENT_TOOL", payload: tool.name })
+                        }
+                      >
+                        {tool.icon}
+                      </Button>
+                    ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
       </div>
 
-      <ScrollArea className="flex-1" data-oid="cqtt14n">
-        {categories.map((category) => (
-          <div key={category} className="p-4 border-b" data-oid="01_9rgo">
-            <h3
-              className="text-sm font-medium text-muted-foreground mb-3 capitalize"
-              data-oid="9747g.r"
-            >
-              {category}
-            </h3>
-            <div className="grid grid-cols-5 gap-2" data-oid="ayoqonc">
-              {Object.values(toolRegistry)
-                .filter((tool) => tool.category === category)
-                .map((tool) => (
-                  <Button
-                    key={tool.name}
-                    variant={currentTool === tool.name ? "default" : "outline"}
-                    size="icon"
-                    className="h-12 w-12"
-                    title={tool.label}
-                    onClick={() =>
-                      dispatch({
-                        type: "SET_CURRENT_TOOL",
-                        payload: tool.name as ToolType,
-                      })
-                    }
-                    data-oid="wcgb56p"
-                  >
-                    {tool.icon}
-                  </Button>
-                ))}
-            </div>
-          </div>
-        ))}
-      </ScrollArea>
-
+      {/* Settings Panel is now a separate, non-growing element */}
       {currentToolData && (
-        <div className="border-t" data-oid="il4b3:-">
-          <Card
-            className="border-0 rounded-none shadow-none bg-transparent"
-            data-oid="6z.-l2o"
-          >
-            <CardHeader data-oid="m4o.eht">
-              <CardTitle
-                className="text-base flex items-center gap-2"
-                data-oid="-321wk0"
-              >
+        <div className="flex-shrink-0 border-t">
+          <Card className="border-0 rounded-none shadow-none bg-transparent">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
                 {currentToolData.icon}
                 {currentToolData.label} Settings
               </CardTitle>
             </CardHeader>
-            <CardContent data-oid="q-iy8._">
+            <CardContent>
               <SettingsComponent
                 settings={currentSettings}
                 onSettingChange={handleSettingChange}
                 editorState={state}
-                data-oid="zzezn--"
               />
             </CardContent>
           </Card>
@@ -105,6 +92,4 @@ export const ToolPanel: React.FC = () => {
       )}
     </div>
   );
-};
-
-export default ToolPanel;
+}
