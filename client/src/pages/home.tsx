@@ -1,3 +1,5 @@
+// src/pages/home.tsx
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -5,6 +7,7 @@ import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { PDFEditorProvider } from "@/features/pdf-editor/PDFEditorContext";
 import PDFEditorContainer from "@/features/pdf-editor/PDFEditorContainer";
 import Landing from "./landing";
+import { FontProvider } from "@/contexts/FontContext";
 
 export default function HomePage() {
   return (
@@ -35,9 +38,12 @@ export default function HomePage() {
       <div className="w-full border-b shadow-inner-lg bg-gray-100 dark:bg-gray-900">
         <div className="container mx-auto">
           <div className="h-[calc(100vh-61px)] max-h-[800px]">
-            <PDFEditorProvider>
-              <PDFEditorContainer />
-            </PDFEditorProvider>
+            {/* CORRECTED: Wrapped the entire editor setup with FontProvider */}
+            <FontProvider>
+              <PDFEditorProvider>
+                <PDFEditorContainer />
+              </PDFEditorProvider>
+            </FontProvider>
           </div>
         </div>
       </div>
