@@ -38,15 +38,18 @@ export interface PDFEditorState {
   whiteoutBlocks: { [page: number]: WhiteoutBlock[] };
   ocrResults: { [page: number]: OCRResult[] };
   selectedElementId: string | null;
-  selectedElementType: "annotation" | "text" | "form" | "whiteout" | "image" | null;
+  selectedElementType: "annotation" | "text" | "form" | "whiteout" | "image" | "textRegion" | null;
   currentTool: ToolType;
   toolSettings: Record<ToolType, ToolSettings>;
   history: Partial<PDFEditorState>[];
   historyIndex: number;
   canvasRef: React.RefObject<HTMLCanvasElement> | null;
   imageElements: { [page: number]: ImageElement[] };
+  extractedTextRegions: { [page: number]: TextRegion[] };
+  detectedFonts: { [page: number]: DetectedFont[] };
+  fontMatchingEnabled: boolean;
+  inlineEditingRegion: TextRegion | null;
 }
-
 
 export type PDFEditorAction =
   | {
@@ -62,7 +65,7 @@ export type PDFEditorAction =
       type: "SET_SELECTED_ELEMENT";
       payload: {
         id: string | null;
-        type: "annotation" | "text" | "form" | "whiteout" | "image" | null;
+        type: "annotation" | "text" | "form" | "whiteout" | "image" | "textRegion" | null;
       }; 
     }
   | {
@@ -88,10 +91,6 @@ export type PDFEditorAction =
     }
   | { type: "DELETE_ANNOTATION"; payload: { page: number; id: string } }
   | {
-      type: "ADD_TEXT_ELEMENT";
-      payload: { page: number; element: TextElement };
-    }
-  | {
       type: "UPDATE_TEXT_ELEMENT";
       payload: { page: number; id: string; updates: Partial<TextElement> };
     }
@@ -112,6 +111,26 @@ export type PDFEditorAction =
     }
   | { type: "DELETE_FORM_FIELD"; payload: { page: number; id: string } }
   | { type: "SET_OCR_RESULTS"; payload: { page: number; results: OCRResult[] } }
+  | {
+      type: "SET_EXTRACTED_TEXT_REGIONS";
+      payload: { page: number; regions: TextRegion[] };
+    }
+  | {
+      type: "SET_DETECTED_FONTS";
+      payload: { page: number; fonts: DetectedFont[] };
+    }
+  | {
+      type: "SET_FONT_MATCHING_ENABLED";
+      payload: boolean;
+    }
+  | {
+      type: "SET_INLINE_EDITING_REGION";
+      payload: TextRegion | null;
+    }
+  | {
+      type: "UPDATE_TEXT_REGION";
+      payload: { page: number; id: string; updates: Partial<TextRegion> };
+    }
   | {
       type: "UPDATE_TOOL_SETTING";
       payload: {
@@ -209,9 +228,52 @@ export interface ImageElement {
   y: number;
   width: number;
   height: number;
-  src: string; // This will be a Base64 Data URL
+  src: string;
   rotation: number;
-  opacity?: number; // ADD THIS LINE
+  opacity?: number;
+}
+
+// =========================
+// Inline Text Editing Types
+// =========================
+
+export interface TextRegion {
+  id: string;
+  page: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  text: string;
+  fontName: string;
+  fontSize: number;
+  fontWeight: "normal" | "bold";
+  fontStyle: "normal" | "italic";
+  color: string;
+  rotation: number;
+  isEditing: boolean;
+  originalFontInfo?: DetectedFont;
+}
+
+export interface DetectedFont {
+  id: string;
+  fontName: string;
+  fontFamily: string;
+  fontSize: number;
+  fontWeight: "normal" | "bold";
+  fontStyle: "normal" | "italic";
+  isSystemFont: boolean;
+  fallbackFont?: string;
+  instances: number;
+  pages: number[];
+  confidence: number;
+}
+
+export interface FontRecognitionResult {
+  page: number;
+  fonts: DetectedFont[];
+  textRegions: TextRegion[];
+  confidence: number;
 }
 
 // =========================
@@ -299,6 +361,11 @@ export interface ToolSettings {
   maintainAspectRatio?: boolean;
   borderColor?: string;
   borderWidth?: number;
+  // Inline Edit
+  autoFontMatch?: boolean;
+  useFallbackFonts?: boolean;
+  realTimePreview?: boolean;
+  showFontWarnings?: boolean;
 }
 
 // =========================
@@ -326,7 +393,6 @@ export interface EditorTool {
 }
 
 export interface FontManagerProps {
-  // ADD THIS ENTIRE INTERFACE
   selectedFont: string;
   onFontChange: (font: string) => void;
   fontSize: number;
@@ -353,27 +419,34 @@ export interface SignatureToolProps {
   onPlace: (placement: SignaturePlacement) => void;
   onClose: () => void;
   currentPage: number;
-
 }
 
-export interface FontInfo {
-  // ADD THIS ENTIRE INTERFACE
-  name: string;
-  family: string;
-  style: string;
-  weight: string;
-  loaded: boolean;
-  variants?: string[];
-}
-
-export interface ImageElement {
-  // ADD THIS ENTIRE INTERFACE
-  id: string;
-  page: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  src: string; // This will be a Base64 Data URL
+export interface InlineTextEditorProps {
+  textRegion: TextRegion;
+  onSave: (text: string) => void;
+  onCancel: () => void;
+  scale: number;
   rotation: number;
+}
+
+export interface TextExtractionLayerProps {
+  page: number;
+  textRegions: TextRegion[];
+  scale: number;
+  rotation: number;
+  onRegionClick: (region: TextRegion) => void;
+  showRegions: boolean;
+}
+
+export interface FontRecognitionPanelProps {
+  detectedFonts: DetectedFont[];
+  isAnalyzing: boolean;
+  analysisProgress: number;
+  onFontMappingChange: (fontId: string, mapping: Partial<DetectedFont>) => void;
+  settings: {
+    autoFontMatch: boolean;
+    useFallbackFonts: boolean;
+    showFontWarnings: boolean;
+  };
+  onSettingsChange: (settings: Partial<ToolSettings>) => void;
 }

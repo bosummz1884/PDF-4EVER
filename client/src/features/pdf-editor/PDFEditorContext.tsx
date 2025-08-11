@@ -12,8 +12,9 @@ import {
   ToolType,
   ToolSettings,
   EditorTool,
+  TextRegion,
 } from "@/types/pdf-types"; // Import the unified action type
-import { getDocument, RenderTask } from "pdfjs-dist";
+import { getDocument, RenderTask, PDFDocumentProxy } from "pdfjs-dist";
 import { toolRegistry } from "./toolRegistry";
 import "@/lib/pdfWorker";
 import { savePdfWithAnnotations, triggerDownload } from "../../lib/savePdf";
@@ -32,6 +33,8 @@ const initialState: PDFEditorState = {
   formFields: {},
   whiteoutBlocks: {},
   ocrResults: {},
+  extractedTextRegions: {},
+  detectedFonts: {},
   imageElements: {},
   selectedElementId: null,
   selectedElementType: null,
@@ -47,6 +50,8 @@ const initialState: PDFEditorState = {
   ),
   history: [],
   historyIndex: -1,
+  fontMatchingEnabled: true,
+  inlineEditingRegion: null,
 };
 
 function pdfEditorReducer(
@@ -264,6 +269,32 @@ function pdfEditorReducer(
           [action.payload.page]: action.payload.results,
         },
       };
+
+       // --- Inline Edit Actions ---
+    case "SET_EXTRACTED_TEXT_REGIONS":
+      return {
+        ...state,
+        extractedTextRegions: { ...state.extractedTextRegions, [action.payload.page]: action.payload.regions },
+      };
+    case "SET_DETECTED_FONTS":
+      return {
+        ...state,
+        detectedFonts: { ...state.detectedFonts, [action.payload.page]: action.payload.fonts },
+      };
+    case "SET_INLINE_EDITING_REGION":
+      return { ...state, inlineEditingRegion: action.payload };
+    case "UPDATE_TEXT_REGION":
+        const { page, id, updates } = action.payload;
+        return {
+            ...state,
+            extractedTextRegions: {
+                ...state.extractedTextRegions,
+                [page]: (state.extractedTextRegions[page] || []).map(region =>
+                    region.id === id ? { ...region, ...updates } : region
+                ),
+            },
+        };
+
     case "UPDATE_TOOL_SETTING":
       return {
         ...state,
@@ -281,6 +312,9 @@ function pdfEditorReducer(
         formFields: state.formFields,
         whiteoutBlocks: state.whiteoutBlocks,
         textElements: state.textElements,
+        imageElements: state.imageElements,
+        signatureElements: state.signatureElements,
+        extractedTextRegions: state.extractedTextRegions,
       };
       const newHistory = state.history.slice(0, state.historyIndex + 1);
       newHistory.push(snapshot);
@@ -403,7 +437,21 @@ export function PDFEditorProvider({ children }: { children: ReactNode }) {
       const allAnnotations = Object.values(state.annotations).flat();
       const allTextElements = Object.values(state.textElements).flat();
       const allWhiteoutBlocks = Object.values(state.whiteoutBlocks).flat();
+      Object.values(state.extractedTextRegions).flat().forEach(region => {
+          if (region.text !== region.originalFontInfo?.fontName) { // A simple check if text was edited
+              allWhiteoutBlocks.push({
+                  id: `whiteout-${region.id}`,
+                  page: region.page,
+                  x: region.x,
+                  y: region.y,
+                  width: region.width,
+                  height: region.height,
+                  color: '#FFFFFF' // Assume white background
+              });
+          }
+      });
       const allImageElements = Object.values(state.imageElements).flat();
+
       const savedPdfBytes = await savePdfWithAnnotations(
         state.originalPdfData,
         allTextElements,

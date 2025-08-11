@@ -1,235 +1,153 @@
-import React, { ComponentType } from "react";
-import {
-  CheckSquare,
-  Circle,
-  Edit3,
-  Eraser,
-  FileText,
-  FormInput,
-  Highlighter,
-  ImageIcon,
-  Minus,
-  MousePointer,
-  Signature,
-  Square,
-  Type,
-  X as XIcon,
-} from "lucide-react";
-import { EditorTool, EditorToolProps, ToolType } from "@/types/pdf-types";
+// src/tools/toolRegistry.ts
 
-// Import the rich tool setting components.
-// We will create/refactor these files in the subsequent steps.
-import { TextToolComponent } from "@/components/tool-panels/TextToolComponent";
-import { EraserToolComponent } from "@/components/tool-panels/EraserToolComponent";
+import { EditorTool, ToolType } from "@/types/pdf-types";
+import React from "react";
+import { inlineEditTool } from "./inlineEditTool";
 import { FreeformToolComponent } from "@/components/tool-panels/FreeformToolComponent";
 import { HighlightToolComponent } from "@/components/tool-panels/HighlightToolComponent";
 import { ImageToolComponent } from "@/components/tool-panels/ImageToolComponent";
+import { OCRToolComponent } from "@/components/tool-panels/OCRToolComponent";
 import { SelectToolComponent } from "@/components/tool-panels/SelectToolComponent";
 import { ShapeToolComponent } from "@/components/tool-panels/ShapeToolComponent";
-import WhiteoutToolComponent from "@/components/tool-panels/WhiteoutToolComponent";
-import { OCRToolComponent } from "@/components/tool-panels/OCRToolComponent";
+import { TextToolComponent } from "@/components/tool-panels/TextToolComponent";
+import { WhiteoutToolComponent } from "@/components/tool-panels/WhiteoutToolComponent";
 
-// A generic, clean component for tools that do not have settings.
-const NullSettingsPanel: ComponentType<EditorToolProps> = () => (
-  <div className="p-4 text-xs text-gray-500">This tool has no settings.</div>
-);
-
+// Basic tool implementations
 export const toolRegistry: Record<ToolType, EditorTool> = {
   select: {
     name: "select",
     label: "Select",
-    icon: <MousePointer size={16} />,
+    icon: React.createElement("span", {}, "⚬"),
     component: SelectToolComponent,
     category: "basic",
-    shortcut: "V",
-    defaultSettings: {
-      selectionMode: "single",
-      showBounds: true,
-      snapToGrid: false,
-    },
-    description: "Select and manipulate elements",
+    defaultSettings: {},
+    description: "Select and move elements"
   },
+  inlineEdit: inlineEditTool,
   text: {
     name: "text",
     label: "Text",
-    icon: <Type size={16} />,
+    icon: React.createElement("span", {}, "T"),
     component: TextToolComponent,
-    category: "content",
-    shortcut: "T",
-    defaultSettings: {
-      fontFamily: "Helvetica",
-      fontSize: 16,
-      color: "#000000",
-      bold: false,
-      italic: false,
-      underline: false,
-      lineHeight: 1.2,
-      textAlign: "left",
-    },
-    description: "Add and edit text boxes",
+    category: "text",
+    defaultSettings: { fontSize: 14, color: "#000000" },
+    description: "Add text"
   },
   highlight: {
     name: "highlight",
     label: "Highlight",
-    icon: <Highlighter size={16} />,
+    icon: React.createElement("span", {}, "🖍"),
     component: HighlightToolComponent,
     category: "annotation",
-    shortcut: "H",
-    defaultSettings: {
-      color: "#FFFF00",
-      opacity: 0.5,
-      style: "solid",
-      blendMode: "multiply",
-    },
-    description: "Highlight text and content",
+    defaultSettings: { color: "#FFFF00", opacity: 0.5 },
+    description: "Highlight text"
   },
   rectangle: {
     name: "rectangle",
     label: "Rectangle",
-    icon: <Square size={16} />,
+    icon: React.createElement("span", {}, "▭"),
     component: ShapeToolComponent,
-    category: "shapes",
-    shortcut: "R",
-    defaultSettings: {
-      strokeColor: "#000000",
-      fillColor: "transparent",
-      strokeWidth: 2,
-      strokeStyle: "solid",
-      cornerRadius: 0,
-    },
-    description: "Draw rectangles and squares",
+    category: "shape",
+    defaultSettings: { strokeColor: "#000000", fillColor: "transparent" },
+    description: "Draw rectangles"
   },
   circle: {
     name: "circle",
     label: "Circle",
-    icon: <Circle size={16} />,
+    icon: React.createElement("span", {}, "○"),
     component: ShapeToolComponent,
-    category: "shapes",
-    shortcut: "C",
-    defaultSettings: {
-      strokeColor: "#000000",
-      fillColor: "transparent",
-      strokeWidth: 2,
-      strokeStyle: "solid",
-    },
-    description: "Draw circles and ellipses",
-  },
-  line: {
-    name: "line",
-    label: "Line",
-    icon: <Minus size={16} />,
-    component: ShapeToolComponent,
-    category: "shapes",
-    shortcut: "L",
-    defaultSettings: {
-      strokeColor: "#000000",
-      strokeWidth: 2,
-      strokeStyle: "solid",
-    },
-    description: "Draw straight lines",
+    category: "shape",
+    defaultSettings: { strokeColor: "#000000", fillColor: "transparent" },
+    description: "Draw circles"
   },
   freeform: {
     name: "freeform",
-    label: "Draw",
-    icon: <Edit3 size={16} />,
+    label: "Freeform",
+    icon: React.createElement("span", {}, "✏"),
     component: FreeformToolComponent,
-    category: "drawing",
-    shortcut: "F",
-    defaultSettings: { color: "#000000", brushSize: 3, smoothing: "medium" },
-    description: "Draw freeform shapes and lines",
+    category: "draw",
+    defaultSettings: { color: "#000000", brushSize: 3 },
+    description: "Free drawing"
   },
-  eraser: {
-    name: "eraser",
-    label: "Eraser",
-    icon: <Eraser size={16} />,
-    component: EraserToolComponent,
-    category: "editing",
-    shortcut: "E",
-    defaultSettings: { size: 20 },
-    description: "Remove annotations",
-  },
-  whiteout: {
-    name: "whiteout",
-    label: "Whiteout",
-    icon: <Square size={16} className="fill-black" />,
-    component: WhiteoutToolComponent,
-    category: "editing",
-    shortcut: "W",
-    defaultSettings: { color: "#FFFFFF", opacity: 1 },
-    description: "Cover areas of the document",
-  },
-  
-  image: {
-    name: "image",
-    label: "Image",
-    icon: <ImageIcon size={16} />,
-    component: ImageToolComponent,
-    category: "media",
-    shortcut: "I",
-    defaultSettings: {
-        opacity: 1,
-        rotation: 0 
-    },
-    description: "Insert images onto the document",
+  form: {
+    name: "form",
+    label: "Form",
+    icon: React.createElement("span", {}, "📝"),
+    component: SelectToolComponent,
+    category: "form",
+    defaultSettings: {},
+    description: "Add form fields"
   },
   signature: {
     name: "signature",
     label: "Signature",
-    icon: <Signature size={16} />,
-    component: NullSettingsPanel,
-    category: "content",
-    shortcut: "S",
+    icon: React.createElement("span", {}, "✍"),
+    component: SelectToolComponent,
+    category: "annotation",
     defaultSettings: {},
-    description: "Add digital signatures",
+    description: "Add signatures"
   },
-  ocr: {
-    name: "ocr",
-    label: "OCR",
-    icon: <FileText size={16} />,
-    component: OCRToolComponent,
-    category: "advanced",
-    shortcut: "Shift+O",
-    defaultSettings: {},
-    description: "Recognize text in images",
-  },
-  inlineEdit: {
-    name: "inlineEdit",
-    label: "Edit Text",
-    icon: <Edit3 size={16} />,
-    component: NullSettingsPanel,
-    category: "editing",
-    shortcut: "Shift+E",
-    defaultSettings: {},
-    description: "Edit the underlying text of the PDF",
-  },
-  form: {
-    name: "form",
-    label: "Form Field",
-    icon: <FormInput size={16} />,
-    component: NullSettingsPanel,
-    category: "forms",
-    shortcut: "Shift+F",
-    defaultSettings: {},
-    description: "Create interactive form fields",
+  eraser: {
+    name: "eraser",
+    label: "Eraser",
+    icon: React.createElement("span", {}, "🧽"),
+    component: SelectToolComponent,
+    category: "edit",
+    defaultSettings: { size: 10 },
+    description: "Erase content"
   },
   checkmark: {
     name: "checkmark",
     label: "Checkmark",
-    icon: <CheckSquare size={16} />,
-    component: NullSettingsPanel,
+    icon: React.createElement("span", {}, "✓"),
+    component: SelectToolComponent,
     category: "annotation",
-    shortcut: "Shift+C",
-    defaultSettings: {},
-    description: "Add checkmarks",
+    defaultSettings: { color: "#00FF00" },
+    description: "Add checkmarks"
   },
   "x-mark": {
     name: "x-mark",
-    label: "X-Mark",
-    icon: <XIcon size={16} />,
-    component: NullSettingsPanel,
+    label: "X Mark",
+    icon: React.createElement("span", {}, "✗"),
+    component: SelectToolComponent,
     category: "annotation",
-    shortcut: "X",
-    defaultSettings: {},
-    description: "Add X marks",
+    defaultSettings: { color: "#FF0000" },
+    description: "Add X marks"
   },
+  line: {
+    name: "line",
+    label: "Line",
+    icon: React.createElement("span", {}, "―"),
+    component: ShapeToolComponent,
+    category: "shape",
+    defaultSettings: { strokeColor: "#000000", strokeWidth: 2 },
+    description: "Draw lines"
+  },
+  image: {
+    name: "image",
+    label: "Image",
+    icon: React.createElement("span", {}, "🖼"),
+    component: ImageToolComponent,
+    category: "media",
+    defaultSettings: { opacity: 1, rotation: 0 },
+    description: "Add images"
+  },
+  whiteout: {
+    name: "whiteout",
+    label: "Whiteout",
+    icon: React.createElement("span", {}, "⬜"),
+    component: WhiteoutToolComponent,
+    category: "edit",
+    defaultSettings: { color: "#FFFFFF" },
+    description: "Cover content"
+  },
+  ocr: {
+    name: "ocr",
+    label: "OCR",
+    icon: React.createElement("span", {}, "👁"),
+    component: OCRToolComponent,
+    category: "utility",
+    defaultSettings: {},
+    description: "Extract text"
+  }
 };
