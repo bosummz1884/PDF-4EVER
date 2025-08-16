@@ -25,6 +25,8 @@ import { FontStylePanel } from "../../components/tool-panels/FontStylePanel";
 import { LayerVisibilityPanel } from "../../components/tool-panels/LayerVisibilityPanel";
 import { toolRegistry } from "@/components/tool-panels/toolRegistry";
 import { ToolDropdown } from "@/components/tool-panels/ToolDropdown";
+import { PageNavigationControls } from "../../components/navigation/PageNavigationControls";
+import { ThumbnailNavigation } from "../../components/navigation/ThumbnailNavigation";
 
 // Import All Services
 import { fontRecognitionService } from "../../services/fontRecognitionService";
@@ -54,6 +56,9 @@ export default function PDFEditorContainer() {
     freeform: true,
     textExtraction: true,
   });
+
+  // Navigation state
+  const [showThumbnails, setShowThumbnails] = useState(false);
 
   const [currentFontStyle, setCurrentFontStyle] = useState({
     fontFamily: "Arial",
@@ -280,6 +285,10 @@ export default function PDFEditorContainer() {
   const handleToggleLayer = (layer: keyof typeof layerVisibility) => {
     setLayerVisibility(prev => ({ ...prev, [layer]: !prev[layer] }));
   };
+
+  const handleToggleThumbnails = () => {
+    setShowThumbnails(prev => !prev);
+  };
   
   const handleZoom = (direction: 'in' | 'out' | 'fit') => {
       const newScale = direction === 'in' ? Math.min(scale * 1.25, 3.0) : direction === 'out' ? Math.max(scale * 0.8, 0.25) : 1.0;
@@ -302,7 +311,16 @@ export default function PDFEditorContainer() {
           <input ref={fileInputRef} type="file" accept=".pdf" onChange={handleFileUpload} className="hidden" />
           <input ref={imageInputRef} type="file" accept="image/png, image/jpeg" onChange={handleImageUpload} className="hidden" />
         </div>
-        {fileName && ( <div className="text-sm text-muted-foreground">{fileName} ({currentPage}/{totalPages})</div> )}
+        <div className="flex items-center gap-4">
+          {fileName && ( <div className="text-sm text-muted-foreground">{fileName}</div> )}
+          {/* Page Navigation Controls */}
+          {pdfDocument && (
+            <PageNavigationControls 
+              showThumbnails={showThumbnails}
+              onToggleThumbnails={handleToggleThumbnails}
+            />
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={() => dispatch({ type: "UNDO" })} disabled={historyIndex <= 0} title="Undo (Ctrl+Z)"> <Undo className="h-4 w-4" /> </Button>
           <Button variant="ghost" size="sm" onClick={() => dispatch({ type: "REDO" })} disabled={historyIndex >= history.length - 1} title="Redo (Ctrl+Y)"> <Redo className="h-4 w-4" /> </Button>
@@ -457,13 +475,6 @@ export default function PDFEditorContainer() {
                 )}
               </div>
               {inlineEditingRegion && <InlineTextEditor textRegion={inlineEditingRegion} onSave={handleInlineTextSave} onCancel={handleInlineTextCancel} scale={scale} rotation={rotation} detectedFonts={allDetectedFonts} />}
-              <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-white/80 backdrop-blur-sm shadow-lg rounded-lg border p-2">
-                <Button variant="ghost" size="sm" onClick={() => handleZoom('out')} title="Zoom Out"> <ZoomOut className="h-4 w-4" /> </Button>
-                <span className="text-sm font-medium min-w-12 text-center">{Math.round(scale * 100)}%</span>
-                <Button variant="ghost" size="sm" onClick={() => handleZoom('in')} title="Zoom In"> <ZoomIn className="h-4 w-4" /> </Button>
-                <Separator orientation="vertical" className="h-6 mx-1" />
-                <Button variant="ghost" size="sm" onClick={() => handleZoom('fit')} title="Fit to Page"> <Maximize className="h-4 w-4" /> </Button>
-              </div>
             </div>
           ) : (
             <Card className="w-full max-w-md"><CardContent className="pt-6 text-center"><FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" /><h3>No PDF Loaded</h3><p className="text-muted-foreground">Upload a PDF file to get started.</p><Button className="mt-4" onClick={() => fileInputRef.current?.click()}><Upload className="h-4 w-4 mr-2" />Upload PDF</Button></CardContent></Card>
@@ -472,6 +483,12 @@ export default function PDFEditorContainer() {
         
         {/* Performance Monitoring */}
         <MemoryProfiler />
+
+        {/* Thumbnail Navigation Modal */}
+        <ThumbnailNavigation 
+          isOpen={showThumbnails}
+          onClose={() => setShowThumbnails(false)}
+        />
       </div>
     </div>
     </KeyboardHandler>
