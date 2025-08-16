@@ -25,9 +25,7 @@ export class TextExtractionService {
     options: TextExtractionOptions = {}
   ): Promise<TextRegion[]> {
     const page = await pdfDocument.getPage(pageNumber);
-    const textContent = await page.getTextContent({
-      disableCombineTextItems: !options.combineTextItems
-    });
+    const textContent = await page.getTextContent();
     
     const viewport = page.getViewport({ scale: 1.0 });
     const textRegions: TextRegion[] = [];
@@ -130,15 +128,24 @@ export class TextExtractionService {
   }
 
   private areRegionsAdjacent(region1: TextRegion, region2: TextRegion): boolean {
-    const threshold = 5; // pixels
+    const threshold = Math.max(region1.fontSize * 0.3, 5); // Dynamic threshold based on font size
+    
+    // Check if regions are on the same line (accounting for rotation)
+    const rotationDiff = Math.abs(region1.rotation - region2.rotation);
+    if (rotationDiff > 5) return false; // Different rotation angles
+    
     const horizontallyAligned = Math.abs(region1.y - region2.y) <= threshold;
     const verticallyAdjacent = 
       Math.abs(region1.x + region1.width - region2.x) <= threshold ||
       Math.abs(region2.x + region2.width - region1.x) <= threshold;
 
-    return horizontallyAligned && verticallyAdjacent &&
-           region1.fontName === region2.fontName &&
-           Math.abs(region1.fontSize - region2.fontSize) <= 1;
+    // Enhanced font matching
+    const fontCompatible = region1.fontName === region2.fontName &&
+                          Math.abs(region1.fontSize - region2.fontSize) <= 1 &&
+                          region1.fontWeight === region2.fontWeight &&
+                          region1.fontStyle === region2.fontStyle;
+
+    return horizontallyAligned && verticallyAdjacent && fontCompatible;
   }
 
   private combineRegions(regions: TextRegion[]): TextRegion {
@@ -220,6 +227,146 @@ export class TextExtractionService {
       x >= region.x && x <= region.x + region.width &&
       y >= region.y && y <= region.y + region.height
     ) || null;
+  }
+
+  /**
+   * Enhanced text boundary detection with better accuracy
+   */
+  detectTextBoundaries(regions: TextRegion[]): TextRegion[] {
+    return regions.map(region => {
+      // Calculate more accurate boundaries based on font metrics
+      const adjustedHeight = Math.max(region.height, region.fontSize * 1.2);
+      const adjustedY = region.y - (adjustedHeight - region.height) / 2;
+      
+      return {
+        ...region,
+        y: adjustedY,
+        height: adjustedHeight,
+        // Add padding for better click targets
+        x: region.x - 2,
+        width: region.width + 4
+      };
+    });
+  }
+
+  /**
+   * Handle rotated and skewed text with improved coordinate transformation
+   */
+  normalizeRotatedText(regions: TextRegion[]): TextRegion[] {
+    return regions.map(region => {
+      if (Math.abs(region.rotation) < 1) return region; // No significant rotation
+      
+      // Calculate bounding box for rotated text
+      const radians = (region.rotation * Math.PI) / 180;
+      const cos = Math.cos(radians);
+      const sin = Math.sin(radians);
+      
+      // Transform corners of the text region
+      const corners = [
+        { x: 0, y: 0 },
+        { x: region.width, y: 0 },
+        { x: region.width, y: region.height },
+        { x: 0, y: region.height }
+      ];
+      
+      const transformedCorners = corners.map(corner => ({
+        x: region.x + corner.x * cos - corner.y * sin,
+        y: region.y + corner.x * sin + corner.y * cos
+      }));
+      
+      // Calculate new bounding box
+      const minX = Math.min(...transformedCorners.map(c => c.x));
+      const maxX = Math.max(...transformedCorners.map(c => c.x));
+      const minY = Math.min(...transformedCorners.map(c => c.y));
+      const maxY = Math.max(...transformedCorners.map(c => c.y));
+      
+      return {
+        ...region,
+        x: minX,
+        y: minY,
+        width: maxX - minX,
+        height: maxY - minY
+      };
+    });
+  }
+
+  /**
+   * Advanced text region merging with line detection
+   */
+  mergeTextLines(regions: TextRegion[]): TextRegion[] {
+    const lines: TextRegion[][] = [];
+    const processed = new Set<string>();
+    
+    // Group regions into lines
+    for (const region of regions) {
+      if (processed.has(region.id)) continue;
+      
+      const line = [region];
+      processed.add(region.id);
+      
+      // Find other regions on the same line
+      for (const other of regions) {
+        if (processed.has(other.id)) continue;
+        
+        if (this.areOnSameLine(region, other)) {
+          line.push(other);
+          processed.add(other.id);
+        }
+      }
+      
+      lines.push(line);
+    }
+    
+    // Merge regions within each line
+    return lines.map(line => {
+      if (line.length === 1) return line[0];
+      
+      // Sort by x position
+      line.sort((a, b) => a.x - b.x);
+      
+      const first = line[0];
+      const last = line[line.length - 1];
+      
+      return {
+        ...first,
+        id: `line-${first.page}-${Date.now()}`,
+        text: line.map(r => r.text).join(' '),
+        width: (last.x + last.width) - first.x,
+        height: Math.max(...line.map(r => r.height))
+      };
+    });
+  }
+
+  private areOnSameLine(region1: TextRegion, region2: TextRegion): boolean {
+    const threshold = Math.min(region1.fontSize, region2.fontSize) * 0.5;
+    
+    // Check vertical alignment (same line)
+    const verticalOverlap = Math.min(region1.y + region1.height, region2.y + region2.height) - 
+                           Math.max(region1.y, region2.y);
+    
+    return verticalOverlap > threshold &&
+           Math.abs(region1.rotation - region2.rotation) <= 5 && // Similar rotation
+           region1.fontName === region2.fontName; // Same font
+  }
+
+  /**
+   * Extract text with improved accuracy for complex layouts
+   */
+  async extractTextWithLayout(
+    pdfDocument: PDFDocumentProxy,
+    pageNumber: number
+  ): Promise<TextRegion[]> {
+    let regions = await this.extractTextRegions(pdfDocument, pageNumber, {
+      mergeClosestItems: false,
+      normalizeWhitespace: true
+    });
+    
+    // Apply enhancements
+    regions = this.normalizeRotatedText(regions);
+    regions = this.detectTextBoundaries(regions);
+    regions = this.mergeTextLines(regions);
+    
+    return regions;
   }
 }
 

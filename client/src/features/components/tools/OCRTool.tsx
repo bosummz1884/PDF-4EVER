@@ -1,437 +1,226 @@
-import React, {
-  useState,
-  useRef,
-  useCallback,
-  ChangeEvent,
-  DragEvent,
-} from "react";
-import { ocrService, OCR_LANGUAGES } from "@/pages/services/ocrService";
-import { OCRResult, OCRToolProps } from "client/src/types/pdf-types";
+// src/features/components/tools/OCRTool.tsx
 
-const OCRTool: React.FC<OCRToolProps> = ({
-  pdfDocument,
-  canvasRef,
-  currentPage = 1,
-  onTextDetected,
-  onTextBoxCreate,
-  onTextExtracted,
-}) => {
+import React, { useState, useCallback, ChangeEvent, DragEvent } from "react";
+import { ocrService, OCR_LANGUAGES } from "../../services/OCRService";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { usePDFEditor } from "@/features/pdf-editor/PDFEditorContext";
+import { OCRResult, TextElement } from "@/types/pdf-types";
+import { Upload, Copy, Zap, Eye, PlusSquare } from "lucide-react";
+
+export const OCRToolComponent: React.FC = () => {
+  const { state, dispatch } = usePDFEditor();
+  const { canvasRef, currentPage, scale } = state;
+
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
-  const [ocrResults, setOcrResults] = useState<OCRResult[]>([]);
   const [extractedText, setExtractedText] = useState<string>("");
+  const [ocrResults, setOcrResults] = useState<OCRResult[]>([]);
   const [selectedLanguage, setSelectedLanguage] = useState<string>("eng");
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const performOCROnImage = useCallback(
-    async (
-      imageData: string | File,
-      pageNumber: number = 1,
-      totalPages: number = 1,
-    ) => {
-      setIsProcessing(true);
-      setError(null);
-      setProgress(0);
-
-      try {
-        const { ocrText, ocrResults: results } = await ocrService.performOCR(
-          imageData,
-          selectedLanguage,
-          pageNumber,
-          totalPages,
-          setProgress,
-        );
-
-        if (totalPages === 1) {
-          setExtractedText(ocrText);
-          setOcrResults(results);
-          onTextDetected?.(results);
-          onTextExtracted?.(ocrText);
-          setProgress(100);
-        }
-
-        return { ocrText, ocrResults: results };
-      } catch (error: any) {
-        setError(error.message);
-        return { ocrText: "", ocrResults: [] };
-      } finally {
-        if (totalPages === 1) {
-          setIsProcessing(false);
-        }
-      }
+  const handleOcrResult = useCallback(
+    (text: string, results: OCRResult[]) => {
+      setExtractedText(text);
+      setOcrResults(results);
+      // Dispatch results to the central state, associated with the current page
+      dispatch({
+        type: "SET_OCR_RESULTS",
+        payload: { page: currentPage, results },
+      });
     },
-    [selectedLanguage, onTextDetected, onTextExtracted],
+    [dispatch, currentPage],
   );
 
-  const handlePdfUpload = useCallback(
-    async (file: File) => {
-      setIsProcessing(true);
-      setProgress(0);
-      setError(null);
-
-      try {
-        const {
-          ocrText,
-          ocrResults: results,
-          previewUrl: preview,
-        } = await ocrService.performPDFOCR(file, selectedLanguage, setProgress);
-
-        setExtractedText(ocrText);
-        setOcrResults(results);
-        setPreviewUrl(preview ?? null);
-        onTextDetected?.(results);
-        onTextExtracted?.(ocrText);
-        setProgress(100);
-      } catch (error: any) {
-        setError(error.message);
-      } finally {
-        setIsProcessing(false);
-      }
-    },
-    [selectedLanguage, onTextDetected, onTextExtracted],
-  );
-
-  const handleFileInput = (): void => fileInputRef.current?.click();
-
-  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processFile = useCallback(async (file: File) => {
+    setIsProcessing(true);
+    setProgress(0);
     setError(null);
     setPreviewUrl(null);
     setExtractedText("");
     setOcrResults([]);
 
-    if (file.type === "application/pdf") {
-      await handlePdfUpload(file);
-    } else if (file.type.startsWith("image/")) {
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-      await performOCROnImage(url);
-    } else {
-      setError("Unsupported file type. Please upload an image or PDF.");
+    try {
+      if (file.type === "application/pdf") {
+        const {
+          ocrText,
+          ocrResults,
+          previewUrl: pdfPreview,
+        } = await ocrService.performPDFOCR(file, selectedLanguage, setProgress);
+        handleOcrResult(ocrText, ocrResults);
+        if (pdfPreview) setPreviewUrl(pdfPreview);
+      } else if (file.type.startsWith("image/")) {
+        const url = URL.createObjectURL(file);
+        setPreviewUrl(url);
+        const { ocrText, ocrResults } = await ocrService.performOCR(
+          file,
+          selectedLanguage,
+          1,
+          1,
+          setProgress,
+        );
+        handleOcrResult(ocrText, ocrResults);
+      } else {
+        throw new Error("Unsupported file type. Please upload an image or PDF.");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unknown error occurred.");
+    } finally {
+      setIsProcessing(false);
     }
+  }, [handleOcrResult, selectedLanguage]);
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processFile(file);
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (isProcessing) return;
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
   };
 
   const performCanvasOCR = useCallback(async () => {
     if (!canvasRef?.current) return;
-    setPreviewUrl(null);
     const canvas = canvasRef.current;
     const imageData = canvas.toDataURL("image/png");
-    await performOCROnImage(imageData);
-  }, [canvasRef, performOCROnImage]);
+    // We can treat the canvas data as an image file for processing
+    const blob = await (await fetch(imageData)).blob();
+    const file = new File([blob], "canvas.png", { type: "image/png" });
+    await processFile(file);
+  }, [canvasRef, processFile]);
 
-  const extractTextFromPDF = useCallback(async () => {
-    if (!pdfDocument) return;
-    setIsProcessing(true);
-    setProgress(0);
-    setError(null);
-
-    try {
-      const { extractedText: pageText, results } =
-        await ocrService.extractPDFText(pdfDocument, currentPage);
-
-      setExtractedText(pageText);
-      setOcrResults(results);
-      onTextDetected?.(results);
-      onTextExtracted?.(pageText);
-      setProgress(100);
-    } catch (error: any) {
-      setError(error.message);
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [pdfDocument, currentPage, onTextDetected, onTextExtracted]);
-
-  const copyToClipboard = useCallback(() => {
-    if (extractedText) navigator.clipboard.writeText(extractedText);
-  }, [extractedText]);
-
-  const downloadText = useCallback(() => {
-    const blob = new Blob([extractedText], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `extracted-text-page-${currentPage}.txt`;
-    link.click();
-    URL.revokeObjectURL(url);
-  }, [extractedText, currentPage]);
-
-  const createTextBoxFromResult = useCallback(
-    (result: OCRResult) => {
-      if (onTextBoxCreate) {
-        onTextBoxCreate(
-          result.boundingBox.x0,
-          result.boundingBox.y0,
-          result.text,
-        );
-      }
-    },
-    [onTextBoxCreate],
-  );
-
-  const highlightTextOnCanvas = useCallback(
-    (result: OCRResult) => {
-      if (canvasRef) {
-        ocrService.highlightTextOnCanvas(result, canvasRef);
-      }
-    },
-    [canvasRef],
-  );
-
-  const handleQuickImageOCR = async () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-
-    input.onchange = async (event: Event) => {
-      const file = (event.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      setIsProcessing(true);
-      try {
-        const { ocrText } = await ocrService.performOCR(file, selectedLanguage);
-        setExtractedText(ocrText);
-        onTextExtracted?.(ocrText);
-        setProgress(100);
-      } catch (error: any) {
-        setError(error.message);
-      } finally {
-        setIsProcessing(false);
-      }
+  const addTextToPage = (result: OCRResult) => {
+    const toolSettings = state.toolSettings.text;
+    const newTextElement: TextElement = {
+      id: `text-${Date.now()}`,
+      page: currentPage,
+      text: result.text,
+      x: result.boundingBox.x0 / scale, // Descale coordinates
+      y: result.boundingBox.y0 / scale,
+      width: (result.boundingBox.x1 - result.boundingBox.x0) / scale,
+      height: (result.boundingBox.y1 - result.boundingBox.y0) / scale,
+      fontFamily: toolSettings.fontFamily || 'Helvetica',
+      fontSize: toolSettings.fontSize || 12, // Default size
+      color: toolSettings.color || '#000000',
+      bold: toolSettings.bold || false,
+      italic: toolSettings.italic || false,
+      underline: toolSettings.underline || false,
+      textAlign: 'left',
+      lineHeight: 1.2,
+      rotation: 0,
     };
-
-    input.click();
+    dispatch({ type: 'ADD_TEXT_ELEMENT', payload: { page: currentPage, element: newTextElement } });
+    dispatch({ type: 'SAVE_TO_HISTORY' });
   };
-
-  const handleDrop = async (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    if (isProcessing) return;
-
-    const file = e.dataTransfer.files[0];
-    if (!file) return;
-
-    setError(null);
-    setPreviewUrl(null);
-    setExtractedText("");
-    setOcrResults([]);
-
-    if (file.type === "application/pdf") {
-      await handlePdfUpload(file);
-    } else if (file.type.startsWith("image/")) {
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-      await performOCROnImage(url);
-    } else {
-      setError("Unsupported file type. Please upload an image or PDF.");
+  
+  const highlightOnCanvas = (result: OCRResult) => {
+    if (canvasRef?.current) {
+      ocrService.highlightTextOnCanvas(result, canvasRef);
     }
   };
 
   return (
-    <div className="space-y-4" data-oid="mghcfzz">
-      <button
-        onClick={handleQuickImageOCR}
-        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-        disabled={isProcessing}
-        data-oid="b3uzp7."
-      >
-        🔎 Extract Text from Image (Quick OCR)
-      </button>
-
-      <div
-        className={`border-2 border-dashed rounded-lg py-6 px-4 cursor-pointer transition-colors ${
-          isProcessing
-            ? "opacity-60 pointer-events-none"
-            : "hover:bg-gray-50 border-gray-300"
-        }`}
-        onClick={handleFileInput}
-        onDrop={handleDrop}
-        onDragOver={(e) => e.preventDefault()}
-        role="button"
-        tabIndex={0}
-        data-oid="-s.v5jt"
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*,application/pdf"
-          className="hidden"
-          onChange={handleFileChange}
-          data-oid="uborbs-"
-        />
-
-        <div className="flex flex-col items-center" data-oid="gq7wqx7">
-          <div className="font-semibold text-gray-700" data-oid="_5vyd15">
-            Drag & drop or click to upload an image or PDF
-          </div>
-          <div className="text-sm text-gray-500 mt-1" data-oid="y313lyc">
-            Supported: JPG, PNG, PDF
-          </div>
-        </div>
-      </div>
-
-      {previewUrl && (
-        <div className="text-center" data-oid="etxm8v5">
-          <img
-            src={previewUrl}
-            alt="Preview"
-            className="inline-block max-h-56 border rounded shadow-sm"
-            data-oid="xn-.s.5"
-          />
-        </div>
-      )}
-
-      <div className="flex flex-wrap gap-2 items-center" data-oid="cj-3uej">
-        <button
-          onClick={extractTextFromPDF}
-          disabled={isProcessing || !pdfDocument}
-          className="px-3 py-2 bg-gray-600 text-white rounded disabled:opacity-50"
-          data-oid="swtj_5y"
-        >
-          Extract PDF Text
-        </button>
-
-        <button
-          onClick={performCanvasOCR}
-          disabled={isProcessing || !canvasRef?.current}
-          className="px-3 py-2 bg-gray-600 text-white rounded disabled:opacity-50"
-          data-oid="tfcym4s"
-        >
-          OCR Canvas
-        </button>
-
-        <select
-          value={selectedLanguage}
-          onChange={(e) => setSelectedLanguage(e.target.value)}
-          disabled={isProcessing}
-          className="px-2 py-1 border rounded"
-          data-oid="1x-xv_n"
-        >
-          {OCR_LANGUAGES.map((lang) => (
-            <option key={lang.code} value={lang.code} data-oid="_t2-di:">
-              {lang.name}
-            </option>
-          ))}
-        </select>
-
-        {ocrResults.length > 0 && (
-          <span
-            className="text-sm font-medium text-gray-600"
-            data-oid=".o7oj:3"
-          >
-            {ocrResults.length} text regions found
-          </span>
-        )}
-      </div>
-
-      {isProcessing && (
-        <div className="space-y-2" data-oid="vapj0nv">
+    <div className="p-4 space-y-4">
+      <Card>
+        <CardContent className="pt-6">
           <div
-            className="w-full bg-gray-200 rounded-full h-2"
-            data-oid="-89eqtl"
+            className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-black/20"
+            onClick={() => document.getElementById("ocr-file-input")?.click()}
+            onDrop={handleDrop}
+            onDragOver={(e) => e.preventDefault()}
           >
-            <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-200"
-              style={{ width: `${progress}%` }}
-              data-oid="6zrd95w"
+            <Upload className="mx-auto h-8 w-8 text-gray-400" />
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">Drag & drop or click to upload</p>
+            <p className="text-xs text-gray-500">Image or PDF file</p>
+            <input
+              id="ocr-file-input"
+              type="file"
+              className="hidden"
+              onChange={handleFileChange}
+              accept="image/*,application/pdf"
             />
           </div>
-          <p className="text-sm text-gray-600" data-oid="u4vmexo">
-            {progress > 0 ? `Processing: ${progress}%` : "Initializing..."}
-          </p>
-        </div>
-      )}
+        </CardContent>
+      </Card>
 
-      {error && (
-        <div
-          className="text-red-600 text-sm bg-red-50 p-2 rounded"
-          data-oid="-tlhdw7"
-        >
-          {error}
-        </div>
-      )}
+      {previewUrl && <img src={previewUrl} alt="Preview" className="max-h-40 mx-auto rounded border" />}
+
+      <div className="flex items-center gap-2">
+        <Button onClick={performCanvasOCR} disabled={isProcessing || !canvasRef?.current} className="flex-1">
+          <Zap className="h-4 w-4 mr-2" /> Scan Current View
+        </Button>
+        <Select value={selectedLanguage} onValueChange={setSelectedLanguage} disabled={isProcessing}>
+          <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {OCR_LANGUAGES.map(lang => (
+              <SelectItem key={lang.code} value={lang.code}>{lang.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {isProcessing && <Progress value={progress} className="w-full" />}
+      {error && <p className="text-sm text-red-600">{error}</p>}
 
       {extractedText && (
-        <div className="space-y-2" data-oid="g8h6kj8">
-          <div className="flex items-center gap-2" data-oid="z:u5myh">
-            <strong className="text-sm" data-oid="608ed5_">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex justify-between items-center">
               Extracted Text
-            </strong>
-            <button
-              onClick={copyToClipboard}
-              className="text-xs px-2 py-1 bg-gray-100 rounded hover:bg-gray-200"
-              data-oid="r_p9_-c"
-            >
-              Copy
-            </button>
-            <button
-              onClick={downloadText}
-              className="text-xs px-2 py-1 bg-gray-100 rounded hover:bg-gray-200"
-              data-oid="p8sdtwv"
-            >
-              Download
-            </button>
-          </div>
-          <textarea
-            value={extractedText}
-            onChange={(e) => setExtractedText(e.target.value)}
-            className="w-full min-h-20 font-mono text-sm border rounded p-2"
-            placeholder="Extracted text will appear here..."
-            data-oid="ud.ezf8"
-          />
-        </div>
+              <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(extractedText)}>
+                <Copy className="h-3 w-3 mr-2" />Copy
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Textarea value={extractedText} readOnly className="min-h-32 font-mono text-xs" />
+          </CardContent>
+        </Card>
       )}
 
       {ocrResults.length > 0 && (
-        <div className="space-y-2" data-oid="kwfvfd7">
-          <strong className="text-sm" data-oid="au4tvrh">
-            Detected Text Regions
-          </strong>
-          <div
-            className="max-h-48 overflow-y-auto space-y-2"
-            data-oid="faqbfu6"
-          >
-            {ocrResults.map((result) => (
-              <div
-                key={result.id}
-                className="flex items-center justify-between p-2 border rounded bg-gray-50"
-                data-oid="uo-sika"
-              >
-                <div className="flex-1" data-oid="vb1pzn8">
-                  <div className="font-medium text-sm" data-oid="pi2hp0v">
-                    {result.text}
+        <Card>
+          <CardHeader>
+              <CardTitle className="text-base">Detected Text Regions</CardTitle>
+          </CardHeader>
+          <CardContent>
+              <ScrollArea className="h-48">
+                  <div className="space-y-2">
+                      {ocrResults.map((result) => (
+                          <div key={result.id} className="flex items-center justify-between p-2 border rounded hover:bg-muted/50">
+                              <div className="flex-1">
+                                  <p className="text-sm font-medium">{result.text}</p>
+                                  <p className="text-xs text-muted-foreground">Confidence: {Math.round(result.confidence)}%</p>
+                              </div>
+                              <div className="flex gap-1">
+                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => highlightOnCanvas(result)} title="Highlight on page">
+                                      <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => addTextToPage(result)} title="Add as text box">
+                                      <PlusSquare className="h-4 w-4" />
+                                  </Button>
+                              </div>
+                          </div>
+                      ))}
                   </div>
-                  <div className="text-xs text-gray-500" data-oid="boyao6v">
-                    Confidence: {Math.round(result.confidence)}%
-                  </div>
-                </div>
-                <div className="flex gap-2" data-oid="p909nw4">
-                  <button
-                    className="text-xs px-2 py-1 bg-yellow-200 rounded hover:bg-yellow-300"
-                    onClick={() => highlightTextOnCanvas(result)}
-                    data-oid="sd-eu6_"
-                  >
-                    Highlight
-                  </button>
-                  {onTextBoxCreate && (
-                    <button
-                      className="text-xs px-2 py-1 bg-blue-200 rounded hover:bg-blue-300"
-                      onClick={() => createTextBoxFromResult(result)}
-                      data-oid="3edy-t9"
-                    >
-                      Add Box
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+              </ScrollArea>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
 };
-
-export default OCRTool;

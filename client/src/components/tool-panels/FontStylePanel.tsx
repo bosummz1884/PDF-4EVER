@@ -22,6 +22,7 @@ interface FontStylePanelProps {
   onFontStyleChange: (style: "normal" | "italic") => void;
   onTextColorChange: (color: string) => void;
   onTextAlignChange: (align: "left" | "center" | "right" | "justify") => void;
+  horizontal?: boolean;
 }
 
 export function FontStylePanel({
@@ -37,7 +38,8 @@ export function FontStylePanel({
   onFontWeightChange,
   onFontStyleChange,
   onTextColorChange,
-  onTextAlignChange
+  onTextAlignChange,
+  horizontal = false
 }: FontStylePanelProps) {
   const systemFonts = [
     "Arial",
@@ -67,6 +69,104 @@ export function FontStylePanel({
   const uniqueFonts = availableFonts.filter((font, index, self) => 
     index === self.findIndex(f => f.value === font.value)
   );
+
+  if (horizontal) {
+    return (
+      <div className="flex items-center gap-4" data-testid="font-style-panel">
+        {/* Font Family */}
+        <Select value={selectedFont} onValueChange={onFontChange}>
+          <SelectTrigger className="w-32">
+            <SelectValue placeholder="Font" />
+          </SelectTrigger>
+          <SelectContent>
+            {uniqueFonts.map((font) => (
+              <SelectItem key={font.value} value={font.value}>
+                <span className={cn(
+                  font.isDetected ? "text-green-700" : "text-gray-700"
+                )}>
+                  {font.label}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        
+        {/* Font Size */}
+        <Input
+          type="number"
+          value={fontSize}
+          onChange={(e) => onFontSizeChange(Number(e.target.value))}
+          min="8"
+          max="72"
+          className="w-16"
+        />
+        
+        {/* Style Buttons */}
+        <div className="flex gap-1">
+          <Button
+            variant={fontWeight === "bold" ? "default" : "outline"}
+            size="sm"
+            onClick={() => onFontWeightChange(fontWeight === "bold" ? "normal" : "bold")}
+            className="h-8 px-2"
+          >
+            <Bold className="h-3 w-3" />
+          </Button>
+          <Button
+            variant={fontStyle === "italic" ? "default" : "outline"}
+            size="sm"
+            onClick={() => onFontStyleChange(fontStyle === "italic" ? "normal" : "italic")}
+            className="h-8 px-2"
+          >
+            <Italic className="h-3 w-3" />
+          </Button>
+        </div>
+        
+        {/* Text Color */}
+        <input
+          type="color"
+          value={textColor}
+          onChange={(e) => onTextColorChange(e.target.value)}
+          className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
+        />
+        
+        {/* Text Alignment */}
+        <div className="flex gap-1">
+          <Button
+            variant={textAlign === "left" ? "default" : "outline"}
+            size="sm"
+            onClick={() => onTextAlignChange("left")}
+            className="h-8 px-2"
+          >
+            <AlignLeft className="h-3 w-3" />
+          </Button>
+          <Button
+            variant={textAlign === "center" ? "default" : "outline"}
+            size="sm"
+            onClick={() => onTextAlignChange("center")}
+            className="h-8 px-2"
+          >
+            <AlignCenter className="h-3 w-3" />
+          </Button>
+          <Button
+            variant={textAlign === "right" ? "default" : "outline"}
+            size="sm"
+            onClick={() => onTextAlignChange("right")}
+            className="h-8 px-2"
+          >
+            <AlignRight className="h-3 w-3" />
+          </Button>
+          <Button
+            variant={textAlign === "justify" ? "default" : "outline"}
+            size="sm"
+            onClick={() => onTextAlignChange("justify")}
+            className="h-8 px-2"
+          >
+            <AlignJustify className="h-3 w-3" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Card data-testid="font-style-panel">

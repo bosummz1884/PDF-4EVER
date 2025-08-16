@@ -31,10 +31,65 @@ const BrushPreview: React.FC<{ settings: EditorToolProps["settings"] }> = ({ set
 };
 
 
-export const FreeformToolComponent: React.FC<EditorToolProps> = ({
+export const FreeformToolComponent: React.FC<EditorToolProps & { compact?: boolean }> = ({
   settings,
   onSettingChange,
+  compact = false,
 }) => {
+  if (compact) {
+    return (
+      <div className="flex items-center gap-3">
+        {/* Brush Color */}
+        <Input
+          type="color"
+          value={settings.color || "#000000"}
+          onChange={(e) => onSettingChange("color", e.target.value)}
+          className="w-8 h-8 p-0 cursor-pointer"
+          title="Brush Color"
+        />
+        
+        {/* Brush Size */}
+        <Input
+          type="number"
+          value={settings.brushSize || 3}
+          onChange={(e) => onSettingChange("brushSize", parseInt(e.target.value) || 3)}
+          className="w-16"
+          min={1}
+          max={50}
+          title="Brush Size"
+        />
+        
+        {/* Opacity */}
+        <Input
+          type="range"
+          min={10}
+          max={100}
+          step={5}
+          value={(settings.opacity ?? 1) * 100}
+          onChange={(e) => onSettingChange("opacity", parseInt(e.target.value) / 100)}
+          className="w-20"
+          title={`Opacity: ${Math.round((settings.opacity ?? 1) * 100)}%`}
+        />
+        
+        {/* Smoothing */}
+        <Select
+          value={settings.smoothing || "medium"}
+          onValueChange={(value) => onSettingChange("smoothing", value as "none" | "low" | "medium" | "high")}
+        >
+          <SelectTrigger className="w-20">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">None</SelectItem>
+            <SelectItem value="low">Low</SelectItem>
+            <SelectItem value="medium">Medium</SelectItem>
+            <SelectItem value="high">High</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    );
+  }
+  
   return (
     <div className="space-y-4">
       {/* Brush Color */}

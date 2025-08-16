@@ -7,6 +7,7 @@ import {
   TextElement,
   WhiteoutBlock,
   ImageElement,
+  FreeformElement,
 } from "@/types/pdf-types";
 import { loadAndEmbedFonts } from "./loadFonts";
 
@@ -30,16 +31,26 @@ export async function savePdfWithAnnotations(
   textElements: TextElement[],
   annotations: Annotation[],
   whiteoutBlocks: WhiteoutBlock[],
-  imageElements: ImageElement[]
+  imageElements: ImageElement[],
+  freeformElements: FreeformElement[] = [],
+  onProgress?: (progress: number, status: string) => void
 ): Promise<Uint8Array> {
+  onProgress?.(10, "Loading PDF document...");
   const pdfDoc = await PDFDocument.load(originalPdfData);
+  
+  onProgress?.(20, "Loading fonts...");
   const fontMap = await loadAndEmbedFonts(pdfDoc);
   const pages = pdfDoc.getPages();
+
+  const totalElements = annotations.length + textElements.length + whiteoutBlocks.length + imageElements.length + freeformElements.length;
+  let processedElements = 0;
 
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i];
     const pageNum = i + 1;
     const { height: pageHeight } = page.getSize();
+    
+    onProgress?.(30 + (i / pages.length) * 50, `Processing page ${pageNum}/${pages.length}...`);
 
     // Sections for Annotations, Text, and Whiteout Blocks remain unchanged...
     // 1. Draw Annotations
@@ -155,10 +166,49 @@ export async function savePdfWithAnnotations(
         rotate: { type: RotationTypes.Degrees, angle: -img.rotation },
         opacity: img.opacity ?? 1,
       });
+      processedElements++;
+    }
+
+    // 5. Draw Freeform Elements
+    const pageFreeformElements = freeformElements.filter((f) => f.page === pageNum);
+    for (const freeform of pageFreeformElements) {
+      // Draw each path in the freeform element
+      for (const path of freeform.paths) {
+        if (path.points.length < 2) continue;
+
+        const { color: pathColor } = parseColor(path.color);
+        
+        // Create a path using moveTo and lineTo operations
+        const pathPoints = path.points.map(point => ({
+          x: point.x,
+          y: pageHeight - point.y // Convert coordinate system
+        }));
+
+        // Draw the path as a series of connected lines
+        for (let j = 1; j < pathPoints.length; j++) {
+          const start = pathPoints[j - 1];
+          const end = pathPoints[j];
+          
+          // Draw line segment with brush size as stroke width
+          page.drawLine({
+            start: { x: start.x, y: start.y },
+            end: { x: end.x, y: end.y },
+            thickness: path.brushSize,
+            color: pathColor,
+            opacity: path.opacity,
+            lineCap: 'round' as any, // Round line caps for smoother appearance
+          });
+        }
+      }
+      processedElements++;
     }
   }
 
-  return await pdfDoc.save();
+  onProgress?.(90, "Finalizing PDF...");
+  const savedBytes = await pdfDoc.save();
+  onProgress?.(100, "PDF saved successfully!");
+  
+  return savedBytes;
 }
 
 export function triggerDownload(bytes: Uint8Array, filename: string) {

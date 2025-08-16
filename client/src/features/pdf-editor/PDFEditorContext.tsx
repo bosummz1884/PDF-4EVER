@@ -13,14 +13,14 @@ import {
   ToolSettings,
   EditorTool,
   TextRegion,
-} from "@/types/pdf-types"; // Import the unified action type
+} from "../../types/pdf-types"; // Import the unified action type
 import { getDocument, RenderTask, PDFDocumentProxy } from "pdfjs-dist";
-import { toolRegistry } from "./toolRegistry";
+import { toolRegistry } from "../../components/tool-panels/toolRegistry";
 import "@/lib/pdfWorker";
 import { savePdfWithAnnotations, triggerDownload } from "../../lib/savePdf";
 
 const initialState: PDFEditorState = {
-  pdfDocument: null,
+  pdfDocument: null as PDFDocumentProxy | null,
   originalPdfData: null,
   currentPage: 1,
   totalPages: 0,
@@ -37,7 +37,10 @@ const initialState: PDFEditorState = {
   detectedFonts: {},
   imageElements: {},
   selectedElementId: null,
+  selectedElementIds: [],
   selectedElementType: null,
+  signatureElements: {},
+  freeformElements: {},
   currentTool: "select",
   canvasRef: null,
   toolSettings: Object.values(toolRegistry).reduce(
@@ -51,7 +54,7 @@ const initialState: PDFEditorState = {
   history: [],
   historyIndex: -1,
   fontMatchingEnabled: true,
-  inlineEditingRegion: null,
+  inlineEditingRegion: null as TextRegion | null,
 };
 
 function pdfEditorReducer(
@@ -83,8 +86,35 @@ function pdfEditorReducer(
       return {
         ...state,
         selectedElementId: action.payload.id,
+        selectedElementIds: action.payload.id ? [action.payload.id] : [],
         selectedElementType: action.payload.type,
       };
+    case "SET_SELECTED_ELEMENTS":
+      return {
+        ...state,
+        selectedElementId: action.payload.ids.length > 0 ? action.payload.ids[0] : null,
+        selectedElementIds: action.payload.ids,
+        selectedElementType: action.payload.type,
+      };
+    case "ADD_TO_SELECTION":
+      const newIds = state.selectedElementIds.includes(action.payload.id)
+        ? state.selectedElementIds.filter(id => id !== action.payload.id)
+        : [...state.selectedElementIds, action.payload.id];
+      return {
+        ...state,
+        selectedElementId: newIds.length > 0 ? newIds[0] : null,
+        selectedElementIds: newIds,
+        selectedElementType: newIds.length > 0 ? action.payload.type : null,
+      };
+    case "CLEAR_SELECTION":
+      return {
+        ...state,
+        selectedElementId: null,
+        selectedElementIds: [],
+        selectedElementType: null,
+      };
+
+      
     case "ADD_ANNOTATION":
       return {
         ...state,
@@ -261,6 +291,44 @@ function pdfEditorReducer(
           ).filter((el) => el.id !== action.payload.id),
         },
       };
+
+    // --- Freeform Element Actions ---
+    case "ADD_FREEFORM_ELEMENT":
+      return {
+        ...state,
+        freeformElements: {
+          ...state.freeformElements,
+          [action.payload.page]: [
+            ...(state.freeformElements[action.payload.page] || []),
+            action.payload.element,
+          ],
+        },
+      };
+    case "UPDATE_FREEFORM_ELEMENT":
+      return {
+        ...state,
+        freeformElements: {
+          ...state.freeformElements,
+          [action.payload.page]: (
+            state.freeformElements[action.payload.page] || []
+          ).map((el) =>
+            el.id === action.payload.id
+              ? { ...el, ...action.payload.updates }
+              : el,
+          ),
+        },
+      };
+    case "DELETE_FREEFORM_ELEMENT":
+      return {
+        ...state,
+        freeformElements: {
+          ...state.freeformElements,
+          [action.payload.page]: (
+            state.freeformElements[action.payload.page] || []
+          ).filter((el) => el.id !== action.payload.id),
+        },
+      };
+
     case "SET_OCR_RESULTS":
       return {
         ...state,
@@ -283,18 +351,10 @@ function pdfEditorReducer(
       };
     case "SET_INLINE_EDITING_REGION":
       return { ...state, inlineEditingRegion: action.payload };
-    case "UPDATE_TEXT_REGION":
-        const { page, id, updates } = action.payload;
-        return {
-            ...state,
-            extractedTextRegions: {
-                ...state.extractedTextRegions,
-                [page]: (state.extractedTextRegions[page] || []).map(region =>
-                    region.id === id ? { ...region, ...updates } : region
-                ),
-            },
-        };
-
+    case "UPDATE_TEXT_REGION": {
+        const { page, id, updates } = action.payload; 
+        return { ...state, extractedTextRegions: { ...state.extractedTextRegions, [page]: (state.extractedTextRegions[page] || []).map(region => region.id === id ? { ...region, ...updates } : region) } };
+    }
     case "UPDATE_TOOL_SETTING":
       return {
         ...state,
@@ -314,6 +374,7 @@ function pdfEditorReducer(
         textElements: state.textElements,
         imageElements: state.imageElements,
         signatureElements: state.signatureElements,
+        freeformElements: state.freeformElements,
         extractedTextRegions: state.extractedTextRegions,
       };
       const newHistory = state.history.slice(0, state.historyIndex + 1);
@@ -450,7 +511,9 @@ export function PDFEditorProvider({ children }: { children: ReactNode }) {
               });
           }
       });
+      
       const allImageElements = Object.values(state.imageElements).flat();
+      const allFreeformElements = Object.values(state.freeformElements).flat();
 
       const savedPdfBytes = await savePdfWithAnnotations(
         state.originalPdfData,
@@ -458,6 +521,11 @@ export function PDFEditorProvider({ children }: { children: ReactNode }) {
         allAnnotations,
         allWhiteoutBlocks,
         allImageElements,
+        allFreeformElements,
+        (progress, status) => {
+          // TODO: Add progress indicator UI component
+          console.log(`Save progress: ${progress}% - ${status}`);
+        }
       );
       const newFilename = state.fileName.replace(".pdf", "-edited.pdf");
       triggerDownload(savedPdfBytes, newFilename);

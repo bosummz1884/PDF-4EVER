@@ -10,7 +10,9 @@ import { OCRToolComponent } from "@/components/tool-panels/OCRToolComponent";
 import { SelectToolComponent } from "@/components/tool-panels/SelectToolComponent";
 import { ShapeToolComponent } from "@/components/tool-panels/ShapeToolComponent";
 import { TextToolComponent } from "@/components/tool-panels/TextToolComponent";
-import { WhiteoutToolComponent } from "@/components/tool-panels/WhiteoutToolComponent";
+import { WhiteoutToolComponent } from "./WhiteoutToolComponent";
+import { FormToolComponent } from "./FormToolComponent";
+import { SignatureToolComponent } from "./SignatureToolComponent";
 
 // Basic tool implementations
 export const toolRegistry: Record<ToolType, EditorTool> = {
@@ -73,19 +75,10 @@ export const toolRegistry: Record<ToolType, EditorTool> = {
     name: "form",
     label: "Form",
     icon: React.createElement("span", {}, "📝"),
-    component: SelectToolComponent,
+    component: FormToolComponent,
     category: "form",
-    defaultSettings: {},
+    defaultSettings: { fieldType: "text", width: 150, height: 30, required: false, readonly: false },
     description: "Add form fields"
-  },
-  signature: {
-    name: "signature",
-    label: "Signature",
-    icon: React.createElement("span", {}, "✍"),
-    component: SelectToolComponent,
-    category: "annotation",
-    defaultSettings: {},
-    description: "Add signatures"
   },
   eraser: {
     name: "eraser",
@@ -149,5 +142,14 @@ export const toolRegistry: Record<ToolType, EditorTool> = {
     category: "utility",
     defaultSettings: {},
     description: "Extract text"
+  },
+  signature: {
+    name: "signature",
+    label: "Signature",
+    icon: React.createElement("span", {}, "✍"),
+    component: SignatureToolComponent,
+    category: "form",
+    defaultSettings: {},
+    description: "Add digital signatures"
   }
 };

@@ -11,25 +11,39 @@ import { DraggableEvent } from "react-draggable";
 interface ImageLayerProps {
   imageElements: ImageElement[];
   selectedElementId: string | null;
+  selectedElementIds?: string[];
   scale: number;
   page: number;
   dispatch: React.Dispatch<PDFEditorAction>;
+  currentTool?: string;
 }
 
 export default function ImageLayer({
   imageElements,
   selectedElementId,
+  selectedElementIds = [],
   scale,
   page,
   dispatch,
+  currentTool = 'select',
 }: ImageLayerProps) {
 
   const handleUpdate = (id: string, updates: Partial<ImageElement>) => {
     dispatch({ type: "UPDATE_IMAGE_ELEMENT", payload: { page, id, updates } });
   };
   
-  const handleSelect = (id: string) => {
-    dispatch({ type: "SET_SELECTED_ELEMENT", payload: { id, type: "image" } });
+  const handleSelect = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Only allow selection when using select tool or image tool
+    if (currentTool === 'select' || currentTool === 'image') {
+      if (e.ctrlKey || e.metaKey) {
+        // Multi-select toggle
+        dispatch({ type: "ADD_TO_SELECTION", payload: { id, type: "image" } });
+      } else {
+        // Single select
+        dispatch({ type: "SET_SELECTED_ELEMENT", payload: { id, type: "image" } });
+      }
+    }
   };
 
   const handleSaveHistory = () => {
@@ -41,7 +55,7 @@ export default function ImageLayer({
       {imageElements.map((element) => (
         <Rnd
           key={element.id}
-          className={`absolute pointer-events-auto ${selectedElementId === element.id ? "ring-2 ring-blue-500 ring-offset-2" : ""}`}
+          className={`absolute pointer-events-auto ${selectedElementId === element.id || selectedElementIds.includes(element.id) ? "ring-2 ring-blue-500 ring-offset-2" : ""}`}
           size={{ width: element.width * scale, height: element.height * scale }}
           position={{ x: element.x * scale, y: element.y * scale }}
           // CORRECTED: The event `e` is a DraggableEvent, and `d` is DraggableData. These are correctly exported.
@@ -61,8 +75,7 @@ export default function ImageLayer({
             handleSaveHistory();
           }}
           onClick={(e: React.MouseEvent) => {
-              e.stopPropagation();
-              handleSelect(element.id);
+              handleSelect(element.id, e);
           }}
           lockAspectRatio
         >
@@ -70,7 +83,11 @@ export default function ImageLayer({
             src={element.src}
             alt="User uploaded content"
             className="w-full h-full"
-            style={{ transform: `rotate(${element.rotation}deg)` }}
+            style={{ 
+              transform: `rotate(${element.rotation}deg)`,
+              opacity: element.opacity || 1,
+              border: element.borderWidth ? `${element.borderWidth}px solid ${element.borderColor || '#000000'}` : 'none'
+            }}
             onDragStart={(e) => e.preventDefault()}
           />
         </Rnd>

@@ -19,6 +19,9 @@ export function FontRecognitionPanel({
     onSettingsChange({ [key]: value });
   };
 
+  
+  
+
   const getFontStatusIcon = (font: typeof detectedFonts[0]) => {
     if (font.confidence > 0.8) {
       return <CheckCircle className="h-3 w-3 text-green-500" />;
@@ -27,7 +30,7 @@ export function FontRecognitionPanel({
     }
     return <AlertTriangle className="h-3 w-3 text-red-500" />;
   };
-
+  
   return (
     <div className="space-y-4" data-testid="font-recognition-panel">
       {/* Recognition Status */}
@@ -146,7 +149,7 @@ export function FontRecognitionPanel({
             <div className="space-y-0.5">
               <label className="text-sm font-medium">Use fallback fonts</label>
               <p className="text-xs text-muted-foreground">
-                Use similar fonts when exact matches aren't available
+                Use similar fonts when exact matches are not available
               </p>
             </div>
             <Switch

@@ -38,7 +38,8 @@ export interface PDFEditorState {
   whiteoutBlocks: { [page: number]: WhiteoutBlock[] };
   ocrResults: { [page: number]: OCRResult[] };
   selectedElementId: string | null;
-  selectedElementType: "annotation" | "text" | "form" | "whiteout" | "image" | "textRegion" | null;
+  selectedElementIds: string[];
+  selectedElementType: "annotation" | "text" | "form" | "whiteout" | "image" | "textRegion" | "freeform" | null;
   currentTool: ToolType;
   toolSettings: Record<ToolType, ToolSettings>;
   history: Partial<PDFEditorState>[];
@@ -48,6 +49,8 @@ export interface PDFEditorState {
   extractedTextRegions: { [page: number]: TextRegion[] };
   detectedFonts: { [page: number]: DetectedFont[] };
   fontMatchingEnabled: boolean;
+  signatureElements: { [page: number]: SignatureElement[] };
+  freeformElements: { [page: number]: FreeformElement[] }; 
   inlineEditingRegion: TextRegion | null;
 }
 
@@ -65,9 +68,24 @@ export type PDFEditorAction =
       type: "SET_SELECTED_ELEMENT";
       payload: {
         id: string | null;
-        type: "annotation" | "text" | "form" | "whiteout" | "image" | "textRegion" | null;
+        type: "annotation" | "text" | "form" | "whiteout" | "image" | "textRegion" | "freeform" | null;
       }; 
     }
+  | {
+      type: "SET_SELECTED_ELEMENTS";
+      payload: {
+        ids: string[];
+        type: "annotation" | "text" | "form" | "whiteout" | "image" | "textRegion" | "freeform" | null;
+      };
+    }
+  | {
+      type: "ADD_TO_SELECTION";
+      payload: {
+        id: string;
+        type: "annotation" | "text" | "form" | "whiteout" | "image" | "textRegion" | "freeform";
+      };
+    }
+  | { type: "CLEAR_SELECTION" }
   | {
       type: "ADD_IMAGE_ELEMENT";
       payload: { page: number; element: ImageElement };
@@ -110,6 +128,15 @@ export type PDFEditorAction =
       payload: { page: number; id: string; updates: Partial<FormField> };
     }
   | { type: "DELETE_FORM_FIELD"; payload: { page: number; id: string } }
+  | {
+      type: "ADD_FREEFORM_ELEMENT";
+      payload: { page: number; element: FreeformElement };
+    }
+  | {
+      type: "UPDATE_FREEFORM_ELEMENT";
+      payload: { page: number; id: string; updates: Partial<FreeformElement> };
+    }
+  | { type: "DELETE_FREEFORM_ELEMENT"; payload: { page: number; id: string } }
   | { type: "SET_OCR_RESULTS"; payload: { page: number; results: OCRResult[] } }
   | {
       type: "SET_EXTRACTED_TEXT_REGIONS";
@@ -167,6 +194,16 @@ export interface Annotation {
   blendMode?: "multiply" | "overlay" | "screen" | "normal";
   rotation?: number;
   cornerRadius?: number;
+}
+
+export interface SignatureElement {
+  id: string;
+  page: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  src: string; // Base64 Data URL of the signature image
 }
 
 export interface TextElement {
@@ -231,6 +268,26 @@ export interface ImageElement {
   src: string;
   rotation: number;
   opacity?: number;
+  borderWidth?: number;
+  borderColor?: string;
+}
+
+export interface FreeformElement {
+  id: string;
+  page: number;
+  paths: Array<{
+    points: Array<{ x: number; y: number }>;
+    color: string;
+    opacity: number;
+    brushSize: number;
+    smoothing: "none" | "low" | "medium" | "high";
+  }>;
+  bounds: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
 }
 
 // =========================
@@ -310,6 +367,7 @@ export interface OCRLanguage {
 export interface SignatureData {
   dataUrl: string;
   hash: string;
+  timestamp?: number;
 }
 
 export interface SignaturePlacement {
@@ -366,6 +424,13 @@ export interface ToolSettings {
   useFallbackFonts?: boolean;
   realTimePreview?: boolean;
   showFontWarnings?: boolean;
+  // Form Fields
+  fieldType?: string;
+  label?: string;
+  defaultValue?: string;
+  groupName?: string;
+  required?: boolean;
+  readonly?: boolean;
 }
 
 // =========================
@@ -379,6 +444,7 @@ export interface EditorToolProps {
     value: ToolSettings[K]
   ) => void;
   editorState: PDFEditorState;
+  compact?: boolean;
 }
 
 export interface EditorTool {
@@ -442,11 +508,13 @@ export interface FontRecognitionPanelProps {
   detectedFonts: DetectedFont[];
   isAnalyzing: boolean;
   analysisProgress: number;
-  onFontMappingChange: (fontId: string, mapping: Partial<DetectedFont>) => void;
+  onFontMappingChange: (fontId: string, newFontFamily: string) => void;
   settings: {
     autoFontMatch: boolean;
     useFallbackFonts: boolean;
+    realTimePreview?: boolean;
     showFontWarnings: boolean;
+    
   };
   onSettingsChange: (settings: Partial<ToolSettings>) => void;
 }

@@ -1,4 +1,4 @@
-// src/features/components/tools/FormTool.tsx
+// src/components/tool-panels/FormToolComponent.tsx
 
 import React from "react";
 import { EditorToolProps } from "@/types/pdf-types";
@@ -26,13 +26,14 @@ const FORM_FIELD_TYPES = [
   { value: "signature", label: "Signature", icon: "✍️" },
 ];
 
-export const FormTool: React.FC<EditorToolProps> = ({
+export const FormToolComponent: React.FC<EditorToolProps & { compact?: boolean }> = ({
   settings,
   onSettingChange,
   editorState,
+  compact = false,
 }) => {
   const currentFieldType = settings.fieldType || "text";
-  const currentPageFormFields = editorState.formFields[editorState.currentPage] || [];
+  const currentPageFormFields = editorState?.formFields?.[editorState?.currentPage] || [];
 
   const handleFieldTypeChange = (type: string) => {
     onSettingChange("fieldType", type);
@@ -53,6 +54,57 @@ export const FormTool: React.FC<EditorToolProps> = ({
       onSettingChange(key as any, value);
     });
   };
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-3">
+        {/* Field Type */}
+        <Select value={currentFieldType} onValueChange={handleFieldTypeChange}>
+          <SelectTrigger className="w-32">
+            <SelectValue placeholder="Field type" />
+          </SelectTrigger>
+          <SelectContent>
+            {FORM_FIELD_TYPES.map((type) => (
+              <SelectItem key={type.value} value={type.value}>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs">{type.icon}</span>
+                  <span className="text-xs">{type.label}</span>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        
+        {/* Size Inputs */}
+        <div className="flex items-center gap-1">
+          <Input
+            type="number"
+            value={settings.width || 150}
+            onChange={(e) => onSettingChange("width", parseInt(e.target.value))}
+            className="w-16 h-8"
+            placeholder="W"
+          />
+          <span className="text-xs text-muted-foreground">×</span>
+          <Input
+            type="number"
+            value={settings.height || 30}
+            onChange={(e) => onSettingChange("height", parseInt(e.target.value))}
+            className="w-16 h-8"
+            placeholder="H"
+          />
+        </div>
+        
+        {/* Required checkbox */}
+        <div className="flex items-center gap-1">
+          <Checkbox
+            checked={settings.required || false}
+            onCheckedChange={(checked) => onSettingChange("required", checked)}
+          />
+          <span className="text-xs text-muted-foreground">Required</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -215,5 +267,3 @@ export const FormTool: React.FC<EditorToolProps> = ({
     </div>
   );
 };
-
-export default FormTool;

@@ -8,11 +8,40 @@ import { commonColors } from "@/features/utils/colorUtils";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 import { cn } from "@/lib/utils";
 
-export const WhiteoutToolComponent: React.FC<EditorToolProps> = ({
+export const WhiteoutToolComponent: React.FC<EditorToolProps & { compact?: boolean }> = ({
   settings,
   onSettingChange,
+  compact = false,
 }) => {
   const currentColor = settings.color || "#FFFFFF";
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-3">
+        {/* Color Picker */}
+        <Input
+          type="color"
+          value={currentColor}
+          onChange={(e) => onSettingChange("color", e.target.value)}
+          className="w-8 h-8 p-0 cursor-pointer"
+          title="Cover-Up Color"
+        />
+        
+        {/* Common Colors */}
+        {commonColors.slice(0, 5).map((color) => (
+          <button
+            key={color.name}
+            className={`w-6 h-6 rounded border-2 ${
+              currentColor.toUpperCase() === color.hex.toUpperCase() ? 'border-primary' : 'border-gray-300'
+            }`}
+            style={{ backgroundColor: color.hex }}
+            onClick={() => onSettingChange("color", color.hex)}
+            title={color.name}
+          />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

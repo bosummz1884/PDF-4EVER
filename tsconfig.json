@@ -67,7 +67,10 @@
       ],
       "@layers/*": [
         "./client/src/features/components/layers/*"
-      ]
+      ],
+      "@tool-panels/*": [
+        "./client/src/features/components/tool-panels/*"
+      ],
     }
   }
 }

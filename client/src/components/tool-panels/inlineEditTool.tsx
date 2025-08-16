@@ -1,7 +1,7 @@
 import React from "react";
 import { Edit3 } from "lucide-react";
 import { EditorTool, EditorToolProps } from "@/types/pdf-types";
-import { FontRecognitionPanel } from "@/components/pdf-editor/FontRecognitionPanel";
+import { FontRecognitionPanel } from "./FontRecognitionPanel";
 
 function InlineEditToolComponent({ settings, onSettingChange, editorState }: EditorToolProps) {
   const allDetectedFonts = Object.values(editorState.detectedFonts).flat();

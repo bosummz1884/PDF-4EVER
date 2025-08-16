@@ -22,11 +22,68 @@ const HIGHLIGHT_COLORS = [
   { name: "Blue", value: "#ADD8E6" },
 ];
 
-export const HighlightToolComponent: React.FC<EditorToolProps> = ({
+export const HighlightToolComponent: React.FC<EditorToolProps & { compact?: boolean }> = ({
   settings,
   onSettingChange,
+  compact = false,
 }) => {
   const currentColor = settings.color || "#FFFF00";
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-3">
+        {/* Color Picker */}
+        <Input
+          type="color"
+          value={currentColor}
+          onChange={(e) => onSettingChange("color", e.target.value)}
+          className="w-8 h-8 p-0 cursor-pointer"
+          title="Highlight Color"
+        />
+        
+        {/* Color Presets */}
+        {HIGHLIGHT_COLORS.map((color) => (
+          <button
+            key={color.name}
+            className={`w-6 h-6 rounded border-2 ${
+              currentColor.toUpperCase() === color.value ? 'border-primary' : 'border-gray-300'
+            }`}
+            style={{ backgroundColor: color.value }}
+            onClick={() => onSettingChange("color", color.value)}
+            title={color.name}
+          />
+        ))}
+        
+        {/* Opacity */}
+        <Input
+          type="range"
+          min={10}
+          max={100}
+          step={5}
+          value={(settings.opacity || 0.5) * 100}
+          onChange={(e) => onSettingChange("opacity", parseInt(e.target.value) / 100)}
+          className="w-20"
+          title={`Opacity: ${Math.round((settings.opacity || 0.5) * 100)}%`}
+        />
+        
+        {/* Blend Mode */}
+        <Select
+          value={settings.blendMode || "multiply"}
+          onValueChange={(value) => onSettingChange("blendMode", value as "multiply" | "overlay" | "screen" | "normal")}
+        >
+          <SelectTrigger className="w-24">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="multiply">Multiply</SelectItem>
+            <SelectItem value="overlay">Overlay</SelectItem>
+            <SelectItem value="screen">Screen</SelectItem>
+            <SelectItem value="normal">Normal</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

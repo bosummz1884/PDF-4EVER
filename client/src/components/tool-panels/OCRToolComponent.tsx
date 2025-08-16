@@ -18,7 +18,7 @@ import { usePDFEditor } from "@/features/pdf-editor/PDFEditorContext";
 import { OCRResult, TextElement } from "@/types/pdf-types";
 import { Upload, Copy, Zap, Eye, PlusSquare } from "lucide-react";
 
-export const OCRToolComponent: React.FC = () => {
+export const OCRToolComponent: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
   const { state, dispatch } = usePDFEditor();
   const { canvasRef, currentPage, scale } = state;
 
@@ -132,6 +132,69 @@ export const OCRToolComponent: React.FC = () => {
       ocrService.highlightTextOnCanvas(result, canvasRef);
     }
   };
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-3">
+        {/* Language Selection */}
+        <Select value={selectedLanguage} onValueChange={setSelectedLanguage} disabled={isProcessing}>
+          <SelectTrigger className="w-20">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {OCR_LANGUAGES.map(lang => (
+              <SelectItem key={lang.code} value={lang.code}>{lang.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        
+        {/* Scan Button */}
+        <Button 
+          onClick={performCanvasOCR} 
+          disabled={isProcessing || !canvasRef?.current} 
+          size="sm"
+          variant="outline"
+        >
+          <Zap className="h-3 w-3 mr-1" /> 
+          Scan
+        </Button>
+        
+        {/* Upload Button */}
+        <Button 
+          onClick={() => document.getElementById("ocr-file-input")?.click()}
+          disabled={isProcessing}
+          size="sm"
+          variant="outline"
+        >
+          <Upload className="h-3 w-3 mr-1" /> 
+          Upload
+        </Button>
+        
+        <input
+          id="ocr-file-input"
+          type="file"
+          className="hidden"
+          onChange={handleFileChange}
+          accept="image/*,application/pdf"
+        />
+        
+        {/* Progress */}
+        {isProcessing && (
+          <div className="flex items-center gap-2">
+            <Progress value={progress} className="w-16 h-2" />
+            <span className="text-xs text-muted-foreground">{Math.round(progress)}%</span>
+          </div>
+        )}
+        
+        {/* Results Count */}
+        {ocrResults.length > 0 && (
+          <span className="text-xs text-muted-foreground">
+            {ocrResults.length} regions found
+          </span>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 space-y-4">

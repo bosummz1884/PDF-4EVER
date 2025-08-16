@@ -1,7 +1,6 @@
-// src/features/components/tools/SignatureTool.tsx
+// src/components/tool-panels/SignatureToolComponent.tsx
 
-import React, { useRef, useState, MouseEvent, useCallback } from "react";
-import SignatureCanvas from "react-signature-canvas";
+import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -16,158 +15,15 @@ import {
   CheckCircle,
   AlertCircle 
 } from 'lucide-react';
-import { signatureService } from "@/services/signatureService";
-import { usePDFEditor } from "../../pdf-editor/PDFEditorContext";
-import {
-  SignatureData,
-  SignaturePlacement,
-} from "@/types/pdf-types";
+import { usePDFEditor } from '@/features/pdf-editor/PDFEditorContext';
+import { signatureService } from '@/services/signatureService';
+import { SignatureData } from '@/types/pdf-types';
+import SignatureTool from '@/features/components/tools/SignatureTool';
 
-const SignaturePad: React.FC<{
-  onSave?: (dataUrl: string) => void;
-  onComplete?: (dataUrl: string) => void;
-  onSigned?: (result: SignatureData) => void;
-  onClose?: () => void;
-  showCancel?: boolean;
-  width?: number;
-  height?: number;
-}> = ({
-  onSave,
-  onComplete,
-  onSigned,
-  onClose,
-  showCancel = false,
-  width = 400,
-  height = 200,
-}) => {
-  const sigCanvas = useRef<SignatureCanvas | null>(null);
-
-  const clear = useCallback(() => {
-    sigCanvas.current?.clear();
-  }, []);
-
-  const handleSave = useCallback(() => {
-    if (!sigCanvas.current || sigCanvas.current.isEmpty()) return;
-    const dataUrl = sigCanvas.current.getTrimmedCanvas().toDataURL("image/png");
-    const signatureData = signatureService.createSignatureData(dataUrl);
-
-    onSave?.(dataUrl);
-    onComplete?.(dataUrl);
-    onSigned?.(signatureData);
-    clear();
-  }, [onSave, onComplete, onSigned, clear]);
-
-  return (
-    <div
-      className="border-2 border-dashed border-gray-400 rounded-lg p-4 bg-white max-w-full mx-auto"
-      data-oid="ox05nz9"
-    >
-      <SignatureCanvas
-        ref={sigCanvas}
-        penColor="black"
-        backgroundColor="#f8f9fa"
-        canvasProps={{
-          width,
-          height,
-          className: "border rounded bg-gray-100",
-        }}
-        data-oid="45hr3m3"
-      />
-
-      <div
-        className="mt-4 flex justify-center gap-4 flex-wrap"
-        data-oid="pb:pit-"
-      >
-        <button
-          onClick={clear}
-          className="px-4 py-2 font-bold border-none rounded bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer"
-          data-oid="tu_emb8"
-        >
-          Clear
-        </button>
-        <button
-          onClick={handleSave}
-          className="px-4 py-2 font-bold border-none rounded bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer"
-          data-oid="al09pns"
-        >
-          Save
-        </button>
-        {showCancel && (
-          <button
-            onClick={onClose}
-            className="px-4 py-2 font-bold border-none rounded bg-gray-600 text-white hover:bg-gray-700 cursor-pointer"
-            data-oid="lag2utn"
-          >
-            Cancel
-          </button>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const SignatureDragLayer: React.FC<{
-  signatureDataUrl?: string;
-  onPlace?: (placement: SignaturePlacement) => void;
-  currentPage?: number;
-}> = ({ signatureDataUrl, onPlace, currentPage = 1 }) => {
-  const [positions, setPositions] = useState<SignaturePlacement[]>([]);
-
-  const handleClick = useCallback(
-    (e: MouseEvent<HTMLDivElement>) => {
-      if (!signatureDataUrl) return;
-      const bounds = (
-        e.currentTarget as HTMLDivElement
-      ).getBoundingClientRect();
-      const x = e.clientX - bounds.left;
-      const y = e.clientY - bounds.top;
-
-      const newSig = signatureService.createSignaturePlacement(
-        x,
-        y,
-        signatureDataUrl,
-        150,
-        75,
-        currentPage,
-      );
-
-      setPositions((prev) => [...prev, newSig]);
-      onPlace?.(newSig);
-    },
-    [signatureDataUrl, onPlace, currentPage],
-  );
-
-  return (
-    <div
-      className="relative w-full h-full border-2 border-dashed border-gray-400 bg-gray-50 min-h-48 cursor-crosshair"
-      onClick={handleClick}
-      data-oid="rq1_7id"
-    >
-      {positions.map((sig, i) => (
-        <img
-          key={i}
-          src={sig.src}
-          alt="Signature"
-          className="absolute pointer-events-none"
-          style={{
-            left: sig.x,
-            top: sig.y,
-            width: sig.width,
-            height: sig.height,
-          }}
-          data-oid="6wf46ta"
-        />
-      ))}
-    </div>
-  );
-};
-
-export const SignatureToolComponent: React.FC = () => {
-  const { state, dispatch } = usePDFEditor();
+export const SignatureToolComponent: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
+  const { state } = usePDFEditor();
   const [showSignaturePad, setShowSignaturePad] = useState(false);
   const [savedSignatures, setSavedSignatures] = useState<SignatureData[]>([]);
-  const [signatureUrl, setSignatureUrl] = useState<string | undefined>(undefined);
-  const [dragMode, setDragMode] = useState<boolean>(false);
 
   // Load saved signatures on component mount
   React.useEffect(() => {
@@ -192,44 +48,37 @@ export const SignatureToolComponent: React.FC = () => {
     return signatureService.validateSignature(signature);
   }, []);
 
-  const handleSave = useCallback(
-    (dataUrl: string) => {
-      setSignatureUrl(dataUrl);
-      const signatureData = signatureService.createSignatureData(dataUrl);
-      signatureService.saveSignature(signatureData);
-      setSavedSignatures(signatureService.getSavedSignatures());
-      setDragMode(true);
-    },
-    [],
-  );
-
-  const handleDragPlaced = useCallback(
-    (placement: SignaturePlacement) => {
-      // Add signature as image element to PDF editor state
-      dispatch({
-        type: 'ADD_IMAGE_ELEMENT',
-        payload: {
-          page: state.currentPage,
-          element: {
-            id: `signature-${Date.now()}`,
-            x: placement.x,
-            y: placement.y,
-            width: placement.width,
-            height: placement.height,
-            src: placement.src,
-            rotation: 0,
-            page: placement.page
-          }
-        }
-      });
-    },
-    [dispatch, state.currentPage],
-  );
-
-  const handleClose = useCallback(() => {
-    setSignatureUrl(undefined);
-    setDragMode(false);
-  }, []);
+  if (compact) {
+    return (
+      <div className="flex items-center gap-3">
+        {/* Create Signature Button */}
+        <Button
+          onClick={handleCreateSignature}
+          size="sm"
+          variant={showSignaturePad ? "secondary" : "outline"}
+        >
+          <PenTool className="h-3 w-3 mr-1" />
+          {showSignaturePad ? "Hide" : "Create"}
+        </Button>
+        
+        {/* Saved Signatures Count */}
+        {savedSignatures.length > 0 && (
+          <div className="flex items-center gap-1">
+            <FileSignature className="h-3 w-3" />
+            <span className="text-xs text-muted-foreground">
+              {savedSignatures.length} saved
+            </span>
+          </div>
+        )}
+        
+        {/* Verification Status */}
+        <div className="flex items-center gap-1">
+          <Shield className="h-3 w-3 text-blue-600" />
+          <span className="text-xs text-muted-foreground">Verified</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Card className="w-full">
@@ -254,31 +103,7 @@ export const SignatureToolComponent: React.FC = () => {
           
           {showSignaturePad && (
             <div className="border rounded-lg p-4 bg-gray-50">
-              {!dragMode && (
-                <SignaturePad
-                  onSave={handleSave}
-                  onClose={handleClose}
-                  showCancel={true}
-                  width={400}
-                  height={150}
-                />
-              )}
-              {dragMode && signatureUrl && (
-                <div className="space-y-4">
-                  <div className="font-semibold text-gray-700">
-                    Click anywhere on the document below to place your signature:
-                  </div>
-                  <SignatureDragLayer
-                    signatureDataUrl={signatureUrl}
-                    onPlace={handleDragPlaced}
-                  />
-                  <div className="flex justify-center">
-                    <Button onClick={handleClose}>
-                      Done
-                    </Button>
-                  </div>
-                </div>
-              )}
+              <SignatureTool />
               <div className="mt-3 flex justify-end">
                 <Button 
                   variant="outline" 
@@ -401,7 +226,3 @@ export const SignatureToolComponent: React.FC = () => {
     </Card>
   );
 };
-
-// Export both the component and the internal tools for backward compatibility
-export default SignatureToolComponent;
-export { SignaturePad, SignatureDragLayer };

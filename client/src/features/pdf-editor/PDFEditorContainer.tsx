@@ -15,24 +15,45 @@ import { ToolType, TextRegion, Annotation, WhiteoutBlock, TextElement, ImageElem
 import { TextExtractionLayer } from "../components/layers/TextExtractionLayer";
 import AdvancedTextLayer from "../components/layers/AdvancedTextLayer";
 import ImageLayer from "../components/layers/ImageLayer";
+import AnnotationLayer from "../components/layers/AnnotationLayer";
+import WhiteoutLayer from "../components/layers/WhiteoutLayer";
+import { FreeformLayer } from "../components/layers/FreeformLayer";
 import { InlineTextEditor } from "../components/InlineTextEditor";
+import { KeyboardHandler } from "../components/KeyboardHandler";
 import { FontRecognitionPanel } from "../../components/tool-panels/FontRecognitionPanel";
 import { FontStylePanel } from "../../components/tool-panels/FontStylePanel";
-import { toolRegistry } from "./toolRegistry";
+import { LayerVisibilityPanel } from "../../components/tool-panels/LayerVisibilityPanel";
+import { toolRegistry } from "@/components/tool-panels/toolRegistry";
+import { ToolDropdown } from "@/components/tool-panels/ToolDropdown";
 
 // Import All Services
 import { fontRecognitionService } from "../../services/fontRecognitionService";
 import { textExtractionService } from "../../services/textExtractionService";
 
+// Import Performance Components
+import { MemoryProfiler } from "../components/MemoryProfiler";
+import { usePerformanceOptimization } from "../hooks/usePerformanceOptimization";
+
 export default function PDFEditorContainer() {
   const { state, dispatch, canvasRef, fileInputRef, loadPDF, renderPage, savePDF } = usePDFEditor();
   const { toast } = useToast();
+  const { cleanupMemory, cancelRenderTask } = usePerformanceOptimization();
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [drawingShape, setDrawingShape] = useState<Partial<Annotation> | null>(null);
   const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  
+  // Layer visibility state
+  const [layerVisibility, setLayerVisibility] = useState({
+    whiteout: true,
+    annotations: true,
+    text: true,
+    images: true,
+    freeform: true,
+    textExtraction: true,
+  });
 
   const [currentFontStyle, setCurrentFontStyle] = useState({
     fontFamily: "Arial",
@@ -47,7 +68,7 @@ export default function PDFEditorContainer() {
     currentPage, totalPages, pdfDocument, currentTool, toolSettings, scale, rotation,
     historyIndex, history, inlineEditingRegion, fileName,
     extractedTextRegions, detectedFonts, annotations, textElements, imageElements, whiteoutBlocks,
-    selectedElementId
+    freeformElements, selectedElementId, selectedElementIds
   } = state;
 
   const currentPageTextRegions = React.useMemo(() => extractedTextRegions[currentPage] || [], [extractedTextRegions, currentPage]);
@@ -56,6 +77,7 @@ export default function PDFEditorContainer() {
   const currentPageTextElements = React.useMemo(() => textElements[currentPage] || [], [textElements, currentPage]);
   const currentPageImageElements = React.useMemo(() => imageElements[currentPage] || [], [imageElements, currentPage]);
   const currentPageWhiteoutBlocks = React.useMemo(() => whiteoutBlocks[currentPage] || [], [whiteoutBlocks, currentPage]);
+  const currentPageFreeformElements = React.useMemo(() => freeformElements[currentPage] || [], [freeformElements, currentPage]);
 
   useEffect(() => {
     if (pdfDocument) {
@@ -144,6 +166,12 @@ export default function PDFEditorContainer() {
     setStartPoint(coords);
     const settings = toolSettings[currentTool];
 
+    // Handle select tool - clear selection when clicking empty space
+    if (currentTool === 'select') {
+      dispatch({ type: 'CLEAR_SELECTION' });
+      return;
+    }
+
     if (["rectangle", "circle", "highlight", "whiteout", "line", "freeform"].includes(currentTool)) {
       const newShape: Partial<Annotation> = {
         type: currentTool, page: currentPage, x: coords.x, y: coords.y, ...settings,
@@ -153,7 +181,7 @@ export default function PDFEditorContainer() {
       };
       setDrawingShape(newShape);
     }
-  }, [currentPage, currentTool, toolSettings, scale, getCanvasCoordinates]);
+  }, [currentPage, currentTool, toolSettings, scale, getCanvasCoordinates, dispatch]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!startPoint) return;
@@ -218,6 +246,40 @@ export default function PDFEditorContainer() {
   };
 
   const handleInlineTextCancel = () => { dispatch({ type: "SET_INLINE_EDITING_REGION", payload: null }); };
+
+  // Freeform element handlers
+  const handleFreeformElementsChange = useCallback((elements: any[]) => {
+    // Replace all freeform elements for the current page
+    const currentElements = currentPageFreeformElements;
+    
+    // Find new elements (those not in current elements)
+    const newElements = elements.filter(el => !currentElements.find(curr => curr.id === el.id));
+    
+    // Add new elements
+    newElements.forEach(element => {
+      dispatch({ type: 'ADD_FREEFORM_ELEMENT', payload: { page: currentPage, element } });
+    });
+    
+    if (newElements.length > 0) {
+      dispatch({ type: 'SAVE_TO_HISTORY' });
+    }
+  }, [currentPageFreeformElements, currentPage, dispatch]);
+
+  const handleFreeformElementSelect = useCallback((id: string, event: React.MouseEvent) => {
+    if (currentTool !== 'select') return;
+    
+    event.stopPropagation();
+    
+    if (event.ctrlKey || event.metaKey) {
+      dispatch({ type: 'ADD_TO_SELECTION', payload: { id, type: 'freeform' } });
+    } else {
+      dispatch({ type: 'SET_SELECTED_ELEMENT', payload: { id, type: 'freeform' } });
+    }
+  }, [currentTool, dispatch]);
+  
+  const handleToggleLayer = (layer: keyof typeof layerVisibility) => {
+    setLayerVisibility(prev => ({ ...prev, [layer]: !prev[layer] }));
+  };
   
   const handleZoom = (direction: 'in' | 'out' | 'fit') => {
       const newScale = direction === 'in' ? Math.min(scale * 1.25, 3.0) : direction === 'out' ? Math.max(scale * 0.8, 0.25) : 1.0;
@@ -227,7 +289,8 @@ export default function PDFEditorContainer() {
   const ActiveToolPanel = toolRegistry[currentTool]?.component;
 
   return (
-    <div className="h-full w-full flex flex-col bg-gray-50">
+    <KeyboardHandler>
+      <div className="h-full w-full flex flex-col bg-gray-50">
       <header className="bg-white border-b px-4 py-3 flex items-center justify-between flex-shrink-0 shadow-sm">
         <div className="flex items-center gap-3">
             <FileText className="h-5 w-5 text-primary" />
@@ -247,60 +310,147 @@ export default function PDFEditorContainer() {
           <Button onClick={savePDF} disabled={!pdfDocument}> <Save className="h-4 w-4 mr-2" /> Save PDF </Button>
         </div>
       </header>
-      <div className="flex-1 flex overflow-hidden">
-        <aside className="w-80 bg-white border-r flex flex-col">
-           <div className="p-4 border-b">
-             <h2 className="text-sm font-semibold mb-3">Tools</h2>
-             <div className="grid grid-cols-4 gap-2">
-               {Object.values(toolRegistry).map((tool) => (
-                 <Button key={tool.name} variant={currentTool === tool.name ? "default" : "outline"} size="icon" className="h-14 w-14 flex-col gap-1 text-xs" title={tool.label} onClick={() => handleToolSelect(tool.name)}>
-                   {tool.icon} <span>{tool.label}</span>
-                 </Button>
-               ))}
-             </div>
-           </div>
-           <div className="flex-1 overflow-y-auto p-4">
-            {currentTool === 'inlineEdit' ? (
-              <FontRecognitionPanel detectedFonts={allDetectedFonts} isAnalyzing={isAnalyzing} analysisProgress={analysisProgress} onFontMappingChange={() => {}} settings={{ autoFontMatch: true, useFallbackFonts: true, showFontWarnings: false, realTimePreview: true }} onSettingsChange={() => {}} />
-            ) : ActiveToolPanel ? (
-              <ActiveToolPanel settings={toolSettings[currentTool]} onSettingChange={(key, value) => dispatch({ type: 'UPDATE_TOOL_SETTING', payload: { toolId: currentTool, key, value }})} editorState={state} />
-            ) : <p className="text-xs text-muted-foreground">Select a tool to see its options.</p>}
-           </div>
-           {(currentTool === "inlineEdit" || currentTool === "text") && (
-             <div className="p-4 border-t">
-               <FontStylePanel 
-                 selectedFont={currentFontStyle.fontFamily}
-                 fontSize={currentFontStyle.fontSize}
-                 fontWeight={currentFontStyle.fontWeight}
-                 fontStyle={currentFontStyle.fontStyle}
-                 textColor={currentFontStyle.textColor}
-                 textAlign={currentFontStyle.textAlign}
-                 onFontChange={font => setCurrentFontStyle(s => ({...s, fontFamily: font}))} 
-                 onFontSizeChange={size => setCurrentFontStyle(s => ({...s, fontSize: size}))} 
-                 onFontWeightChange={weight => setCurrentFontStyle(s => ({...s, fontWeight: weight}))} 
-                 onFontStyleChange={style => setCurrentFontStyle(s => ({...s, fontStyle: style}))} 
-                 onTextColorChange={color => setCurrentFontStyle(s => ({...s, textColor: color}))} 
-                 onTextAlignChange={align => setCurrentFontStyle(s => ({...s, textAlign: align}))} 
-                 detectedFonts={allDetectedFonts} 
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Horizontal Toolbar */}
+        {pdfDocument && (
+          <div className="bg-white border-b px-4 py-2 flex items-center gap-4 flex-shrink-0">
+            {/* Tools Section with Dropdowns */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-700 mr-2">Tools:</span>
+              {Object.values(toolRegistry).map((tool) => (
+                <ToolDropdown
+                  key={tool.name}
+                  toolName={tool.name}
+                  icon={tool.icon}
+                  label={tool.label}
+                  isActive={currentTool === tool.name}
+                  onToolSelect={handleToolSelect}
+                  settings={toolSettings[tool.name] || {}}
+                  onSettingChange={(key, value) => dispatch({ type: 'UPDATE_TOOL_SETTING', payload: { toolId: tool.name, key, value }})}
+                  editorState={state}
                 />
-             </div>
-           )}
-        </aside>
-        <main className="flex-1 flex items-center justify-center overflow-auto p-8 bg-gray-100" onMouseUp={handleMouseUp}>
+              ))}
+            </div>
+            
+            {/* Inline Edit Mode Indicator */}
+            {currentTool === 'inlineEdit' && (
+              <>
+                <Separator orientation="vertical" className="h-6" />
+                <div className="text-xs text-muted-foreground">Inline Edit Mode - Click text regions to edit</div>
+              </>
+            )}
+            
+            {/* Layer Visibility Toggle */}
+            <Separator orientation="vertical" className="h-6" />
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-600">Layers:</span>
+              <div className="flex items-center gap-1">
+                {Object.entries(layerVisibility).map(([layer, visible]) => (
+                  <Button
+                    key={layer}
+                    variant={visible ? "default" : "outline"}
+                    size="sm"
+                    className="h-6 px-2 text-xs capitalize"
+                    onClick={() => handleToggleLayer(layer as keyof typeof layerVisibility)}
+                    title={`Toggle ${layer} layer`}
+                  >
+                    {layer}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Font Style Panel for Inline Edit Mode */}
+        {pdfDocument && currentTool === "inlineEdit" && (
+          <div className="bg-gray-50 border-b px-4 py-2 flex items-center gap-4 flex-shrink-0">
+            <span className="text-xs font-medium text-gray-700">Text Formatting:</span>
+            <FontStylePanel 
+              selectedFont={currentFontStyle.fontFamily}
+              fontSize={currentFontStyle.fontSize}
+              fontWeight={currentFontStyle.fontWeight}
+              fontStyle={currentFontStyle.fontStyle}
+              textColor={currentFontStyle.textColor}
+              textAlign={currentFontStyle.textAlign}
+              onFontChange={font => setCurrentFontStyle(s => ({...s, fontFamily: font}))} 
+              onFontSizeChange={size => setCurrentFontStyle(s => ({...s, fontSize: size}))} 
+              onFontWeightChange={weight => setCurrentFontStyle(s => ({...s, fontWeight: weight}))} 
+              onFontStyleChange={style => setCurrentFontStyle(s => ({...s, fontStyle: style}))} 
+              onTextColorChange={color => setCurrentFontStyle(s => ({...s, textColor: color}))} 
+              onTextAlignChange={align => setCurrentFontStyle(s => ({...s, textAlign: align}))} 
+              detectedFonts={allDetectedFonts}
+              horizontal={true}
+            />
+          </div>
+        )}
+        
+        <main className="flex-1 flex justify-center overflow-auto p-8 bg-gray-100" onMouseUp={handleMouseUp}>
           {pdfDocument ? (
-            <div className="relative shadow-2xl" onMouseDown={handleMouseDown} onMouseMove={handleMouseMove}>
+            <div className="relative shadow-2xl my-auto" onMouseDown={handleMouseDown} onMouseMove={handleMouseMove}>
               <canvas ref={canvasRef} className="block" />
               <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute inset-0 pointer-events-none">
-                  {currentPageAnnotations.map(ann => <div key={ann.id} style={{ position: 'absolute', left: ann.x * scale, top: ann.y * scale, width: (ann.width || 0) * scale, height: (ann.height || 0) * scale, border: `${ann.strokeWidth || 1}px solid ${ann.strokeColor || ann.color}`, backgroundColor: ann.fillColor, opacity: ann.opacity, borderRadius: ann.type === 'circle' ? '50%' : `${ann.cornerRadius || 0}px` }} />)}
-                  {currentPageWhiteoutBlocks.map(block => <div key={block.id} style={{ position: 'absolute', left: block.x * scale, top: block.y * scale, width: block.width * scale, height: block.height * scale, backgroundColor: block.color || '#FFFFFF' }} />)}
-                  {drawingShape && <div style={{ position: 'absolute', left: drawingShape.x! * scale, top: drawingShape.y! * scale, width: drawingShape.width! * scale, height: drawingShape.height! * scale, border: '2px dashed #3B82F6', backgroundColor: '#3B82F630', borderRadius: drawingShape.type === 'circle' ? '50%' : `${drawingShape.cornerRadius || 0}px` }} />}
-                </div>
-                <AdvancedTextLayer textElements={currentPageTextElements} selectedElementId={selectedElementId} scale={scale} page={currentPage} dispatch={dispatch} />
-                <ImageLayer imageElements={currentPageImageElements} selectedElementId={selectedElementId} scale={scale} page={currentPage} dispatch={dispatch} />
-                <TextExtractionLayer page={currentPage} textRegions={currentPageTextRegions} scale={scale} rotation={rotation} onRegionClick={handleTextRegionClick} showRegions={currentTool === "inlineEdit"} />
+                {/* Whiteout blocks - render first so they appear behind other elements */}
+                {layerVisibility.whiteout && (
+                  <WhiteoutLayer whiteoutBlocks={currentPageWhiteoutBlocks} selectedElementId={selectedElementId} selectedElementIds={selectedElementIds} scale={scale} page={currentPage} dispatch={dispatch} currentTool={currentTool} />
+                )}
+                
+                {/* Annotations - shapes, highlights, etc. */}
+                {layerVisibility.annotations && (
+                  <AnnotationLayer annotations={currentPageAnnotations} selectedElementId={selectedElementId} selectedElementIds={selectedElementIds} scale={scale} page={currentPage} dispatch={dispatch} currentTool={currentTool} />
+                )}
+                
+                {/* Drawing preview for new shapes */}
+                {drawingShape && (
+                  <div 
+                    className="absolute pointer-events-none"
+                    style={{ 
+                      left: drawingShape.x! * scale, 
+                      top: drawingShape.y! * scale, 
+                      width: drawingShape.width! * scale, 
+                      height: drawingShape.height! * scale, 
+                      border: '2px dashed #3B82F6', 
+                      backgroundColor: '#3B82F630', 
+                      borderRadius: drawingShape.type === 'circle' ? '50%' : `${drawingShape.cornerRadius || 0}px` 
+                    }} 
+                  />
+                )}
+                
+                {/* Text elements */}
+                {layerVisibility.text && (
+                  <AdvancedTextLayer textElements={currentPageTextElements} selectedElementId={selectedElementId} selectedElementIds={selectedElementIds} scale={scale} page={currentPage} dispatch={dispatch} currentTool={currentTool} />
+                )}
+                
+                {/* Image elements */}
+                {layerVisibility.images && (
+                  <ImageLayer imageElements={currentPageImageElements} selectedElementId={selectedElementId} selectedElementIds={selectedElementIds} scale={scale} page={currentPage} dispatch={dispatch} currentTool={currentTool} />
+                )}
+                
+                {/* Freeform drawing elements */}
+                {layerVisibility.freeform && (
+                  <FreeformLayer 
+                    elements={currentPageFreeformElements}
+                    currentPage={currentPage}
+                    scale={scale}
+                    isDrawing={currentTool === 'freeform'}
+                    brushSettings={{
+                      color: toolSettings.freeform?.color || '#000000',
+                      opacity: toolSettings.freeform?.opacity || 1,
+                      brushSize: toolSettings.freeform?.brushSize || 3,
+                      smoothing: toolSettings.freeform?.smoothing || 'medium'
+                    }}
+                    selectedElementIds={selectedElementIds}
+                    onElementsChange={handleFreeformElementsChange}
+                    onElementSelect={handleFreeformElementSelect}
+                  />
+                )}
+                
+                {/* Text extraction overlay for inline editing */}
+                {layerVisibility.textExtraction && (
+                  <TextExtractionLayer page={currentPage} textRegions={currentPageTextRegions} scale={scale} rotation={rotation} onRegionClick={handleTextRegionClick} showRegions={currentTool === "inlineEdit"} />
+                )}
               </div>
-              {inlineEditingRegion && <InlineTextEditor textRegion={inlineEditingRegion} onSave={handleInlineTextSave} onCancel={handleInlineTextCancel} scale={scale} rotation={rotation} />}
+              {inlineEditingRegion && <InlineTextEditor textRegion={inlineEditingRegion} onSave={handleInlineTextSave} onCancel={handleInlineTextCancel} scale={scale} rotation={rotation} detectedFonts={allDetectedFonts} />}
               <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-white/80 backdrop-blur-sm shadow-lg rounded-lg border p-2">
                 <Button variant="ghost" size="sm" onClick={() => handleZoom('out')} title="Zoom Out"> <ZoomOut className="h-4 w-4" /> </Button>
                 <span className="text-sm font-medium min-w-12 text-center">{Math.round(scale * 100)}%</span>
@@ -313,7 +463,11 @@ export default function PDFEditorContainer() {
             <Card className="w-full max-w-md"><CardContent className="pt-6 text-center"><FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" /><h3>No PDF Loaded</h3><p className="text-muted-foreground">Upload a PDF file to get started.</p><Button className="mt-4" onClick={() => fileInputRef.current?.click()}><Upload className="h-4 w-4 mr-2" />Upload PDF</Button></CardContent></Card>
           )}
         </main>
+        
+        {/* Performance Monitoring */}
+        <MemoryProfiler />
       </div>
     </div>
+    </KeyboardHandler>
   );
 }

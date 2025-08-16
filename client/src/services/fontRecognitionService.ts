@@ -234,6 +234,101 @@ export class FontRecognitionService {
     return parts.join(" ");
   }
 
+  /**
+   * Find the best font match from a list of detected fonts
+   */
+  public findBestFontMatch(targetFontFamily: string, detectedFonts: DetectedFont[]): DetectedFont | null {
+    if (!detectedFonts.length) return null;
+    
+    // Exact match first
+    let exactMatch = detectedFonts.find(font => 
+      font.fontFamily.toLowerCase() === targetFontFamily.toLowerCase()
+    );
+    if (exactMatch) return exactMatch;
+    
+    // Partial match (contains)
+    let partialMatch = detectedFonts.find(font => 
+      font.fontFamily.toLowerCase().includes(targetFontFamily.toLowerCase()) ||
+      targetFontFamily.toLowerCase().includes(font.fontFamily.toLowerCase())
+    );
+    if (partialMatch) return partialMatch;
+    
+    // Fallback match
+    let fallbackMatch = detectedFonts.find(font => 
+      font.fallbackFont?.toLowerCase() === targetFontFamily.toLowerCase()
+    );
+    if (fallbackMatch) return fallbackMatch;
+    
+    // Return highest confidence font as last resort
+    return detectedFonts.reduce((best, current) => 
+      current.confidence > best.confidence ? current : best
+    );
+  }
+
+  /**
+   * Enhanced font matching with similarity scoring
+   */
+  public findSimilarFonts(targetFont: DetectedFont, availableFonts: DetectedFont[], maxResults = 5): DetectedFont[] {
+    const similarities = availableFonts.map(font => ({
+      font,
+      score: this.calculateFontSimilarity(targetFont, font)
+    }));
+    
+    return similarities
+      .sort((a, b) => b.score - a.score)
+      .slice(0, maxResults)
+      .map(item => item.font);
+  }
+
+  private calculateFontSimilarity(font1: DetectedFont, font2: DetectedFont): number {
+    let score = 0;
+    
+    // Family name similarity (most important)
+    if (font1.fontFamily === font2.fontFamily) {
+      score += 0.5;
+    } else if (font1.fontFamily.toLowerCase().includes(font2.fontFamily.toLowerCase()) ||
+               font2.fontFamily.toLowerCase().includes(font1.fontFamily.toLowerCase())) {
+      score += 0.3;
+    }
+    
+    // Weight similarity
+    if (font1.fontWeight === font2.fontWeight) score += 0.2;
+    
+    // Style similarity
+    if (font1.fontStyle === font2.fontStyle) score += 0.2;
+    
+    // Size similarity (less important for matching)
+    const sizeDiff = Math.abs(font1.fontSize - font2.fontSize);
+    if (sizeDiff <= 2) score += 0.1;
+    else if (sizeDiff <= 5) score += 0.05;
+    
+    return score;
+  }
+
+  /**
+   * Generate web font fallback stack
+   */
+  public generateFontStack(detectedFont: DetectedFont): string {
+    const stack = [detectedFont.fontFamily];
+    
+    if (detectedFont.fallbackFont && detectedFont.fallbackFont !== detectedFont.fontFamily) {
+      stack.push(detectedFont.fallbackFont);
+    }
+    
+    // Add generic fallbacks based on font characteristics
+    if (detectedFont.fontFamily.toLowerCase().includes('serif') || 
+        ['Times', 'Georgia', 'Garamond'].some(serif => detectedFont.fontFamily.includes(serif))) {
+      stack.push('serif');
+    } else if (detectedFont.fontFamily.toLowerCase().includes('mono') ||
+               ['Courier', 'Monaco', 'Consolas'].some(mono => detectedFont.fontFamily.includes(mono))) {
+      stack.push('monospace');
+    } else {
+      stack.push('sans-serif');
+    }
+    
+    return stack.map(font => font.includes(' ') ? `"${font}"` : font).join(', ');
+  }
+
   public clearCache(): void {
     this.fontCache.clear();
   }

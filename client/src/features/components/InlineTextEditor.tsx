@@ -1,21 +1,43 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Check, X, Type } from "lucide-react";
-import { InlineTextEditorProps } from "@/types/pdf-types";
+import { Check, X, Type, Palette } from "lucide-react";
+import { InlineTextEditorProps, DetectedFont } from "@/types/pdf-types";
 import { cn } from "@/lib/utils";
+import { fontRecognitionService } from "@/services/fontRecognitionService";
 
 export function InlineTextEditor({
   textRegion,
   onSave,
   onCancel,
   scale,
-  rotation
-}: InlineTextEditorProps) {
+  rotation,
+  detectedFonts = []
+}: InlineTextEditorProps & { detectedFonts?: DetectedFont[] }) {
   const [editedText, setEditedText] = useState(textRegion.text);
   const [isMultiline, setIsMultiline] = useState(textRegion.text.length > 50);
+  const [showPreview, setShowPreview] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Enhanced font matching using detected fonts
+  const matchedFont = useMemo(() => {
+    if (!textRegion.originalFontInfo?.fontFamily || !detectedFonts.length) {
+      return textRegion.originalFontInfo?.fontFamily || 'Arial';
+    }
+    
+    const bestMatch = fontRecognitionService.findBestFontMatch(
+      textRegion.originalFontInfo.fontFamily,
+      detectedFonts
+    );
+    
+    if (bestMatch) {
+      // Generate a proper font stack for better fallback support
+      return fontRecognitionService.generateFontStack(bestMatch);
+    }
+    
+    return textRegion.originalFontInfo.fontFamily;
+  }, [textRegion.originalFontInfo, detectedFonts]);
 
   useEffect(() => {
     // Focus the input when editor mounts
@@ -40,15 +62,36 @@ export function InlineTextEditor({
     }
   };
 
+  // Enhanced font styling with better matching and overflow handling
   const fontStyle = {
-    fontFamily: textRegion.originalFontInfo?.fontFamily || 'Arial',
-    fontSize: `${textRegion.fontSize * scale}px`,
+    fontFamily: matchedFont,
+    fontSize: `${Math.max(textRegion.fontSize * scale, 12)}px`, // Minimum readable size
     fontWeight: textRegion.fontWeight,
     fontStyle: textRegion.fontStyle,
     color: textRegion.color,
     lineHeight: 1.2,
-    transform: rotation !== 0 ? `rotate(${rotation}deg)` : undefined
+    transform: rotation !== 0 ? `rotate(${rotation}deg)` : undefined,
+    wordWrap: 'break-word' as const,
+    overflowWrap: 'break-word' as const,
+    hyphens: 'auto' as const
   };
+  
+  // Calculate if text will overflow
+  const textMetrics = useMemo(() => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return { willOverflow: false, estimatedHeight: textRegion.height };
+    
+    ctx.font = `${fontStyle.fontWeight} ${fontStyle.fontSize} ${fontStyle.fontFamily}`;
+    const textWidth = ctx.measureText(editedText).width;
+    const availableWidth = textRegion.width * scale - 8; // Account for padding
+    
+    const willOverflow = textWidth > availableWidth;
+    const lines = Math.ceil(textWidth / availableWidth);
+    const estimatedHeight = lines * (textRegion.fontSize * scale * 1.2);
+    
+    return { willOverflow, estimatedHeight, lines };
+  }, [editedText, fontStyle, textRegion, scale]);
 
   return (
     <div 
@@ -57,12 +100,24 @@ export function InlineTextEditor({
         left: textRegion.x * scale,
         top: textRegion.y * scale,
         width: textRegion.width * scale,
-        minHeight: textRegion.height * scale
+        minHeight: Math.max(textRegion.height * scale, textMetrics.estimatedHeight)
       }}
       data-testid="inline-text-editor"
     >
-      {/* Overlay Background */}
-      <div className="absolute inset-0 bg-blue-50 border-2 border-primary rounded-sm shadow-lg -z-10" />
+      {/* Overlay Background with overflow indicator */}
+      <div className={cn(
+        "absolute inset-0 rounded-sm shadow-lg -z-10",
+        textMetrics.willOverflow 
+          ? "bg-yellow-50 border-2 border-yellow-400" 
+          : "bg-blue-50 border-2 border-primary"
+      )} />
+      
+      {/* Overflow warning */}
+      {textMetrics.willOverflow && (
+        <div className="absolute -top-6 right-0 text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded">
+          Text may overflow ({textMetrics.lines} lines)
+        </div>
+      )}
       
       {/* Editable Input */}
       {isMultiline ? (
@@ -129,7 +184,42 @@ export function InlineTextEditor({
         >
           <Type className="h-3 w-3" />
         </Button>
+        
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => setShowPreview(!showPreview)}
+          className="h-6 w-6 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+          title="Toggle Preview"
+          data-testid="button-preview"
+        >
+          <Palette className="h-3 w-3" />
+        </Button>
       </div>
+      
+      {/* Real-time Preview */}
+      {showPreview && (
+        <div className="absolute -right-2 top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg p-2 z-10">
+          <div className="text-xs text-gray-500 mb-1">Preview:</div>
+          <div 
+            className="text-sm border border-gray-100 rounded p-1 bg-gray-50"
+            style={{
+              fontFamily: matchedFont,
+              fontSize: '12px',
+              fontWeight: textRegion.fontWeight,
+              fontStyle: textRegion.fontStyle,
+              color: textRegion.color,
+              wordWrap: 'break-word'
+            }}
+          >
+            {editedText || 'Type to see preview...'}
+          </div>
+          <div className="text-xs text-gray-400 mt-1">
+            Font: {matchedFont}
+            {textMetrics.willOverflow && <span className="text-yellow-600"> ⚠ Overflow</span>}
+          </div>
+        </div>
+      )}
 
       {/* Resize Handle */}
       <div 

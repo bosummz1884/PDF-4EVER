@@ -7,17 +7,21 @@ import { TextElement, PDFEditorAction } from "@/types/pdf-types";
 interface AdvancedTextLayerProps {
   textElements: TextElement[];
   selectedElementId: string | null;
+  selectedElementIds?: string[];
   scale: number;
   page: number;
   dispatch: React.Dispatch<PDFEditorAction>;
+  currentTool?: string;
 }
 
 export default function AdvancedTextLayer({
   textElements,
   selectedElementId,
+  selectedElementIds = [],
   scale,
   page,
   dispatch,
+  currentTool = 'select',
 }: AdvancedTextLayerProps) {
   const [editingElementId, setEditingElementId] = useState<string | null>(null);
 
@@ -25,8 +29,18 @@ export default function AdvancedTextLayer({
     dispatch({ type: "UPDATE_TEXT_ELEMENT", payload: { page, id, updates } });
   };
 
-  const handleSelect = (id: string) => {
-    dispatch({ type: "SET_SELECTED_ELEMENT", payload: { id, type: "text" } });
+  const handleSelect = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Only allow selection when using select tool or text tool
+    if (currentTool === 'select' || currentTool === 'text') {
+      if (e.ctrlKey || e.metaKey) {
+        // Multi-select toggle
+        dispatch({ type: "ADD_TO_SELECTION", payload: { id, type: "text" } });
+      } else {
+        // Single select
+        dispatch({ type: "SET_SELECTED_ELEMENT", payload: { id, type: "text" } });
+      }
+    }
   };
 
   // Automatically enter edit mode for a newly created element
@@ -44,7 +58,7 @@ export default function AdvancedTextLayer({
         <TextBox
           key={element.id}
           element={element}
-          isSelected={selectedElementId === element.id}
+          isSelected={selectedElementId === element.id || selectedElementIds.includes(element.id)}
           isEditing={editingElementId === element.id}
           onUpdate={handleUpdate}
           onSelect={handleSelect}
@@ -63,7 +77,7 @@ interface TextBoxProps {
   isSelected: boolean;
   isEditing: boolean;
   onUpdate: (id: string, updates: Partial<TextElement>) => void;
-  onSelect: (id: string) => void;
+  onSelect: (id: string, e: React.MouseEvent) => void;
   onSetEditing: (id: string | null) => void;
   onSaveHistory: () => void;
   scale: number;
@@ -152,8 +166,7 @@ const TextBox: React.FC<TextBoxProps> = ({
           border: isEditing ? '1px dashed #3B82F6' : '1px solid transparent',
         }}
         onClick={(e) => {
-          e.stopPropagation();
-          onSelect(element.id);
+          onSelect(element.id, e);
         }}
         onDoubleClick={handleDoubleClick}
       >

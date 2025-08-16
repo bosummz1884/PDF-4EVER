@@ -44,15 +44,81 @@ const StylePreview: React.FC<{
   );
 };
 
-export const ShapeToolComponent: React.FC<EditorToolProps> = ({
+export const ShapeToolComponent: React.FC<EditorToolProps & { compact?: boolean }> = ({
   settings,
   onSettingChange,
+  compact = false,
 }) => {
   const { state } = usePDFEditor();
   const { currentTool } = state;
 
   const isLine = currentTool === "line";
   const isRectangle = currentTool === "rectangle";
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-3">
+        {/* Stroke Color */}
+        <Input
+          type="color"
+          value={settings.strokeColor || "#000000"}
+          onChange={(e) => onSettingChange("strokeColor", e.target.value)}
+          className="w-8 h-8 p-0 cursor-pointer"
+          title="Stroke Color"
+        />
+        
+        {/* Fill Color (Not for lines) */}
+        {!isLine && (
+          <Input
+            type="color"
+            value={settings.fillColor === "transparent" ? "#ffffff" : settings.fillColor}
+            onChange={(e) => onSettingChange("fillColor", e.target.value)}
+            className="w-8 h-8 p-0 cursor-pointer"
+            title="Fill Color"
+          />
+        )}
+        
+        {/* Stroke Width */}
+        <Input
+          type="number"
+          value={settings.strokeWidth || 2}
+          onChange={(e) => onSettingChange("strokeWidth", parseInt(e.target.value) || 2)}
+          className="w-16"
+          min={1}
+          max={50}
+          title="Stroke Width"
+        />
+        
+        {/* Stroke Style */}
+        <Select
+          value={settings.strokeStyle || "solid"}
+          onValueChange={(value) => onSettingChange("strokeStyle", value as "solid" | "dashed" | "dotted")}
+        >
+          <SelectTrigger className="w-20">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="solid">Solid</SelectItem>
+            <SelectItem value="dashed">Dashed</SelectItem>
+            <SelectItem value="dotted">Dotted</SelectItem>
+          </SelectContent>
+        </Select>
+        
+        {/* Corner Radius (Only for rectangles) */}
+        {isRectangle && (
+          <Input
+            type="number"
+            value={settings.cornerRadius || 0}
+            onChange={(e) => onSettingChange("cornerRadius", parseInt(e.target.value) || 0)}
+            className="w-16"
+            min={0}
+            max={50}
+            title="Corner Radius"
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
