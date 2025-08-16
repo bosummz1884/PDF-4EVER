@@ -313,50 +313,54 @@ export default function PDFEditorContainer() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Horizontal Toolbar */}
         {pdfDocument && (
-          <div className="bg-white border-b px-4 py-2 flex items-center gap-4 flex-shrink-0">
-            {/* Tools Section with Dropdowns */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-700 mr-2">Tools:</span>
-              {Object.values(toolRegistry).map((tool) => (
-                <ToolDropdown
-                  key={tool.name}
-                  toolName={tool.name}
-                  icon={tool.icon}
-                  label={tool.label}
-                  isActive={currentTool === tool.name}
-                  onToolSelect={handleToolSelect}
-                  settings={toolSettings[tool.name] || {}}
-                  onSettingChange={(key, value) => dispatch({ type: 'UPDATE_TOOL_SETTING', payload: { toolId: tool.name, key, value }})}
-                  editorState={state}
-                />
-              ))}
-            </div>
-            
-            {/* Inline Edit Mode Indicator */}
-            {currentTool === 'inlineEdit' && (
-              <>
-                <Separator orientation="vertical" className="h-6" />
-                <div className="text-xs text-muted-foreground">Inline Edit Mode - Click text regions to edit</div>
-              </>
-            )}
-            
-            {/* Layer Visibility Toggle */}
-            <Separator orientation="vertical" className="h-6" />
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-600">Layers:</span>
-              <div className="flex items-center gap-1">
-                {Object.entries(layerVisibility).map(([layer, visible]) => (
-                  <Button
-                    key={layer}
-                    variant={visible ? "default" : "outline"}
-                    size="sm"
-                    className="h-6 px-2 text-xs capitalize"
-                    onClick={() => handleToggleLayer(layer as keyof typeof layerVisibility)}
-                    title={`Toggle ${layer} layer`}
-                  >
-                    {layer}
-                  </Button>
-                ))}
+          <div className="bg-white border-b px-4 py-2 flex-shrink-0 overflow-x-auto">
+            <div className="flex items-center gap-4 min-w-fit">
+              {/* Tools Section with Dropdowns */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className="text-sm font-medium text-gray-700 mr-2 whitespace-nowrap">Tools:</span>
+                <div className="flex items-center gap-1 flex-wrap">
+                  {Object.values(toolRegistry).map((tool) => (
+                    <ToolDropdown
+                      key={tool.name}
+                      toolName={tool.name}
+                      icon={tool.icon}
+                      label={tool.label}
+                      isActive={currentTool === tool.name}
+                      onToolSelect={handleToolSelect}
+                      settings={toolSettings[tool.name] || {}}
+                      onSettingChange={(key, value) => dispatch({ type: 'UPDATE_TOOL_SETTING', payload: { toolId: tool.name, key, value }})}
+                      editorState={state}
+                    />
+                  ))}
+                </div>
+              </div>
+              
+              {/* Inline Edit Mode Indicator */}
+              {currentTool === 'inlineEdit' && (
+                <>
+                  <Separator orientation="vertical" className="h-6 flex-shrink-0" />
+                  <div className="text-xs text-muted-foreground whitespace-nowrap">Inline Edit Mode - Click text regions to edit</div>
+                </>
+              )}
+              
+              {/* Layer Visibility Toggle */}
+              <Separator orientation="vertical" className="h-6 flex-shrink-0" />
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className="text-xs text-gray-600 whitespace-nowrap">Layers:</span>
+                <div className="flex items-center gap-1 flex-wrap">
+                  {Object.entries(layerVisibility).map(([layer, visible]) => (
+                    <Button
+                      key={layer}
+                      variant={visible ? "default" : "outline"}
+                      size="sm"
+                      className="h-6 px-2 text-xs capitalize whitespace-nowrap"
+                      onClick={() => handleToggleLayer(layer as keyof typeof layerVisibility)}
+                      title={`Toggle ${layer} layer`}
+                    >
+                      {layer}
+                    </Button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -364,24 +368,26 @@ export default function PDFEditorContainer() {
         
         {/* Font Style Panel for Inline Edit Mode */}
         {pdfDocument && currentTool === "inlineEdit" && (
-          <div className="bg-gray-50 border-b px-4 py-2 flex items-center gap-4 flex-shrink-0">
-            <span className="text-xs font-medium text-gray-700">Text Formatting:</span>
-            <FontStylePanel 
-              selectedFont={currentFontStyle.fontFamily}
-              fontSize={currentFontStyle.fontSize}
-              fontWeight={currentFontStyle.fontWeight}
-              fontStyle={currentFontStyle.fontStyle}
-              textColor={currentFontStyle.textColor}
-              textAlign={currentFontStyle.textAlign}
-              onFontChange={font => setCurrentFontStyle(s => ({...s, fontFamily: font}))} 
-              onFontSizeChange={size => setCurrentFontStyle(s => ({...s, fontSize: size}))} 
-              onFontWeightChange={weight => setCurrentFontStyle(s => ({...s, fontWeight: weight}))} 
-              onFontStyleChange={style => setCurrentFontStyle(s => ({...s, fontStyle: style}))} 
-              onTextColorChange={color => setCurrentFontStyle(s => ({...s, textColor: color}))} 
-              onTextAlignChange={align => setCurrentFontStyle(s => ({...s, textAlign: align}))} 
-              detectedFonts={allDetectedFonts}
-              horizontal={true}
-            />
+          <div className="bg-gray-50 border-b px-4 py-2 flex-shrink-0 overflow-x-auto">
+            <div className="flex items-center gap-4 min-w-fit">
+              <span className="text-xs font-medium text-gray-700 whitespace-nowrap">Text Formatting:</span>
+              <FontStylePanel 
+                selectedFont={currentFontStyle.fontFamily}
+                fontSize={currentFontStyle.fontSize}
+                fontWeight={currentFontStyle.fontWeight}
+                fontStyle={currentFontStyle.fontStyle}
+                textColor={currentFontStyle.textColor}
+                textAlign={currentFontStyle.textAlign}
+                onFontChange={font => setCurrentFontStyle(s => ({...s, fontFamily: font}))} 
+                onFontSizeChange={size => setCurrentFontStyle(s => ({...s, fontSize: size}))} 
+                onFontWeightChange={weight => setCurrentFontStyle(s => ({...s, fontWeight: weight}))} 
+                onFontStyleChange={style => setCurrentFontStyle(s => ({...s, fontStyle: style}))} 
+                onTextColorChange={color => setCurrentFontStyle(s => ({...s, textColor: color}))} 
+                onTextAlignChange={align => setCurrentFontStyle(s => ({...s, textAlign: align}))} 
+                detectedFonts={allDetectedFonts}
+                horizontal={true}
+              />
+            </div>
           </div>
         )}
         

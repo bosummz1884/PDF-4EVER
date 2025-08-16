@@ -332,6 +332,20 @@ T1.1 → T1.2 → T1.6 → T1.3 → T2.1 → T3.4 → T4.0 → T4.1 → T4.2 →
 ### Priority 3 (Nice to Have)
 - T3.2, T3.3, Advanced documentation
 
+## Discovered During Work
+
+### 2025-08-16
+- **Fixed Toolbar Overflow Issue** ✅
+  - **Problem**: Horizontal toolbar extending beyond screen boundaries on smaller screens
+  - **Solution**: Added responsive layout with `overflow-x-auto`, `flex-wrap`, `whitespace-nowrap`, and `min-w-fit` classes
+  - **Files Modified**: `PDFEditorContainer.tsx`
+  - **Changes**: 
+    - Main toolbar now scrolls horizontally when content exceeds container width
+    - Tool dropdowns and layer buttons wrap properly within their sections
+    - Text labels use `whitespace-nowrap` to prevent breaking
+    - Font style panel for inline edit mode also made responsive
+  - **Result**: Toolbar now fits within page limits and provides horizontal scrolling when needed
+
 This task breakdown provides a clear roadmap for developing your PDF editor while maintaining flexibility for adjustments based on progress and priorities.
 
 ## Discovered During Work - August 16, 2025
@@ -341,6 +355,11 @@ This task breakdown provides a clear roadmap for developing your PDF editor whil
   - [x] Fix duplicate signature tool definition in toolRegistry causing rendering conflicts
   - [x] Correct action type inconsistencies in AdvancedTextLayer and ImageLayer components
   - [x] Ensure proper layer positioning and canvas alignment
+
+- [x] **T4.7** Fix undo/redo system to preserve document state
+  - [x] Modified LOAD_SUCCESS action to initialize history with only editable content
+  - [x] Updated UNDO/REDO actions to preserve document state (pdfDocument, originalPdfData, totalPages, fileName)
+  - [x] Ensured undo operations only affect edits, not document loading
 
 - [x] **T4.7** Redesign toolbar layout to horizontal position
   - [x] Move toolbar from vertical sidebar to horizontal layout at top of PDF viewer

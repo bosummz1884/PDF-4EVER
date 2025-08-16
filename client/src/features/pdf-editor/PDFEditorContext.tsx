@@ -62,16 +62,28 @@ function pdfEditorReducer(
   action: PDFEditorAction,
 ): PDFEditorState {
   switch (action.type) {
-    case "LOAD_SUCCESS":
+    case "LOAD_SUCCESS": {
+      // Create initial snapshot with only editable content (no document state)
+      const initialSnapshot: Partial<PDFEditorState> = {
+        annotations: {},
+        formFields: {},
+        whiteoutBlocks: {},
+        textElements: {},
+        imageElements: {},
+        signatureElements: {},
+        freeformElements: {},
+        extractedTextRegions: {},
+      };
       return {
         ...initialState,
         pdfDocument: action.payload.doc,
         originalPdfData: action.payload.data,
         totalPages: action.payload.doc.numPages,
         fileName: action.payload.file.name,
-        history: [{ ...initialState }],
+        history: [initialSnapshot],
         historyIndex: 0,
       };
+    }
     case "SET_LOADING":
       return { ...state, isLoading: action.payload };
     case "SET_CURRENT_PAGE":
@@ -388,12 +400,34 @@ function pdfEditorReducer(
     case "UNDO": {
       if (state.historyIndex <= 0) return state;
       const newIndex = state.historyIndex - 1;
-      return { ...state, ...state.history[newIndex], historyIndex: newIndex };
+      const snapshot = state.history[newIndex];
+      // Only restore editable content, preserve document state
+      return { 
+        ...state, 
+        ...snapshot,
+        // Preserve document-related state that shouldn't be undone
+        pdfDocument: state.pdfDocument,
+        originalPdfData: state.originalPdfData,
+        totalPages: state.totalPages,
+        fileName: state.fileName,
+        historyIndex: newIndex 
+      };
     }
     case "REDO": {
       if (state.historyIndex >= state.history.length - 1) return state;
       const newIndex = state.historyIndex + 1;
-      return { ...state, ...state.history[newIndex], historyIndex: newIndex };
+      const snapshot = state.history[newIndex];
+      // Only restore editable content, preserve document state
+      return { 
+        ...state, 
+        ...snapshot,
+        // Preserve document-related state that shouldn't be redone
+        pdfDocument: state.pdfDocument,
+        originalPdfData: state.originalPdfData,
+        totalPages: state.totalPages,
+        fileName: state.fileName,
+        historyIndex: newIndex 
+      };
     }
     default:
       return state;
