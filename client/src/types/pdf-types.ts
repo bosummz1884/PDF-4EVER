@@ -294,6 +294,23 @@ export interface FreeformElement {
 // Inline Text Editing Types
 // =========================
 
+export interface TextFormatting {
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  color?: string;
+  fontSize?: number;
+  fontFamily?: string;
+  textAlign?: 'left' | 'center' | 'right' | 'justify';
+  lineHeight?: number;
+  backgroundColor?: string;
+}
+
+export interface TextSpan {
+  text: string;
+  formatting: TextFormatting;
+}
+
 export interface TextRegion {
   id: string;
   page: number;
@@ -302,6 +319,7 @@ export interface TextRegion {
   width: number;
   height: number;
   text: string;
+  richText?: TextSpan[]; // Rich text content with formatting
   fontName: string;
   fontSize: number;
   fontWeight: "normal" | "bold";
@@ -310,6 +328,8 @@ export interface TextRegion {
   rotation: number;
   isEditing: boolean;
   originalFontInfo?: DetectedFont;
+  textAlign?: 'left' | 'center' | 'right' | 'justify';
+  lineHeight?: number;
 }
 
 export interface DetectedFont {
@@ -490,14 +510,22 @@ export interface SignatureToolProps {
   currentPage: number;
 }
 
-export interface FormattingState {
-  bold: boolean;
-  italic: boolean;
-  underline: boolean;
-  align: 'left' | 'center' | 'right' | 'justify';
-  color: string;
-  fontSize: number;
-  fontFamily: string;
+export interface FormattingState extends TextFormatting {
+  activeFormats: Set<keyof TextFormatting>;
+  selection: {
+    start: number;
+    end: number;
+    range: Range | null;
+  };
+  align?: 'left' | 'center' | 'right' | 'justify';
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  color?: string;
+  fontSize?: number;
+  fontFamily?: string;
+  lineHeight?: number;
+  backgroundColor?: string;
 }
 
 export interface InlineTextEditorProps {
