@@ -446,3 +446,9 @@ This task breakdown provides a clear roadmap for developing your PDF editor whil
     - Escape cancels the edit and restores original text
     - Removed overflow warning tip; kept neutral minimal overlay
   - Reason: Match pro editors (Acrobat/Sejda) with immediate-edit and unobtrusive UI
+
+- [x] Toolbar placement and wrapping improvements
+  - Problem: Toolbar was overlaying the page and showing a horizontal scrollbar.
+  - Solution: Move toolbar into normal document flow directly under `PageNavigationControls` and above the canvas; enable `flex-wrap` and remove `overflow-x-auto/whitespace-nowrap` to allow multi-row wrapping within the PDF canvas width.
+  - Files Modified: `client/src/features/pdf-editor/PDFEditorContainer.tsx`
+  - Result: Toolbar sits under the zoom/fit/thumbnail controls, fits inside the PDF canvas area, and cleanly wraps to two rows when needed without a horizontal scrollbar.

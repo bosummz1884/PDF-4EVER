@@ -490,6 +490,16 @@ export interface SignatureToolProps {
   currentPage: number;
 }
 
+export interface FormattingState {
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+  align: 'left' | 'center' | 'right' | 'justify';
+  color: string;
+  fontSize: number;
+  fontFamily: string;
+}
+
 export interface InlineTextEditorProps {
   textRegion: TextRegion;
   onSave: (text: string) => void;

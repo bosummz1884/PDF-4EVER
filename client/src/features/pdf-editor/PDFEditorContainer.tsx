@@ -361,20 +361,20 @@ export default function PDFEditorContainer() {
         
         <main className="flex-1 flex justify-center overflow-auto p-8 bg-gray-100" onMouseUp={handleMouseUp}>
           {pdfDocument ? (
-            <div className="relative shadow-2xl my-auto pt-14" onMouseDown={handleMouseDown} onMouseMove={handleMouseMove}>
-              {/* In-canvas toolbar: positioned over the PDF canvas and constrained to its width */}
+            <div className="shadow-2xl my-auto pt-4">
+              {/* Toolbar placed ABOVE the canvas, inside the same container so it matches canvas width. */}
+              {/* reason: Keeping it in normal flow (not absolute) ensures no overlap and allows wrapping into multiple rows. */}
               <div
-                className="absolute top-2 left-1/2 -translate-x-1/2 z-20 w-full px-2"
-                // comments: Placing the toolbar here ensures it stays within the PDF bounds.
+                className="z-20 w-full px-2"
                 onMouseDown={(e) => e.stopPropagation()}
                 onMouseUp={(e) => e.stopPropagation()}
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="bg-white/95 backdrop-blur border rounded-md shadow-md overflow-x-auto whitespace-nowrap">
-                  <div className="flex items-center gap-4 p-2 min-w-fit">
+                <div className="bg-white/95 backdrop-blur border rounded-md shadow-md">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4 p-2">
                     {/* Tools Section with Dropdowns */}
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-sm font-medium text-gray-700 mr-2 whitespace-nowrap">Tools:</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-700 mr-1">Tools:</span>
                       <div className="flex items-center gap-1 flex-wrap">
                         {Object.values(toolRegistry).map((tool) => (
                           <ToolDropdown
@@ -395,22 +395,22 @@ export default function PDFEditorContainer() {
                     {/* Inline Edit Mode Indicator */}
                     {currentTool === 'inlineEdit' && (
                       <>
-                        <Separator orientation="vertical" className="h-6 flex-shrink-0" />
-                        <div className="text-xs text-muted-foreground whitespace-nowrap">Inline Edit Mode - Click text regions to edit</div>
+                        <Separator orientation="vertical" className="h-6" />
+                        <div className="text-xs text-muted-foreground">Inline Edit Mode - Click text regions to edit</div>
                       </>
                     )}
 
                     {/* Layer Visibility Toggle */}
-                    <Separator orientation="vertical" className="h-6 flex-shrink-0" />
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-xs text-gray-600 whitespace-nowrap">Layers:</span>
+                    <Separator orientation="vertical" className="h-6" />
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-600">Layers:</span>
                       <div className="flex items-center gap-1 flex-wrap">
                         {Object.entries(layerVisibility).map(([layer, visible]) => (
                           <Button
                             key={layer}
                             variant={visible ? "default" : "outline"}
                             size="sm"
-                            className="h-6 px-2 text-xs capitalize whitespace-nowrap"
+                            className="h-6 px-2 text-xs capitalize"
                             onClick={() => handleToggleLayer(layer as keyof typeof layerVisibility)}
                             title={`Toggle ${layer} layer`}
                           >
@@ -421,7 +421,7 @@ export default function PDFEditorContainer() {
                     </div>
 
                     {/* Save PDF within bounds */}
-                    <Separator orientation="vertical" className="h-6 flex-shrink-0" />
+                    <Separator orientation="vertical" className="h-6" />
                     <div className="flex items-center">
                       <Button onClick={savePDF} disabled={!pdfDocument} size="sm">
                         <Save className="h-4 w-4 mr-2" /> Save PDF
@@ -431,69 +431,73 @@ export default function PDFEditorContainer() {
                 </div>
               </div>
 
-              <canvas ref={canvasRef} className="block" />
-              <div className="absolute inset-0 pointer-events-none">
-                {/* Whiteout blocks - render first so they appear behind other elements */}
-                {layerVisibility.whiteout && (
-                  <WhiteoutLayer whiteoutBlocks={currentPageWhiteoutBlocks} selectedElementId={selectedElementId} selectedElementIds={selectedElementIds} scale={scale} page={currentPage} dispatch={dispatch} currentTool={currentTool} />
-                )}
-                
-                {/* Annotations - shapes, highlights, etc. */}
-                {layerVisibility.annotations && (
-                  <AnnotationLayer annotations={currentPageAnnotations} selectedElementId={selectedElementId} selectedElementIds={selectedElementIds} scale={scale} page={currentPage} dispatch={dispatch} currentTool={currentTool} />
-                )}
-                
-                {/* Drawing preview for new shapes */}
-                {drawingShape && (
-                  <div 
-                    className="absolute pointer-events-none"
-                    style={{ 
-                      left: drawingShape.x! * scale, 
-                      top: drawingShape.y! * scale, 
-                      width: drawingShape.width! * scale, 
-                      height: drawingShape.height! * scale, 
-                      border: '2px dashed #3B82F6', 
-                      backgroundColor: '#3B82F630', 
-                      borderRadius: drawingShape.type === 'circle' ? '50%' : `${drawingShape.cornerRadius || 0}px` 
-                    }} 
-                  />
-                )}
-                
-                {/* Text elements */}
-                {layerVisibility.text && (
-                  <AdvancedTextLayer textElements={currentPageTextElements} selectedElementId={selectedElementId} selectedElementIds={selectedElementIds} scale={scale} page={currentPage} dispatch={dispatch} currentTool={currentTool} />
-                )}
-                
-                {/* Image elements */}
-                {layerVisibility.images && (
-                  <ImageLayer imageElements={currentPageImageElements} selectedElementId={selectedElementId} selectedElementIds={selectedElementIds} scale={scale} page={currentPage} dispatch={dispatch} currentTool={currentTool} />
-                )}
-                
-                {/* Freeform drawing elements */}
-                {layerVisibility.freeform && (
-                  <FreeformLayer 
-                    elements={currentPageFreeformElements}
-                    currentPage={currentPage}
-                    scale={scale}
-                    isDrawing={currentTool === 'freeform'}
-                    brushSettings={{
-                      color: toolSettings.freeform?.color || '#000000',
-                      opacity: toolSettings.freeform?.opacity || 1,
-                      brushSize: toolSettings.freeform?.brushSize || 3,
-                      smoothing: toolSettings.freeform?.smoothing || 'medium'
-                    }}
-                    selectedElementIds={selectedElementIds}
-                    onElementsChange={handleFreeformElementsChange}
-                    onElementSelect={handleFreeformElementSelect}
-                  />
-                )}
-                
-                {/* Text extraction overlay for inline editing */}
-                {layerVisibility.textExtraction && (
-                  <TextExtractionLayer page={currentPage} textRegions={currentPageTextRegions} scale={scale} rotation={rotation} onRegionClick={handleTextRegionClick} showRegions={currentTool === "inlineEdit"} />
-                )}
+              {/* Canvas and overlays are wrapped in a relative container so absolute children align to the canvas (not the toolbar). */}
+              <div className="relative" onMouseDown={handleMouseDown} onMouseMove={handleMouseMove}>
+                {/* Canvas follows toolbar in normal flow so toolbar sits directly above the document. */}
+                <canvas ref={canvasRef} className="block" />
+                <div className="absolute inset-0 pointer-events-none">
+                  {/* Whiteout blocks - render first so they appear behind other elements */}
+                  {layerVisibility.whiteout && (
+                    <WhiteoutLayer whiteoutBlocks={currentPageWhiteoutBlocks} selectedElementId={selectedElementId} selectedElementIds={selectedElementIds} scale={scale} page={currentPage} dispatch={dispatch} currentTool={currentTool} />
+                  )}
+                  
+                  {/* Annotations - shapes, highlights, etc. */}
+                  {layerVisibility.annotations && (
+                    <AnnotationLayer annotations={currentPageAnnotations} selectedElementId={selectedElementId} selectedElementIds={selectedElementIds} scale={scale} page={currentPage} dispatch={dispatch} currentTool={currentTool} />
+                  )}
+                  
+                  {/* Drawing preview for new shapes */}
+                  {drawingShape && (
+                    <div 
+                      className="absolute pointer-events-none"
+                      style={{ 
+                        left: drawingShape.x! * scale, 
+                        top: drawingShape.y! * scale, 
+                        width: drawingShape.width! * scale, 
+                        height: drawingShape.height! * scale, 
+                        border: '2px dashed #3B82F6', 
+                        backgroundColor: '#3B82F630', 
+                        borderRadius: drawingShape.type === 'circle' ? '50%' : `${drawingShape.cornerRadius || 0}px` 
+                      }} 
+                    />
+                  )}
+                  
+                  {/* Text elements */}
+                  {layerVisibility.text && (
+                    <AdvancedTextLayer textElements={currentPageTextElements} selectedElementId={selectedElementId} selectedElementIds={selectedElementIds} scale={scale} page={currentPage} dispatch={dispatch} currentTool={currentTool} />
+                  )}
+                  
+                  {/* Image elements */}
+                  {layerVisibility.images && (
+                    <ImageLayer imageElements={currentPageImageElements} selectedElementId={selectedElementId} selectedElementIds={selectedElementIds} scale={scale} page={currentPage} dispatch={dispatch} currentTool={currentTool} />
+                  )}
+                  
+                  {/* Freeform drawing elements */}
+                  {layerVisibility.freeform && (
+                    <FreeformLayer 
+                      elements={currentPageFreeformElements}
+                      currentPage={currentPage}
+                      scale={scale}
+                      isDrawing={currentTool === 'freeform'}
+                      brushSettings={{
+                        color: toolSettings.freeform?.color || '#000000',
+                        opacity: toolSettings.freeform?.opacity || 1,
+                        brushSize: toolSettings.freeform?.brushSize || 3,
+                        smoothing: toolSettings.freeform?.smoothing || 'medium'
+                      }}
+                      selectedElementIds={selectedElementIds}
+                      onElementsChange={handleFreeformElementsChange}
+                      onElementSelect={handleFreeformElementSelect}
+                    />
+                  )}
+                  
+                  {/* Text extraction overlay for inline editing */}
+                  {layerVisibility.textExtraction && (
+                    <TextExtractionLayer page={currentPage} textRegions={currentPageTextRegions} scale={scale} rotation={rotation} onRegionClick={handleTextRegionClick} showRegions={currentTool === "inlineEdit"} />
+                  )}
+                </div>
+                {inlineEditingRegion && <InlineTextEditor textRegion={inlineEditingRegion} onSave={handleInlineTextSave} onCancel={handleInlineTextCancel} scale={scale} rotation={rotation} detectedFonts={allDetectedFonts} />}
               </div>
-              {inlineEditingRegion && <InlineTextEditor textRegion={inlineEditingRegion} onSave={handleInlineTextSave} onCancel={handleInlineTextCancel} scale={scale} rotation={rotation} detectedFonts={allDetectedFonts} />}
             </div>
           ) : (
             <Card className="w-full max-w-md"><CardContent className="pt-6 text-center"><FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" /><h3>No PDF Loaded</h3><p className="text-muted-foreground">Upload a PDF file to get started.</p><Button className="mt-4" onClick={() => fileInputRef.current?.click()}><Upload className="h-4 w-4 mr-2" />Upload PDF</Button></CardContent></Card>
