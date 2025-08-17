@@ -102,6 +102,10 @@ Core class handling PDF document manipulation using pdf-lib and PDF.js libraries
 - Maintain clean separation between UI components and business logic
 - Test thoroughly across different browsers and device sizes
 
+## UI/UX Notes
+
+- Improved toolbar tool visibility and contrast. Inactive tool buttons now have a subtle white background and light shadow to stand clear over the PDF canvas, while active tools remain high-contrast. Tool dropdown panels use a solid background, border, and elevated shadow with increased z-index for readability. See `client/src/components/tool-panels/ToolDropdown.tsx`.
+
 ## Build & Deploy
 
 ```bash

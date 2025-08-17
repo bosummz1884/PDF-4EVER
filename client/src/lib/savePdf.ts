@@ -1,7 +1,7 @@
 // src/lib/savePdf.ts
 
-// CORRECTED: Imported RotationTypes from pdf-lib and our custom ImageElement type
-import { PDFDocument, StandardFonts, rgb, Color, RotationTypes } from "pdf-lib";
+// Import helpers from pdf-lib
+import { PDFDocument, StandardFonts, rgb, Color, degrees } from "pdf-lib";
 import {
   Annotation,
   TextElement,
@@ -162,8 +162,8 @@ export async function savePdfWithAnnotations(
         y: pageHeight - img.y - img.height,
         width: img.width,
         height: img.height,
-        // CORRECTED: Used the RotationTypes enum from pdf-lib
-        rotate: { type: RotationTypes.Degrees, angle: -img.rotation },
+        // Use pdf-lib helper to rotate images. Negative angle to convert from top-left to bottom-left coords.
+        rotate: degrees(-img.rotation),
         opacity: img.opacity ?? 1,
       });
       processedElements++;

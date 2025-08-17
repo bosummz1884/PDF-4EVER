@@ -379,3 +379,27 @@ This task breakdown provides a clear roadmap for developing your PDF editor whil
   - [x] Add thumbnail toggle button with grid view of all pages
   - [x] Implement click-to-navigate functionality in thumbnail view
   - [x] Add visual indicators for current page in thumbnail grid
+
+- [x] **T4.10** Improve tool visibility and contrast in toolbar
+  - [x] Enhance active/inactive states for tool buttons to improve contrast
+  - [x] Add subtle background and shadow to inactive tool buttons for separation
+  - [x] Increase dropdown panel visibility with solid background, border, and shadow
+  - [x] Raise dropdown z-index to ensure it layers above canvas and toolbar
+  - **Files Modified**: `client/src/components/tool-panels/ToolDropdown.tsx`
+  - **Reason**: Improve clarity of selected tools against varying page backgrounds and ensure dropdown readability
+
+- [x] Fix exported PDF image rotation
+  - **Problem**: Images with rotation were not rotated in the saved PDF
+  - **Solution**: Use `degrees()` from pdf-lib for `rotate` instead of non-existent `RotationTypes`
+  - **Files Modified**: `client/src/lib/savePdf.ts`
+
+- [x] Clean up savePDF logic to avoid unintended whiteouts and stale state
+  - **Problem**: `savePDF()` injected whiteout blocks from inline edit regions heuristically; freeform drawings could be stale due to missing dep
+  - **Solution**: Remove auto-injection based on `extractedTextRegions`; add `freeformElements` to dependency array
+  - **Files Modified**: `client/src/features/pdf-editor/PDFEditorContext.tsx`
+
+- [ ] Follow-ups (Accessibility & Theming)
+  - [ ] Verify hover/focus states have sufficient contrast and visible focus rings
+  - [ ] Audit dark mode styling for tool buttons and dropdown panels
+  - [ ] Add ARIA attributes to tool buttons and dropdown triggers where applicable
+  - [ ] Test high-contrast/Windows settings for sufficient visibility

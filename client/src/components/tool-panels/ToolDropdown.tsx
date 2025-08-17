@@ -44,7 +44,11 @@ export const ToolDropdown: React.FC<ToolDropdownProps> = ({
         variant={isActive ? "default" : "outline"}
         size="sm"
         onClick={handleToolClick}
-        className="flex items-center gap-1"
+        className={`flex items-center gap-1 ${
+          // reason: Improve contrast of inactive buttons against white/gray backgrounds
+          // by giving them a subtle white bg and light shadow. Keep active buttons filled.
+          isActive ? '' : 'bg-white shadow-[0_1px_2px_rgba(0,0,0,0.06)]'
+        }`}
       >
         {icon}
         <span className="text-xs">{label}</span>
@@ -60,7 +64,10 @@ export const ToolDropdown: React.FC<ToolDropdownProps> = ({
           variant={isActive ? "default" : "outline"}
           size="sm"
           onClick={handleToolClick}
-          className="flex items-center gap-1 rounded-r-none border-r-0"
+          className={`flex items-center gap-1 rounded-r-none border-r-0 ${
+            // reason: Add subtle background/shadow only when inactive so active stays high-contrast
+            isActive ? '' : 'bg-white shadow-[0_1px_2px_rgba(0,0,0,0.06)]'
+          }`}
         >
           {icon}
           <span className="text-xs">{label}</span>
@@ -71,7 +78,10 @@ export const ToolDropdown: React.FC<ToolDropdownProps> = ({
           <Button
             variant={isActive ? "default" : "outline"}
             size="sm"
-            className="px-1 rounded-l-none"
+            className={`px-1 rounded-l-none ${
+              // reason: Match main button; only add bg/shadow when inactive
+              isActive ? '' : 'bg-white shadow-[0_1px_2px_rgba(0,0,0,0.06)]'
+            }`}
           >
             <ChevronDown className="h-3 w-3" />
           </Button>
@@ -80,8 +90,9 @@ export const ToolDropdown: React.FC<ToolDropdownProps> = ({
       
       <DropdownMenuContent 
         align="start" 
-        className="w-auto min-w-[300px] p-3"
-        sideOffset={5}
+        // reason: Make panel clearly visible over the PDF: solid background, border, and stronger shadow.
+        className="z-50 w-auto min-w-[300px] p-3 bg-white/95 backdrop-blur-md border shadow-xl rounded-md"
+        sideOffset={8}
       >
         <div className="space-y-2">
           <div className="text-sm font-medium text-muted-foreground border-b pb-2">

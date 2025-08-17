@@ -532,19 +532,8 @@ export function PDFEditorProvider({ children }: { children: ReactNode }) {
       const allAnnotations = Object.values(state.annotations).flat();
       const allTextElements = Object.values(state.textElements).flat();
       const allWhiteoutBlocks = Object.values(state.whiteoutBlocks).flat();
-      Object.values(state.extractedTextRegions).flat().forEach(region => {
-          if (region.text !== region.originalFontInfo?.fontName) { // A simple check if text was edited
-              allWhiteoutBlocks.push({
-                  id: `whiteout-${region.id}`,
-                  page: region.page,
-                  x: region.x,
-                  y: region.y,
-                  width: region.width,
-                  height: region.height,
-                  color: '#FFFFFF' // Assume white background
-              });
-          }
-      });
+      // NOTE: Do not auto-inject whiteouts from inline editing regions here.
+      // If inline edits require whiteouts, the UI/tool should create explicit whiteout blocks.
       
       const allImageElements = Object.values(state.imageElements).flat();
       const allFreeformElements = Object.values(state.freeformElements).flat();
@@ -578,6 +567,7 @@ export function PDFEditorProvider({ children }: { children: ReactNode }) {
     state.whiteoutBlocks,
     state.fileName,
     state.imageElements,
+    state.freeformElements, // include freeform to avoid stale drawings on save
   ]); // 👈 Dependencies for savePDF
 
   const contextValue = {
