@@ -101,9 +101,17 @@ export function PageNavigationControls({
   };
 
   // Keyboard navigation
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.target === document.activeElement) return; // Don't interfere with input focus
-    
+  // reason: Document-level listeners use the native `KeyboardEvent`, not React's synthetic event.
+  const handleKeyDown = (e: KeyboardEvent) => {
+    // Don't intercept when typing in inputs/textareas or contenteditable elements
+    const target = e.target as HTMLElement | null;
+    if (
+      target &&
+      (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+    ) {
+      return;
+    }
+
     switch (e.key) {
       case 'ArrowLeft':
         if (!e.shiftKey) {

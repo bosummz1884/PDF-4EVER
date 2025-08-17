@@ -14,6 +14,8 @@ import {
   EditorTool,
   TextRegion,
 } from "../../types/pdf-types"; // Import the unified action type
+// T2.2: Font recognition imports
+import { fontRecognitionService } from "@/services/fontRecognitionService";
 import { getDocument, RenderTask, PDFDocumentProxy } from "pdfjs-dist";
 import { toolRegistry } from "../../components/tool-panels/toolRegistry";
 import "@/lib/pdfWorker";
@@ -442,6 +444,8 @@ interface PDFEditorContextType {
   loadPDF: (file: File) => Promise<void>;
   renderPage: (pageNumber?: number) => Promise<void>;
   savePDF: () => Promise<void>;
+  // T2.2: expose font analysis for UI triggers
+  analyzeFonts: () => Promise<void>;
 }
 
 const PDFEditorContext = createContext<PDFEditorContextType | undefined>(
@@ -570,6 +574,21 @@ export function PDFEditorProvider({ children }: { children: ReactNode }) {
     state.freeformElements, // include freeform to avoid stale drawings on save
   ]); // 👈 Dependencies for savePDF
 
+  // T2.2: Analyze fonts across all pages and store results in state
+  const analyzeFonts = useCallback(async () => {
+    // reason: Provide a single entry-point to run font analysis on demand
+    if (!state.pdfDocument) return;
+    try {
+      const results = await fontRecognitionService.analyzePDFFonts(state.pdfDocument);
+      // Dispatch detected fonts per page without interfering with text extraction (T2.3)
+      for (const r of results) {
+        dispatch({ type: "SET_DETECTED_FONTS", payload: { page: r.page, fonts: r.fonts } });
+      }
+    } catch (err) {
+      console.error("Font analysis failed", err);
+    }
+  }, [state.pdfDocument]);
+
   const contextValue = {
     state,
     dispatch,
@@ -578,6 +597,7 @@ export function PDFEditorProvider({ children }: { children: ReactNode }) {
     loadPDF,
     renderPage,
     savePDF,
+    analyzeFonts,
   };
   return (
     <PDFEditorContext.Provider value={contextValue}>

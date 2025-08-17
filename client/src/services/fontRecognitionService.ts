@@ -1,4 +1,4 @@
-import { getDocument, PDFDocumentProxy } from "pdfjs-dist";
+import type { PDFDocumentProxy } from "pdfjs-dist";
 import { DetectedFont, FontRecognitionResult, TextRegion } from "@/types/pdf-types";
 
 export class FontRecognitionService {
@@ -17,6 +17,7 @@ export class FontRecognitionService {
     return FontRecognitionService.instance;
   }
 
+  // Analyze fonts across all pages and return per-page results
   async analyzePDFFonts(pdfDocument: PDFDocumentProxy): Promise<FontRecognitionResult[]> {
     const results: FontRecognitionResult[] = [];
     
@@ -124,56 +125,86 @@ export class FontRecognitionService {
     weight: "normal" | "bold";
     styleInfo: "normal" | "italic";
   } {
-    // Handle PDF.js internal font names (e.g., "g_d0_f1")
-    let family = style?.fontFamily || "Unknown";
-    let weight: "normal" | "bold" = "normal";
-    let styleInfo: "normal" | "italic" = "normal";
+    // reason: Normalize disparate PDF font identifiers to canonical families and infer style/weight
+    let rawFamily = (style?.fontFamily || "Unknown").replace(/['"]/g, '').split(',')[0].trim();
+    let familyLower = rawFamily.toLowerCase();
 
-    // Clean up font family name
-    family = family.replace(/['"]/g, '').split(',')[0].trim();
+    // Normalize common vendor suffixes/prefixes and weight/style descriptors often embedded in names
+    const cleanup = (s: string) => s
+      .replace(/[-_]?mt\b/gi, '')
+      .replace(/[-_]?ps\b/gi, '')
+      .replace(/[-_]?std\b/gi, '')
+      .replace(/[-_]?pro\b/gi, '')
+      .replace(/[-_]?lt\b/gi, '')
+      .replace(/[-_]?roman\b/gi, '')
+      .replace(/[-_]?regular\b/gi, '')
+      .replace(/[-_]?book\b/gi, '')
+      .replace(/[-_]?medium\b/gi, '')
+      .replace(/[-_]?light\b/gi, '')
+      .replace(/[-_]?ultra(light)?\b/gi, '')
+      .replace(/[-_]?black\b/gi, '')
+      .replace(/[-_]?heavy\b/gi, '')
+      .replace(/[-_]?bold\b/gi, '')
+      .replace(/[-_]?italic\b/gi, '')
+      .replace(/[-_]?oblique\b/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim();
 
-    // Extract weight and style from font name or style
     const nameLower = fontName.toLowerCase();
-    const familyLower = family.toLowerCase();
+    const normalizedFamilyLower = cleanup(familyLower);
 
-    // Check for bold
-    if (nameLower.includes('bold') || familyLower.includes('bold') || 
-        nameLower.includes('heavy') || familyLower.includes('heavy')) {
-      weight = "bold";
-    }
-
-    // Check for italic
-    if (nameLower.includes('italic') || familyLower.includes('italic') ||
-        nameLower.includes('oblique') || familyLower.includes('oblique')) {
-      styleInfo = "italic";
-    }
-
-    // Handle common PDF font mappings
+    // Canonical mappings to well-known families
     const fontMappings: Record<string, string> = {
       'helvetica': 'Helvetica',
       'arial': 'Arial',
       'times': 'Times New Roman',
+      'times new roman': 'Times New Roman',
       'courier': 'Courier New',
+      'courier new': 'Courier New',
       'georgia': 'Georgia',
-      'verdana': 'Verdana'
+      'verdana': 'Verdana',
+      'tahoma': 'Tahoma',
+      'garamond': 'Garamond',
+      'palatino': 'Palatino',
+      'bookman': 'Bookman',
+      'avant garde': 'Avant Garde'
     };
 
-    const mappedFamily = fontMappings[familyLower] || family;
+    let canonicalFamily = fontMappings[normalizedFamilyLower] || cleanup(rawFamily);
+
+    // Infer weight
+    let weight: "normal" | "bold" = (
+      /\b(bold|heavy|black|semibold|demibold|medium)\b/.test(nameLower) ||
+      /\b(bold|heavy|black|semibold|demibold|medium)\b/.test(familyLower)
+    ) ? "bold" : "normal";
+
+    // Infer style
+    let styleInfo: "normal" | "italic" = (
+      /\b(italic|oblique)\b/.test(nameLower) ||
+      /\b(italic|oblique)\b/.test(familyLower)
+    ) ? "italic" : "normal";
 
     return {
-      family: mappedFamily,
+      family: canonicalFamily,
       weight,
       styleInfo
     };
   }
 
   private getFallbackFont(fontFamily: string): string {
+    // reason: Provide a primary near-equivalent fallback for common families
     const fallbackMappings: Record<string, string> = {
       'Helvetica': 'Arial',
+      'Arial': 'Helvetica',
       'Times': 'Times New Roman',
+      'Times New Roman': 'Times',
       'Courier': 'Courier New',
+      'Courier New': 'Courier',
       'Palatino': 'Georgia',
-      'Optima': 'Verdana'
+      'Garamond': 'Georgia',
+      'Optima': 'Verdana',
+      'Tahoma': 'Verdana',
+      'Verdana': 'Tahoma'
     };
 
     return fallbackMappings[fontFamily] || 'Arial';
@@ -185,17 +216,22 @@ export class FontRecognitionService {
   }
 
   private calculateFontConfidence(fontFamily: string, originalName: string): number {
-    // Higher confidence for system fonts and recognizable names
-    if (this.systemFonts.has(fontFamily)) return 0.9;
-    if (fontFamily !== "Unknown") return 0.7;
-    return 0.3;
+    // reason: Weigh recognizability, system availability, and cleanliness of the normalized name
+    const isSystem = this.systemFonts.has(fontFamily);
+    const cleanNameScore = /[a-z]/i.test(fontFamily) ? 0.2 : 0.0; // basic sanity of readable name
+    const canonicalScore = (fontFamily !== 'Unknown') ? 0.4 : 0.0;
+    const systemScore = isSystem ? 0.3 : 0.0;
+    const bonus = /[-_]/.test(originalName) ? 0.0 : 0.1; // fewer artifacts in original name
+    return Math.min(canonicalScore + systemScore + cleanNameScore + bonus, 0.95);
   }
 
   private calculateConfidence(fonts: DetectedFont[]): number {
     if (fonts.length === 0) return 0;
-    
-    const avgConfidence = fonts.reduce((sum, font) => sum + font.confidence, 0) / fonts.length;
-    return Math.min(avgConfidence + (fonts.length > 1 ? 0.1 : 0), 1.0);
+    // reason: Combine per-font confidence with usage frequency to get page-level confidence
+    const totalInstances = fonts.reduce((sum, f) => sum + (f.instances || 0), 0) || fonts.length;
+    const weighted = fonts.reduce((sum, f) => sum + (f.confidence * ((f.instances || 1) / totalInstances)), 0);
+    const diversityPenalty = (new Set(fonts.map(f => f.fontFamily)).size > 8) ? 0.05 : 0;
+    return Math.max(0, Math.min(1, weighted - diversityPenalty));
   }
 
   async matchSystemFont(detectedFont: DetectedFont): Promise<string> {
@@ -239,30 +275,33 @@ export class FontRecognitionService {
    */
   public findBestFontMatch(targetFontFamily: string, detectedFonts: DetectedFont[]): DetectedFont | null {
     if (!detectedFonts.length) return null;
-    
+    const norm = (s: string) => s.replace(/['"]/g, '').toLowerCase();
+    const target = norm(targetFontFamily);
+
     // Exact match first
-    let exactMatch = detectedFonts.find(font => 
-      font.fontFamily.toLowerCase() === targetFontFamily.toLowerCase()
-    );
+    let exactMatch = detectedFonts.find(font => norm(font.fontFamily) === target);
     if (exactMatch) return exactMatch;
     
     // Partial match (contains)
-    let partialMatch = detectedFonts.find(font => 
-      font.fontFamily.toLowerCase().includes(targetFontFamily.toLowerCase()) ||
-      targetFontFamily.toLowerCase().includes(font.fontFamily.toLowerCase())
-    );
+    let partialMatch = detectedFonts.find(font => {
+      const f = norm(font.fontFamily);
+      return f.includes(target) || target.includes(f);
+    });
     if (partialMatch) return partialMatch;
     
     // Fallback match
-    let fallbackMatch = detectedFonts.find(font => 
-      font.fallbackFont?.toLowerCase() === targetFontFamily.toLowerCase()
-    );
+    let fallbackMatch = detectedFonts.find(font => font.fallbackFont && norm(font.fallbackFont) === target);
     if (fallbackMatch) return fallbackMatch;
     
-    // Return highest confidence font as last resort
-    return detectedFonts.reduce((best, current) => 
-      current.confidence > best.confidence ? current : best
-    );
+    // Similarity-based choice as tie breaker
+    const scored = detectedFonts.map(f => ({ f, s: this.calculateFontSimilarity({
+      // construct a lightweight DetectedFont-like shape for scoring
+      id: 'target', fontName: targetFontFamily, fontFamily: targetFontFamily, fontSize: f.fontSize,
+      fontWeight: f.fontWeight, fontStyle: f.fontStyle, isSystemFont: false, fallbackFont: this.getFallbackFont(targetFontFamily),
+      instances: 1, pages: [], confidence: 0.5
+    } as DetectedFont, f) }));
+    scored.sort((a, b) => b.s - a.s || b.f.confidence - a.f.confidence);
+    return scored[0]?.f || null;
   }
 
   /**
@@ -309,24 +348,30 @@ export class FontRecognitionService {
    * Generate web font fallback stack
    */
   public generateFontStack(detectedFont: DetectedFont): string {
-    const stack = [detectedFont.fontFamily];
-    
-    if (detectedFont.fallbackFont && detectedFont.fallbackFont !== detectedFont.fontFamily) {
+    const name = detectedFont.fontFamily;
+    const lower = name.toLowerCase();
+    const stack: string[] = [name];
+
+    // Primary near-equivalent
+    if (detectedFont.fallbackFont && detectedFont.fallbackFont !== name) {
       stack.push(detectedFont.fallbackFont);
     }
-    
-    // Add generic fallbacks based on font characteristics
-    if (detectedFont.fontFamily.toLowerCase().includes('serif') || 
-        ['Times', 'Georgia', 'Garamond'].some(serif => detectedFont.fontFamily.includes(serif))) {
-      stack.push('serif');
-    } else if (detectedFont.fontFamily.toLowerCase().includes('mono') ||
-               ['Courier', 'Monaco', 'Consolas'].some(mono => detectedFont.fontFamily.includes(mono))) {
-      stack.push('monospace');
-    } else {
-      stack.push('sans-serif');
-    }
-    
-    return stack.map(font => font.includes(' ') ? `"${font}"` : font).join(', ');
+
+    // Platform-safe tiered fallbacks by category
+    const serif = ["Times New Roman", "Times", "Georgia", "Garamond", "serif"];
+    const mono = ["Consolas", "Monaco", "Courier New", "Courier", "monospace"];
+    const sans = ["Arial", "Helvetica", "Verdana", "Tahoma", "Trebuchet MS", "sans-serif"];
+
+    const isSerif = lower.includes('serif') || ["times", "georgia", "garamond", "palatino"].some(s => name.includes(s));
+    const isMono = lower.includes('mono') || ["courier", "consolas", "monaco"].some(s => lower.includes(s));
+
+    if (isSerif) stack.push(...serif.filter(f => f !== name));
+    else if (isMono) stack.push(...mono.filter(f => f !== name));
+    else stack.push(...sans.filter(f => f !== name));
+
+    // Deduplicate while preserving order
+    const deduped = Array.from(new Set(stack));
+    return deduped.map(font => font.includes(' ') ? `"${font}"` : font).join(', ');
   }
 
   public clearCache(): void {

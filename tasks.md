@@ -419,3 +419,18 @@ This task breakdown provides a clear roadmap for developing your PDF editor whil
   - [x] Delete stray debug logs
     - Removed: `client/src/features/components/debug.log`, `client/src/features/hooks/debug.log`, `client/src/features/pdf-editor/debug.log`
     - Reason: leftover debug artifacts; safe to delete
+  - [x] Remove unused PDF.js worker typing
+    - Removed: `client/src/types/pdfjs-worker.d.ts`
+    - Reason: legacy `?worker` typing no longer used; worker configured via `@/lib/pdfWorker` with static `/pdf.worker.js`
+  - [x] Register fontkit to remove pdf-lib warnings and subset fonts
+    - Files Modified: `client/src/lib/loadFonts.ts`
+    - Changes: Register `@pdf-lib/fontkit` via `PDFDocument.registerFontkit(fontkit)`; embed fonts with `{ subset: true }`
+    - Reason: Eliminates "register a fontkit instance" warnings and reduces output file size
+  
+- [ ] T2.2 Progress: Integrate font analysis entry-point and state wiring
+  - Files Modified: `client/src/features/pdf-editor/PDFEditorContext.tsx`, `client/src/services/fontRecognitionService.ts`
+  - Changes:
+    - Added `analyzeFonts()` to `PDFEditorContext` to run font analysis on demand and dispatch `SET_DETECTED_FONTS` per page
+    - Cleaned `fontRecognitionService` import to type-only and added clarifying comment on `analyzePDFFonts`
+  - Reason: Provide clear, explicit trigger for font recognition and ensure ESLint cleanliness before continuing T2.2 subtasks
+  - Next: Implement/refine font matching, fallback stack generation, and confidence scoring, then add tests with varied PDFs

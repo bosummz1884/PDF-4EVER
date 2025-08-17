@@ -1,6 +1,9 @@
 // client/src/lib/loadFonts.ts
 
 import { PDFDocument, PDFFont } from "pdf-lib";
+// Register fontkit to enable TrueType font parsing/subsetting in browser
+// reason: pdf-lib warns to register fontkit when embedding custom fonts; this removes warnings and reduces output size via subsetting
+import fontkit from "@pdf-lib/fontkit";
 
 // This list maps font names to the paths where the font files are located.
 const fontPaths: Record<string, string> = {
@@ -72,13 +75,18 @@ export async function loadAndEmbedFonts(
   pdfDoc: PDFDocument
 ): Promise<Record<string, PDFFont>> {
   const fontMap: Record<string, PDFFont> = {};
+  
+  // Ensure fontkit is registered (static API on PDFDocument)
+  // Safe to call multiple times; pdf-lib will ignore duplicates
+  (PDFDocument as any).registerFontkit?.(fontkit);
 
   for (const [fontName, path] of Object.entries(fontPaths)) {
     try {
       const response = await fetch(path);
       if (response.ok) {
         const fontBytes = await response.arrayBuffer();
-        const embeddedFont = await pdfDoc.embedFont(fontBytes);
+        // Enable subsetting to reduce file size and ensure glyph embedding
+        const embeddedFont = await pdfDoc.embedFont(fontBytes, { subset: true });
         fontMap[fontName] = embeddedFont;
       } else {
         console.warn(
