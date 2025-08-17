@@ -403,3 +403,19 @@ This task breakdown provides a clear roadmap for developing your PDF editor whil
   - [ ] Audit dark mode styling for tool buttons and dropdown panels
   - [ ] Add ARIA attributes to tool buttons and dropdown triggers where applicable
   - [ ] Test high-contrast/Windows settings for sufficient visibility
+
+## Discovered During Work - August 17, 2025
+
+- [x] Remove unused/duplicate files and legacy PDF worker setup
+  - [x] Deleted legacy worker setup in favor of `client/src/lib/pdfWorker.ts`
+    - Removed: `client/src/pdfSetup.ts`, `client/src/pdf-worker-loader.ts`
+    - Reason: not referenced; replaced by `@/lib/pdfWorker` imports in `PDFEditorContext.tsx` and `OCRService.ts`
+  - [x] Deleted duplicate signature service
+    - Removed: `client/src/pages/services/signatureService.ts`
+    - Reason: canonical version is `client/src/services/signatureService.ts` (used by Signature tools)
+  - [x] Deleted unused helpers/UI
+    - Removed: `client/src/pages/services/FontSelectorService.tsx`, `client/src/components/ui/toaster.tsx`
+    - Reason: no imports; fonts handled by `contexts/FontContext.tsx`, toasts by `components/ui/toast.tsx`
+  - [x] Delete stray debug logs
+    - Removed: `client/src/features/components/debug.log`, `client/src/features/hooks/debug.log`, `client/src/features/pdf-editor/debug.log`
+    - Reason: leftover debug artifacts; safe to delete
