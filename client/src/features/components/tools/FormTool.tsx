@@ -173,7 +173,7 @@ export const FormTool: React.FC<EditorToolProps> = ({
             <Checkbox
               id="required"
               checked={settings.required || false}
-              onCheckedChange={(checked) => onSettingChange("required", checked)}
+              onCheckedChange={(checked) => onSettingChange("required", Boolean(checked))}
             />
             <Label htmlFor="required" className="text-xs">Required field</Label>
           </div>
@@ -182,10 +182,22 @@ export const FormTool: React.FC<EditorToolProps> = ({
             <Checkbox
               id="readonly"
               checked={settings.readonly || false}
-              onCheckedChange={(checked) => onSettingChange("readonly", checked)}
+              onCheckedChange={(checked) => onSettingChange("readonly", Boolean(checked))}
             />
             <Label htmlFor="readonly" className="text-xs">Read-only</Label>
           </div>
+        </div>
+
+        {/* Reset to defaults to make Button import purposeful */}
+        <div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleFieldTypeChange(currentFieldType)}
+            title="Reset properties for current field type"
+          >
+            Reset to defaults
+          </Button>
         </div>
       </div>
 

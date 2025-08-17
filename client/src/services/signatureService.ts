@@ -21,8 +21,8 @@ export class SignatureService {
     return {
       dataUrl,
       hash: this.generateSignatureHash(dataUrl),
-      timestamp: new Date().toISOString(),
-      verified: true
+      // use numeric timestamp to match SignatureData type
+      timestamp: Date.now(),
     };
   }
 

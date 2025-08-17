@@ -431,6 +431,9 @@ export interface ToolSettings {
   groupName?: string;
   required?: boolean;
   readonly?: boolean;
+  // form-specific extras
+  placeholder?: string; // placeholder text for inputs
+  options?: string[]; // options for dropdown/radio
 }
 
 // =========================

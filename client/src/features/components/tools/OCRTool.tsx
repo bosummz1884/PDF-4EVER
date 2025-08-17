@@ -1,7 +1,7 @@
 // src/features/components/tools/OCRTool.tsx
 
 import React, { useState, useCallback, ChangeEvent, DragEvent } from "react";
-import { ocrService, OCR_LANGUAGES } from "../../services/OCRService";
+import { ocrService, OCR_LANGUAGES } from "../../../services/OCRService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -166,7 +166,7 @@ export const OCRToolComponent: React.FC = () => {
         <Select value={selectedLanguage} onValueChange={setSelectedLanguage} disabled={isProcessing}>
           <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
           <SelectContent>
-            {OCR_LANGUAGES.map(lang => (
+            {OCR_LANGUAGES.map((lang: { code: string; name: string }) => (
               <SelectItem key={lang.code} value={lang.code}>{lang.name}</SelectItem>
             ))}
           </SelectContent>

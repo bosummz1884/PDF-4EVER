@@ -434,3 +434,15 @@ This task breakdown provides a clear roadmap for developing your PDF editor whil
     - Cleaned `fontRecognitionService` import to type-only and added clarifying comment on `analyzePDFFonts`
   - Reason: Provide clear, explicit trigger for font recognition and ensure ESLint cleanliness before continuing T2.2 subtasks
   - Next: Implement/refine font matching, fallback stack generation, and confidence scoring, then add tests with varied PDFs
+
+- [x] Inline Editor UX: professional-grade behavior
+  - Files Modified: `client/src/features/components/InlineTextEditor.tsx`
+  - Changes:
+    - Removed confirmation toolbar (checkmark/X/Text/Preview) for streamlined editing
+    - Focus places caret at the end of the text instead of selecting all
+    - Auto-apply detected font stack from `detectedFonts` (uses `fontRecognitionService`)
+    - Save on Enter for both single-line and multiline; Shift+Enter inserts a newline
+    - Auto-save on blur (clicking away commits changes)
+    - Escape cancels the edit and restores original text
+    - Removed overflow warning tip; kept neutral minimal overlay
+  - Reason: Match pro editors (Acrobat/Sejda) with immediate-edit and unobtrusive UI

@@ -325,66 +325,16 @@ export default function PDFEditorContainer() {
           <Button variant="ghost" size="sm" onClick={() => dispatch({ type: "UNDO" })} disabled={historyIndex <= 0} title="Undo (Ctrl+Z)"> <Undo className="h-4 w-4" /> </Button>
           <Button variant="ghost" size="sm" onClick={() => dispatch({ type: "REDO" })} disabled={historyIndex >= history.length - 1} title="Redo (Ctrl+Y)"> <Redo className="h-4 w-4" /> </Button>
           <Separator orientation="vertical" className="h-6 mx-2" />
-          <Button onClick={savePDF} disabled={!pdfDocument}> <Save className="h-4 w-4 mr-2" /> Save PDF </Button>
+          {/* Move Save button into the in-canvas toolbar when a PDF is loaded */}
+          {!pdfDocument && (
+            <Button onClick={savePDF} disabled={!pdfDocument}> <Save className="h-4 w-4 mr-2" /> Save PDF </Button>
+          )}
         </div>
       </header>
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Horizontal Toolbar */}
-        {pdfDocument && (
-          <div className="bg-white border-b px-4 py-2 flex-shrink-0 overflow-x-auto">
-            <div className="flex items-center gap-4 min-w-fit">
-              {/* Tools Section with Dropdowns */}
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="text-sm font-medium text-gray-700 mr-2 whitespace-nowrap">Tools:</span>
-                <div className="flex items-center gap-1 flex-wrap">
-                  {Object.values(toolRegistry).map((tool) => (
-                    <ToolDropdown
-                      key={tool.name}
-                      toolName={tool.name}
-                      icon={tool.icon}
-                      label={tool.label}
-                      isActive={currentTool === tool.name}
-                      onToolSelect={handleToolSelect}
-                      settings={toolSettings[tool.name] || {}}
-                      onSettingChange={(key, value) => dispatch({ type: 'UPDATE_TOOL_SETTING', payload: { toolId: tool.name, key, value }})}
-                      editorState={state}
-                    />
-                  ))}
-                </div>
-              </div>
-              
-              {/* Inline Edit Mode Indicator */}
-              {currentTool === 'inlineEdit' && (
-                <>
-                  <Separator orientation="vertical" className="h-6 flex-shrink-0" />
-                  <div className="text-xs text-muted-foreground whitespace-nowrap">Inline Edit Mode - Click text regions to edit</div>
-                </>
-              )}
-              
-              {/* Layer Visibility Toggle */}
-              <Separator orientation="vertical" className="h-6 flex-shrink-0" />
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="text-xs text-gray-600 whitespace-nowrap">Layers:</span>
-                <div className="flex items-center gap-1 flex-wrap">
-                  {Object.entries(layerVisibility).map(([layer, visible]) => (
-                    <Button
-                      key={layer}
-                      variant={visible ? "default" : "outline"}
-                      size="sm"
-                      className="h-6 px-2 text-xs capitalize whitespace-nowrap"
-                      onClick={() => handleToggleLayer(layer as keyof typeof layerVisibility)}
-                      title={`Toggle ${layer} layer`}
-                    >
-                      {layer}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Horizontal Toolbar is now rendered inside the PDF canvas container to keep within document bounds */}
         
-        {/* Font Style Panel for Inline Edit Mode */}
+        {/* Font Style Panel for Inline Edit Mode (kept full-width but below header). If desired, this can also be moved in-canvas later. */}
         {pdfDocument && currentTool === "inlineEdit" && (
           <div className="bg-gray-50 border-b px-4 py-2 flex-shrink-0 overflow-x-auto">
             <div className="flex items-center gap-4 min-w-fit">
@@ -411,7 +361,76 @@ export default function PDFEditorContainer() {
         
         <main className="flex-1 flex justify-center overflow-auto p-8 bg-gray-100" onMouseUp={handleMouseUp}>
           {pdfDocument ? (
-            <div className="relative shadow-2xl my-auto" onMouseDown={handleMouseDown} onMouseMove={handleMouseMove}>
+            <div className="relative shadow-2xl my-auto pt-14" onMouseDown={handleMouseDown} onMouseMove={handleMouseMove}>
+              {/* In-canvas toolbar: positioned over the PDF canvas and constrained to its width */}
+              <div
+                className="absolute top-2 left-1/2 -translate-x-1/2 z-20 w-full px-2"
+                // comments: Placing the toolbar here ensures it stays within the PDF bounds.
+                onMouseDown={(e) => e.stopPropagation()}
+                onMouseUp={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="bg-white/95 backdrop-blur border rounded-md shadow-md overflow-x-auto whitespace-nowrap">
+                  <div className="flex items-center gap-4 p-2 min-w-fit">
+                    {/* Tools Section with Dropdowns */}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-sm font-medium text-gray-700 mr-2 whitespace-nowrap">Tools:</span>
+                      <div className="flex items-center gap-1 flex-wrap">
+                        {Object.values(toolRegistry).map((tool) => (
+                          <ToolDropdown
+                            key={tool.name}
+                            toolName={tool.name}
+                            icon={tool.icon}
+                            label={tool.label}
+                            isActive={currentTool === tool.name}
+                            onToolSelect={handleToolSelect}
+                            settings={toolSettings[tool.name] || {}}
+                            onSettingChange={(key, value) => dispatch({ type: 'UPDATE_TOOL_SETTING', payload: { toolId: tool.name, key, value }})}
+                            editorState={state}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Inline Edit Mode Indicator */}
+                    {currentTool === 'inlineEdit' && (
+                      <>
+                        <Separator orientation="vertical" className="h-6 flex-shrink-0" />
+                        <div className="text-xs text-muted-foreground whitespace-nowrap">Inline Edit Mode - Click text regions to edit</div>
+                      </>
+                    )}
+
+                    {/* Layer Visibility Toggle */}
+                    <Separator orientation="vertical" className="h-6 flex-shrink-0" />
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-xs text-gray-600 whitespace-nowrap">Layers:</span>
+                      <div className="flex items-center gap-1 flex-wrap">
+                        {Object.entries(layerVisibility).map(([layer, visible]) => (
+                          <Button
+                            key={layer}
+                            variant={visible ? "default" : "outline"}
+                            size="sm"
+                            className="h-6 px-2 text-xs capitalize whitespace-nowrap"
+                            onClick={() => handleToggleLayer(layer as keyof typeof layerVisibility)}
+                            title={`Toggle ${layer} layer`}
+                          >
+                            {layer}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Save PDF within bounds */}
+                    <Separator orientation="vertical" className="h-6 flex-shrink-0" />
+                    <div className="flex items-center">
+                      <Button onClick={savePDF} disabled={!pdfDocument} size="sm">
+                        <Save className="h-4 w-4 mr-2" /> Save PDF
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <canvas ref={canvasRef} className="block" />
               <div className="absolute inset-0 pointer-events-none">
                 {/* Whiteout blocks - render first so they appear behind other elements */}

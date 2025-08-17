@@ -98,10 +98,21 @@ export const FormToolComponent: React.FC<EditorToolProps & { compact?: boolean }
         <div className="flex items-center gap-1">
           <Checkbox
             checked={settings.required || false}
-            onCheckedChange={(checked) => onSettingChange("required", checked)}
+            onCheckedChange={(checked) => onSettingChange("required", Boolean(checked))}
           />
           <span className="text-xs text-muted-foreground">Required</span>
         </div>
+
+        {/* Reset to defaults */}
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => handleFieldTypeChange(currentFieldType)}
+          className="h-8"
+          title="Reset size and defaults for current field type"
+        >
+          Reset
+        </Button>
       </div>
     );
   }
@@ -219,13 +230,25 @@ export const FormToolComponent: React.FC<EditorToolProps & { compact?: boolean }
           </div>
         </div>
 
+        {/* Reset to defaults */}
+        <div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleFieldTypeChange(currentFieldType)}
+            title="Reset properties for current field type"
+          >
+            Reset to defaults
+          </Button>
+        </div>
+
         {/* Field Options */}
         <div className="space-y-2">
           <div className="flex items-center space-x-2">
             <Checkbox
               id="required"
               checked={settings.required || false}
-              onCheckedChange={(checked) => onSettingChange("required", checked)}
+              onCheckedChange={(checked) => onSettingChange("required", Boolean(checked))}
             />
             <Label htmlFor="required" className="text-xs">Required field</Label>
           </div>
@@ -234,7 +257,7 @@ export const FormToolComponent: React.FC<EditorToolProps & { compact?: boolean }
             <Checkbox
               id="readonly"
               checked={settings.readonly || false}
-              onCheckedChange={(checked) => onSettingChange("readonly", checked)}
+              onCheckedChange={(checked) => onSettingChange("readonly", Boolean(checked))}
             />
             <Label htmlFor="readonly" className="text-xs">Read-only</Label>
           </div>
