@@ -366,6 +366,46 @@ export interface FontInfo {
   variants?: string[];
 }
 
+export interface TableCell {
+  id: string;
+  text: string;
+  rowIndex: number;
+  colIndex: number;
+  rowSpan: number;
+  colSpan: number;
+  boundingBox: {
+    x0: number;
+    y0: number;
+    x1: number;
+    y1: number;
+  };
+  confidence: number;
+}
+
+export interface TableRow {
+  id: string;
+  cells: TableCell[];
+  boundingBox: {
+    x0: number;
+    y0: number;
+    x1: number;
+    y1: number;
+  };
+}
+
+export interface Table {
+  id: string;
+  page: number;
+  rows: TableRow[];
+  boundingBox: {
+    x0: number;
+    y0: number;
+    x1: number;
+    y1: number;
+  };
+  confidence: number;
+}
+
 export interface OCRResult {
   id: string;
   text: string;
@@ -377,6 +417,7 @@ export interface OCRResult {
     y1: number;
   };
   page: number;
+  isTable?: boolean;
 }
 
 export interface OCRLanguage {
