@@ -16,7 +16,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { usePDFEditor } from "@/features/pdf-editor/PDFEditorContext";
 import { OCRResult, TextElement } from "@/types/pdf-types";
-import { Upload, Copy, Zap, Eye, PlusSquare } from "lucide-react";
+import { Upload, Copy, Zap, Eye, PlusSquare, Edit2, Check, X } from "lucide-react";
+import { OCRTextEditor } from "@/features/components/OCRTextEditor";
 
 export const OCRToolComponent: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
   const { state, dispatch } = usePDFEditor();
@@ -26,6 +27,7 @@ export const OCRToolComponent: React.FC<{ compact?: boolean }> = ({ compact = fa
   const [progress, setProgress] = useState<number>(0);
   const [extractedText, setExtractedText] = useState<string>("");
   const [ocrResults, setOcrResults] = useState<OCRResult[]>([]);
+  const [editingResultId, setEditingResultId] = useState<string | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState<string>("eng");
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -34,6 +36,7 @@ export const OCRToolComponent: React.FC<{ compact?: boolean }> = ({ compact = fa
     (text: string, results: OCRResult[]) => {
       setExtractedText(text);
       setOcrResults(results);
+      setEditingResultId(null);
       // Dispatch results to the central state, associated with the current page
       dispatch({
         type: "SET_OCR_RESULTS",
@@ -42,6 +45,33 @@ export const OCRToolComponent: React.FC<{ compact?: boolean }> = ({ compact = fa
     },
     [dispatch, currentPage],
   );
+
+  const handleUpdateOCRText = useCallback((result: OCRResult, newText: string) => {
+    setOcrResults(prevResults => {
+      const updatedResults = ocrService.updateOCRText(prevResults, result.id, newText);
+      
+      // Update the extracted text
+      const updatedText = updatedResults.map(r => r.text).join(' ');
+      setExtractedText(updatedText);
+      
+      // Update the global state
+      dispatch({
+        type: "SET_OCR_RESULTS",
+        payload: { page: currentPage, results: updatedResults },
+      });
+      
+      return updatedResults;
+    });
+    setEditingResultId(null);
+  }, [currentPage, dispatch]);
+
+  const handleEditResult = useCallback((resultId: string) => {
+    setEditingResultId(resultId);
+  }, []);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingResultId(null);
+  }, []);
 
   const processFile = useCallback(async (file: File) => {
     setIsProcessing(true);
@@ -126,7 +156,7 @@ export const OCRToolComponent: React.FC<{ compact?: boolean }> = ({ compact = fa
     dispatch({ type: 'ADD_TEXT_ELEMENT', payload: { page: currentPage, element: newTextElement } });
     dispatch({ type: 'SAVE_TO_HISTORY' });
   };
-  
+
   const highlightOnCanvas = (result: OCRResult) => {
     if (canvasRef?.current) {
       ocrService.highlightTextOnCanvas(result, canvasRef);
@@ -239,51 +269,100 @@ export const OCRToolComponent: React.FC<{ compact?: boolean }> = ({ compact = fa
       {isProcessing && <Progress value={progress} className="w-full" />}
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      {extractedText && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex justify-between items-center">
-              Extracted Text
-              <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(extractedText)}>
-                <Copy className="h-3 w-3 mr-2" />Copy
+      {/* Extracted Text Section */}
+      <div className="space-y-2">
+        <div className="flex justify-between items-center">
+          <h4 className="text-sm font-medium">Extracted Text</h4>
+          {ocrResults.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigator.clipboard.writeText(extractedText)}
+                className="h-7 text-xs"
+              >
+                <Copy className="h-3 w-3 mr-1" /> Copy All
               </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Textarea value={extractedText} readOnly className="min-h-32 font-mono text-xs" />
-          </CardContent>
-        </Card>
-      )}
-
-      {ocrResults.length > 0 && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setEditingResultId(ocrResults[0]?.id || null)}
+                className="h-7 text-xs"
+              >
+                <Edit2 className="h-3 w-3 mr-1" /> Edit Text
+              </Button>
+            </div>
+          )}
+        </div>
+        
         <Card>
-          <CardHeader>
-              <CardTitle className="text-base">Detected Text Regions</CardTitle>
-          </CardHeader>
-          <CardContent>
-              <ScrollArea className="h-48">
-                  <div className="space-y-2">
-                      {ocrResults.map((result) => (
-                          <div key={result.id} className="flex items-center justify-between p-2 border rounded hover:bg-muted/50">
-                              <div className="flex-1">
-                                  <p className="text-sm font-medium">{result.text}</p>
-                                  <p className="text-xs text-muted-foreground">Confidence: {Math.round(result.confidence)}%</p>
-                              </div>
-                              <div className="flex gap-1">
-                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => highlightOnCanvas(result)} title="Highlight on page">
-                                      <Eye className="h-4 w-4" />
-                                  </Button>
-                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => addTextToPage(result)} title="Add as text box">
-                                      <PlusSquare className="h-4 w-4" />
-                                  </Button>
-                              </div>
-                          </div>
-                      ))}
+          <CardContent className="p-4 min-h-48 max-h-96 overflow-auto">
+            {ocrResults.length > 0 ? (
+              <div className="space-y-2">
+                {ocrResults.map((result) => (
+                  <div key={result.id} className="relative group">
+                    {editingResultId === result.id ? (
+                      <OCRTextEditor
+                        result={result}
+                        onSave={handleUpdateOCRText}
+                        onCancel={handleCancelEdit}
+                        scale={scale}
+                      />
+                    ) : (
+                      <div 
+                        className="p-2 rounded hover:bg-yellow-50/50 transition-colors cursor-pointer border border-transparent hover:border-blue-200"
+                        onClick={() => setEditingResultId(result.id)}
+                      >
+                        <div className="text-sm text-gray-800 break-words">
+                          {result.text}
+                        </div>
+                        <div className="mt-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              highlightOnCanvas(result);
+                            }}
+                          >
+                            <Eye className="h-3 w-3 mr-1" /> Highlight
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addTextToPage(result);
+                            }}
+                          >
+                            <PlusSquare className="h-3 w-3 mr-1" /> Add to Page
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-              </ScrollArea>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
+                {isProcessing ? (
+                  <div className="flex flex-col items-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-2"></div>
+                    <p>Processing OCR...</p>
+                  </div>
+                ) : (
+                  <p className="text-center">
+                    No text extracted yet. <br />
+                    Click 'Scan Current View' to extract text from the document.
+                  </p>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
-      )}
+      </div>
     </div>
   );
 };

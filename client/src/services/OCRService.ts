@@ -160,6 +160,31 @@ export class OCRService {
     }
   }
 
+  /**
+   * Updates the text of a specific OCR result
+   * @param results The current array of OCR results
+   * @param resultId The ID of the result to update
+   * @param newText The new text value
+   * @returns A new array with the updated result
+   */
+  public updateOCRText(
+    results: OCRResult[],
+    resultId: string,
+    newText: string
+  ): OCRResult[] {
+    return results.map(result => {
+      if (result.id === resultId) {
+        return {
+          ...result,
+          text: newText,
+          // Update confidence since this is a manual edit
+          confidence: 100 
+        };
+      }
+      return result;
+    });
+  }
+
   public highlightTextOnCanvas(
     result: OCRResult,
     canvasRef: React.RefObject<HTMLCanvasElement>
