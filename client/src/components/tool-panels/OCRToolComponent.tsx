@@ -39,6 +39,49 @@ export const OCRToolComponent: React.FC<{ compact?: boolean }> = ({ compact = fa
   const [isAreaSelecting, setIsAreaSelecting] = useState(false);
   const [selectedArea, setSelectedArea] = useState<BoundingBox | null>(null);
 
+  const performCanvasOCR = useCallback(async (area?: BoundingBox) => {
+    if (!canvasRef?.current) return;
+    
+    setIsProcessing(true);
+    setProgress(0);
+    setError(null);
+    setExtractedText("");
+    setOcrResults([]);
+    
+    try {
+      const canvas = canvasRef.current;
+      const imageData = canvas.toDataURL("image/png");
+      
+      // We can treat the canvas data as an image file for processing
+      const response = await fetch(imageData);
+      const blob = await response.blob();
+      const file = new File([blob], "canvas.png", { type: "image/png" });
+      
+      const result = await ocrService.performOCR(
+        file,
+        selectedLanguage,
+        currentPage,
+        state.totalPages,
+        (progress) => setProgress(progress),
+        {
+          area: area || undefined,
+          detectTables: true
+        }
+      );
+      
+      if (!result) {
+        throw new Error('OCR processing returned no results');
+      }
+      
+      handleOcrResult(result.ocrText, result.ocrResults);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred during OCR');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [canvasRef, currentPage, selectedLanguage, state.totalPages]);
+
+
   // Handle area selection
   const handleAreaSelected = useCallback((area: BoundingBox) => {
     setSelectedArea(area);
@@ -157,24 +200,26 @@ export const OCRToolComponent: React.FC<{ compact?: boolean }> = ({ compact = fa
 
     try {
       if (file.type === "application/pdf") {
-        const {
-          ocrText,
-          ocrResults,
-          previewUrl: pdfPreview,
-        } = await ocrService.performPDFOCR(file, selectedLanguage, setProgress);
-        handleOcrResult(ocrText, ocrResults);
-        if (pdfPreview) setPreviewUrl(pdfPreview);
+        const result = await ocrService.performPDFOCR(file, selectedLanguage, setProgress);
+        if (!result) {
+          throw new Error('Failed to process PDF with OCR');
+        }
+        handleOcrResult(result.ocrText, result.ocrResults);
+        if (result.previewUrl) setPreviewUrl(result.previewUrl);
       } else if (file.type.startsWith("image/")) {
         const url = URL.createObjectURL(file);
         setPreviewUrl(url);
-        const { ocrText, ocrResults } = await ocrService.performOCR(
+        const result = await ocrService.performOCR(
           file,
           selectedLanguage,
           1,
           1,
           setProgress,
         );
-        handleOcrResult(ocrText, ocrResults);
+        if (!result) {
+          throw new Error('Failed to process image with OCR');
+        }
+        handleOcrResult(result.ocrText, result.ocrResults);
       } else {
         throw new Error("Unsupported file type. Please upload an image or PDF.");
       }
@@ -197,46 +242,7 @@ export const OCRToolComponent: React.FC<{ compact?: boolean }> = ({ compact = fa
     if (file) processFile(file);
   };
 
-  const performCanvasOCR = useCallback(async (area?: BoundingBox) => {
-    if (!canvasRef?.current) return;
-    
-    setIsProcessing(true);
-    setProgress(0);
-    setError(null);
-    setExtractedText("");
-    setOcrResults([]);
-    
-    try {
-      const canvas = canvasRef.current;
-      const imageData = canvas.toDataURL("image/png");
-      
-      // We can treat the canvas data as an image file for processing
-      const response = await fetch(imageData);
-      const blob = await response.blob();
-      const file = new File([blob], "canvas.png", { type: "image/png" });
-      
-      const result = await ocrService.performOCR(
-        file,
-        selectedLanguage,
-        currentPage,
-        state.totalPages,
-        (progress) => setProgress(progress),
-        {
-          area: area || undefined,
-          detectTables: true
-        }
-      );
-      
-      if (result) {
-        handleOcrResult(result.ocrText, result.ocrResults);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unknown error occurred during OCR');
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [canvasRef, currentPage, selectedLanguage, state.totalPages, handleOcrResult]);
-
+  
   const addTextToPage = (result: OCRResult) => {
     const toolSettings = state.toolSettings.text;
     const newTextElement: TextElement = {
