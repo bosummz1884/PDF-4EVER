@@ -7,16 +7,79 @@ import { OCRResult, OCRLanguage, TableCell, TableRow, Table } from "@/types/pdf-
 import "@/lib/pdfWorker";
 
 export const OCR_LANGUAGES: OCRLanguage[] = [
+  // Western European Languages
   { code: "eng", name: "English" },
   { code: "spa", name: "Spanish" },
   { code: "fra", name: "French" },
   { code: "deu", name: "German" },
+  { code: "por", name: "Portuguese" },
+  { code: "ita", name: "Italian" },
+  { code: "nld", name: "Dutch" },
+  { code: "swe", name: "Swedish" },
+  { code: "nor", name: "Norwegian" },
+  { code: "dan", name: "Danish" },
+  { code: "fin", name: "Finnish" },
+  { code: "pol", name: "Polish" },
+  { code: "ron", name: "Romanian" },
+  
+  // Asian Languages
   { code: "chi_sim", name: "Chinese (Simplified)" },
+  { code: "chi_tra", name: "Chinese (Traditional)" },
   { code: "jpn", name: "Japanese" },
   { code: "kor", name: "Korean" },
+  { code: "tha", name: "Thai" },
+  { code: "vie", name: "Vietnamese" },
+  
+  // Cyrillic Script
   { code: "rus", name: "Russian" },
+  { code: "ukr", name: "Ukrainian" },
+  { code: "bul", name: "Bulgarian" },
+  { code: "srp", name: "Serbian" },
+  
+  // Middle Eastern Languages
   { code: "ara", name: "Arabic" },
-  { code: "por", name: "Portuguese" },
+  { code: "fas", name: "Persian" },
+  { code: "heb", name: "Hebrew" },
+  { code: "tur", name: "Turkish" },
+  
+  // Indian Subcontinent
+  { code: "hin", name: "Hindi" },
+  { code: "ben", name: "Bengali" },
+  { code: "tam", name: "Tamil" },
+  { code: "tel", name: "Telugu" },
+  { code: "kan", name: "Kannada" },
+  { code: "mal", name: "Malayalam" },
+  { code: "guj", name: "Gujarati" },
+  { code: "pan", name: "Punjabi" },
+  
+  // Other European
+  { code: "ell", name: "Greek" },
+  { code: "hun", name: "Hungarian" },
+  { code: "ces", name: "Czech" },
+  { code: "slv", name: "Slovenian" },
+  { code: "hrv", name: "Croatian" },
+  { code: "slk", name: "Slovak" },
+  
+  // African Languages
+  { code: "afr", name: "Afrikaans" },
+  { code: "swa", name: "Swahili" },
+  
+  // Additional Asian
+  { code: "ind", name: "Indonesian" },
+  { code: "msa", name: "Malay" },
+  { code: "fil", name: "Filipino" },
+  { code: "mya", name: "Burmese" },
+  
+  // Additional European
+  { code: "cat", name: "Catalan" },
+  { code: "eus", name: "Basque" },
+  { code: "glg", name: "Galician" },
+  
+  // Historical/Literary
+  { code: "lat", name: "Latin" },
+  { code: "swe_old", name: "Swedish (Old)" },
+  { code: "frm", name: "French (Middle)" },
+  { code: "enm", name: "English (Middle)" },
 ];
 
 interface TableDetectionOptions {

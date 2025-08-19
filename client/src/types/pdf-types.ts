@@ -31,15 +31,21 @@ export interface PDFEditorState {
   scale: number;
   rotation: number;
   isLoading: boolean;
+  isProcessingOCR: boolean;
+  ocrProgress: number;
+  ocrStatus: 'idle' | 'processing' | 'completed' | 'error';
+  ocrError: string | null;
   fileName: string;
   annotations: { [page: number]: Annotation[] };
   textElements: { [page: number]: TextElement[] };
   formFields: { [page: number]: FormField[] };
   whiteoutBlocks: { [page: number]: WhiteoutBlock[] };
   ocrResults: { [page: number]: OCRResult[] };
+  ocrLanguages: OCRLanguage[];
+  selectedOcrLanguage: string;
   selectedElementId: string | null;
   selectedElementIds: string[];
-  selectedElementType: "annotation" | "text" | "form" | "whiteout" | "image" | "textRegion" | "freeform" | null;
+  selectedElementType: "annotation" | "text" | "form" | "whiteout" | "image" | "textRegion" | "freeform" | "ocr" | null;
   currentTool: ToolType;
   toolSettings: Record<ToolType, ToolSettings>;
   history: Partial<PDFEditorState>[];
@@ -48,6 +54,8 @@ export interface PDFEditorState {
   imageElements: { [page: number]: ImageElement[] };
   extractedTextRegions: { [page: number]: TextRegion[] };
   detectedFonts: { [page: number]: DetectedFont[] };
+  ocrConfidenceThreshold: number;
+  lastOcrTimestamp: number | null;
   fontMatchingEnabled: boolean;
   signatureElements: { [page: number]: SignatureElement[] };
   freeformElements: { [page: number]: FreeformElement[] }; 
@@ -138,6 +146,12 @@ export type PDFEditorAction =
     }
   | { type: "DELETE_FREEFORM_ELEMENT"; payload: { page: number; id: string } }
   | { type: "SET_OCR_RESULTS"; payload: { page: number; results: OCRResult[] } }
+  | { type: "SET_OCR_LANGUAGES"; payload: OCRLanguage[] }
+  | { type: "SET_SELECTED_OCR_LANGUAGE"; payload: string }
+  | { type: "SET_OCR_PROGRESS"; payload: number }
+  | { type: "SET_OCR_STATUS"; payload: 'idle' | 'processing' | 'completed' | 'error' }
+  | { type: "SET_OCR_ERROR"; payload: string | null }
+  | { type: "SET_OCR_CONFIDENCE_THRESHOLD"; payload: number }
   | {
       type: "SET_EXTRACTED_TEXT_REGIONS";
       payload: { page: number; regions: TextRegion[] };
@@ -418,11 +432,19 @@ export interface OCRResult {
   };
   page: number;
   isTable?: boolean;
+  language?: string;
+  isSelected?: boolean;
+  lastModified?: number;
+  version?: number;
 }
 
 export interface OCRLanguage {
   code: string;
   name: string;
+  nativeName?: string;
+  isEnabled?: boolean;
+  isDownloaded?: boolean;
+  downloadSize?: number;
 }
 
 export interface SignatureData {
@@ -443,6 +465,21 @@ export interface SignaturePlacement {
 // =========================
 // Tooling & Settings Types
 // =========================
+
+export interface OCRSettings {
+  confidenceThreshold: number;
+  autoDetectLanguage: boolean;
+  preprocessImages: boolean;
+  detectTables: boolean;
+  preserveFormatting: boolean;
+  outputFormat: 'text' | 'hocr' | 'pdf' | 'tsv';
+  dpi: number;
+  preserveInterwordSpaces: boolean;
+  ocrEngineMode: 'legacy' | 'lstm' | 'default';
+  pageSegMode: 'auto' | 'single_block' | 'single_line' | 'single_word' | 'single_char' | 'sparse_text' | 'sparse_text_osd';
+  whitelist: string;
+  blacklist: string;
+}
 
 export interface ToolSettings {
   // Select
