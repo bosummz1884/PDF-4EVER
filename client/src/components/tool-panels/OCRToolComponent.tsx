@@ -111,6 +111,7 @@ export const OCRToolComponent: React.FC<{ compact?: boolean }> = ({ compact = fa
       cyrillic: { name: "Cyrillic Script", languages: [] },
       middleEastern: { name: "Middle Eastern", languages: [] },
       indian: { name: "Indian Subcontinent", languages: [] },
+      historical: { name: "Historical/Literary", languages: [] },
       other: { name: "Other Languages", languages: [] }
     };
 
