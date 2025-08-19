@@ -466,6 +466,15 @@ export interface SignaturePlacement {
 // Tooling & Settings Types
 // =========================
 
+export interface BoundingBox {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  page?: number;
+  rotation?: number;
+}
+
 export interface OCRSettings {
   confidenceThreshold: number;
   autoDetectLanguage: boolean;
@@ -479,6 +488,12 @@ export interface OCRSettings {
   pageSegMode: 'auto' | 'single_block' | 'single_line' | 'single_word' | 'single_char' | 'sparse_text' | 'sparse_text_osd';
   whitelist: string;
   blacklist: string;
+  scanMode: 'full-page' | 'selected-area' | 'auto';
+  selectedArea?: BoundingBox | null;
+  autoDetectTextRegions: boolean;
+  mergeAdjacentText: boolean;
+  minTextConfidence: number;
+  postProcessText: boolean;
 }
 
 export interface ToolSettings {
@@ -503,11 +518,10 @@ export interface ToolSettings {
   cornerRadius?: number;
   // Highlight
   opacity?: number;
-  style?: "solid" | "underline" | "strikethrough" | "squiggly";
-  blendMode?: "multiply" | "overlay" | "screen" | "normal";
-  // Freeform
-  brushSize?: number;
-  smoothing?: "none" | "low" | "medium" | "high";
+  highlightColor?: string;
+  // Whiteout
+  whiteoutMode?: "rectangle" | "freeform";
+  whiteoutColor?: string;
   // Eraser
   size?: number;
   // Image
@@ -532,6 +546,26 @@ export interface ToolSettings {
   // form-specific extras
   placeholder?: string; // placeholder text for inputs
   options?: string[]; // options for dropdown/radio
+  
+  // OCR Settings
+  confidenceThreshold?: number;
+  autoDetectLanguage?: boolean;
+  preprocessImages?: boolean;
+  detectTables?: boolean;
+  preserveFormatting?: boolean;
+  outputFormat?: 'text' | 'hocr' | 'pdf' | 'tsv';
+  dpi?: number;
+  preserveInterwordSpaces?: boolean;
+  ocrEngineMode?: 'legacy' | 'lstm' | 'default';
+  pageSegMode?: 'auto' | 'single_block' | 'single_line' | 'single_word' | 'single_char' | 'sparse_text' | 'sparse_text_osd';
+  whitelist?: string;
+  blacklist?: string;
+  scanMode?: 'full-page' | 'selected-area' | 'auto';
+  selectedArea?: BoundingBox | null;
+  autoDetectTextRegions?: boolean;
+  mergeAdjacentText?: boolean;
+  minTextConfidence?: number;
+  postProcessText?: boolean;
 }
 
 // =========================
@@ -576,9 +610,18 @@ export interface OCRToolProps {
   pdfDocument?: PDFDocumentProxy | null;
   canvasRef?: React.RefObject<HTMLCanvasElement>;
   currentPage?: number;
+  scale?: number;
   onTextDetected?: (results: OCRResult[]) => void;
-  onTextBoxCreate?: (x: number, y: number, text: string) => void;
   onTextExtracted?: (text: string) => void;
+  onAreaSelected?: (area: BoundingBox) => void;
+  onScanComplete?: (results: { text: string; results: OCRResult[] }) => void;
+  onError?: (error: Error) => void;
+  settings?: Partial<OCRSettings>;
+  showAreaSelector?: boolean;
+  enableMultiPageScan?: boolean;
+  onPageChange?: (page: number) => void;
+  onCancel?: () => void;
+  onSave?: (results: OCRResult[]) => void;
 }
 
 export interface SignatureToolProps {

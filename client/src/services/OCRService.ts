@@ -109,18 +109,35 @@ export class OCRService {
     return OCRService.instance;
   }
 
+  /**
+   * Performs OCR on the provided image data with optional area selection
+   */
   public async performOCR(
     imageData: Tesseract.ImageLike,
     language: string = "eng",
     pageNumber: number = 1,
     totalPages: number = 1,
     progressCallback?: (progress: number) => void,
-    detectTables: boolean = true
+    options: {
+      detectTables?: boolean;
+      area?: {
+        x0: number;
+        y0: number;
+        x1: number;
+        y1: number;
+      } | null;
+    } = {}
   ): Promise<{ 
     ocrText: string; 
     ocrResults: OCRResult[];
     tables?: Table[];
-  }> {
+  } | null> {
+    const { detectTables = true, area = null } = options;
+    
+    if (!imageData) {
+      throw new Error('No image data provided for OCR');
+    }
+
     const worker: Worker = await createWorker(language, 1, {
       logger: (m) => {
         if (m.status === "recognizing text" && progressCallback) {
@@ -132,49 +149,164 @@ export class OCRService {
     });
 
     try {
+      // Set page segmentation mode based on whether we're processing an area or full page
+      const pageSegMode = area ? PSM.SINGLE_BLOCK : PSM.AUTO;
+      
       await worker.setParameters({
-        tessedit_pageseg_mode: PSM.AUTO,
+        tessedit_pageseg_mode: pageSegMode,
+        preserve_interword_spaces: '1',
       });
 
-      const { data } = await worker.recognize(imageData);
+      // Process the image - crop if area is specified
+      let processedImage = imageData;
+      let adjustX = 0;
+      let adjustY = 0;
+      
+      if (area) {
+        // Validate area coordinates
+        if (area.x1 <= area.x0 || area.y1 <= area.y0) {
+          throw new Error('Invalid area coordinates');
+        }
+        
+        // Create a canvas to crop the image
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('Could not create canvas context');
+
+        // Handle different input types
+        if (imageData instanceof HTMLImageElement || 
+            imageData instanceof HTMLCanvasElement) {
+          // Calculate dimensions
+          const width = Math.round(area.x1 - area.x0);
+          const height = Math.round(area.y1 - area.y0);
+          
+          // Set canvas size to match the selected area
+          canvas.width = width;
+          canvas.height = height;
+          
+          // Draw only the selected area
+          ctx.drawImage(
+            imageData,
+            area.x0, area.y0, // source x, y
+            width, height,    // source width, height
+            0, 0,            // destination x, y
+            width, height    // destination width, height
+          );
+          
+          processedImage = canvas;
+          adjustX = area.x0;
+          adjustY = area.y0;
+        } else if (imageData instanceof ImageData) {
+          // For ImageData, we need to manually crop the pixel data
+          const sourceData = imageData.data;
+          const sourceWidth = imageData.width;
+          const sourceHeight = imageData.height;
+          
+          // Ensure area is within bounds
+          const x0 = Math.max(0, Math.floor(area.x0));
+          const y0 = Math.max(0, Math.floor(area.y0));
+          const x1 = Math.min(sourceWidth, Math.ceil(area.x1));
+          const y1 = Math.min(sourceHeight, Math.ceil(area.y1));
+          
+          const width = x1 - x0;
+          const height = y1 - y0;
+          
+          // Create new ImageData for the cropped area
+          const croppedData = new ImageData(width, height);
+          
+          // Copy pixel data
+          for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+              const sourceIndex = ((y0 + y) * sourceWidth + (x0 + x)) * 4;
+              const destIndex = (y * width + x) * 4;
+              
+              croppedData.data[destIndex] = sourceData[sourceIndex];
+              croppedData.data[destIndex + 1] = sourceData[sourceIndex + 1];
+              croppedData.data[destIndex + 2] = sourceData[sourceIndex + 2];
+              croppedData.data[destIndex + 3] = sourceData[sourceIndex + 3];
+            }
+          }
+          
+          processedImage = croppedData;
+          adjustX = x0;
+          adjustY = y0;
+        }
+      }
+
+      // Perform OCR on the processed image
+      const { data } = await worker.recognize(processedImage);
       const pageData = data as any; // Type assertion to handle Tesseract.js types
 
-      // Process regular text results
-      const ocrResults: OCRResult[] = ((pageData.words || []) as Word[])
-        .filter((word: Word) => word.text.trim() && (word.confidence || 0) > 30)
-        .map((word: Word, index: number) => {
+      // Process regular text results with coordinate adjustment for area selection
+      const ocrResults: OCRResult[] = [];
+      
+      if (pageData.words && Array.isArray(pageData.words)) {
+        (pageData.words as Word[]).forEach((word: Word, index: number) => {
+          if (!word.text?.trim() || (word.confidence || 0) <= 30) return;
+          
           const bbox = word.bbox as Bbox;
-          return {
-            id: `ocr-${pageNumber}-${index}`,
+          
+          // Skip words with invalid bounding boxes
+          if (bbox.x1 <= bbox.x0 || bbox.y1 <= bbox.y0) {
+            console.warn('Skipping word with invalid bounding box:', word);
+            return;
+          }
+          
+          // Adjust coordinates if we processed a selected area
+          const adjustedBbox = {
+            x0: bbox.x0 + adjustX,
+            y0: bbox.y0 + adjustY,
+            x1: bbox.x1 + adjustX,
+            y1: bbox.y1 + adjustY
+          };
+          
+          // Ensure coordinates are valid after adjustment
+          if (adjustedBbox.x1 <= adjustedBbox.x0 || adjustedBbox.y1 <= adjustedBbox.y0) {
+            console.warn('Skipping word with invalid adjusted bounding box:', word);
+            return;
+          }
+          
+          ocrResults.push({
+            id: `ocr-${pageNumber}-${index}-${Date.now()}`,
             text: word.text,
             confidence: word.confidence || 0,
-            boundingBox: {
-              x0: bbox.x0,
-              y0: bbox.y0,
-              x1: bbox.x1,
-              y1: bbox.y1,
-            },
+            boundingBox: adjustedBbox,
             page: pageNumber,
-            isTable: false
-          };
+            isTable: false,
+            language,
+            isSelected: false,
+            lastModified: Date.now(),
+            version: 1
+          });
         });
+      }
 
       // Detect tables if requested
       let tables: Table[] = [];
-      if (detectTables && pageData.lines && (pageData.lines as Line[]).length > 0) {
-        tables = this.detectTables(pageData.lines as Line[], pageNumber);
+      if (detectTables && pageData.lines && Array.isArray(pageData.lines) && pageData.lines.length > 0) {
+        try {
+          tables = this.detectTables(pageData.lines as Line[], pageNumber);
+        } catch (error) {
+          console.warn('Error detecting tables:', error);
+        }
       }
 
-      return { 
+      const result = { 
         ocrText: data.text || "", 
         ocrResults,
         tables: tables.length > 0 ? tables : undefined
       };
+
+      return result;
     } catch (error) {
-      console.error("OCR recognition failed:", error);
-      throw new Error("OCR recognition failed.");
+      console.error('Error during OCR processing:', error);
+      throw error;
     } finally {
-      await worker.terminate();
+      try {
+        await worker.terminate();
+      } catch (error) {
+        console.warn('Error terminating worker:', error);
+      }
     }
   }
 

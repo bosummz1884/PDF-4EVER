@@ -1,11 +1,13 @@
 // src/components/tool-panels/OCRToolComponent.tsx
 
-import React, { useState, useCallback, ChangeEvent, DragEvent } from "react";
+import React, { useState, useCallback, useMemo, ChangeEvent, DragEvent } from "react";
 import { ocrService, OCR_LANGUAGES } from "../../services/OCRService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -16,8 +18,10 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { usePDFEditor } from "@/features/pdf-editor/PDFEditorContext";
 import { OCRResult, TextElement } from "@/types/pdf-types";
-import { Upload, Copy, Zap, Eye, PlusSquare, Edit2, Check, X } from "lucide-react";
+import { Upload, Copy, Zap, Eye, PlusSquare, Edit2, Check, X, Search } from "lucide-react";
 import { OCRTextEditor } from "@/features/components/OCRTextEditor";
+import { OCRAreaSelector } from "@/features/components/OCRAreaSelector";
+import { BoundingBox } from "@/types/pdf-types";
 
 export const OCRToolComponent: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
   const { state, dispatch } = usePDFEditor();
@@ -29,8 +33,78 @@ export const OCRToolComponent: React.FC<{ compact?: boolean }> = ({ compact = fa
   const [ocrResults, setOcrResults] = useState<OCRResult[]>([]);
   const [editingResultId, setEditingResultId] = useState<string | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState<string>("eng");
+  const [languageSearch, setLanguageSearch] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isAreaSelecting, setIsAreaSelecting] = useState(false);
+  const [selectedArea, setSelectedArea] = useState<BoundingBox | null>(null);
+
+  // Handle area selection
+  const handleAreaSelected = useCallback((area: BoundingBox) => {
+    setSelectedArea(area);
+    setIsAreaSelecting(false);
+    performCanvasOCR(area);
+  }, [performCanvasOCR]);
+
+  const handleCancelAreaSelection = useCallback(() => {
+    setIsAreaSelecting(false);
+    setSelectedArea(null);
+  }, []);
+
+  const handleFullPageOCR = useCallback(() => {
+    setSelectedArea(null);
+    performCanvasOCR();
+  }, [performCanvasOCR]);
+
+  const handleAreaOCR = useCallback(() => {
+    setIsAreaSelecting(true);
+  }, []);
+
+  // Group languages by script/region with search functionality
+  const languageGroups = useMemo(() => {
+    const groups: Record<string, {name: string, languages: Array<{code: string, name: string}>}> = {
+      western: { name: "Western European", languages: [] },
+      asian: { name: "Asian Languages", languages: [] },
+      cyrillic: { name: "Cyrillic Script", languages: [] },
+      middleEastern: { name: "Middle Eastern", languages: [] },
+      indian: { name: "Indian Subcontinent", languages: [] },
+      other: { name: "Other Languages", languages: [] }
+    };
+
+    // Filter languages based on search
+    const filteredLangs = OCR_LANGUAGES.filter(lang => 
+      lang.name.toLowerCase().includes(languageSearch.toLowerCase()) ||
+      lang.code.toLowerCase().includes(languageSearch.toLowerCase())
+    );
+
+    // Categorize languages
+    filteredLangs.forEach(lang => {
+      if (['eng', 'spa', 'fra', 'deu', 'por', 'ita', 'nld', 'swe', 'nor', 'dan', 'fin', 'pol', 'ron', 'cat', 'eus', 'glg', 'hrv', 'slv', 'ces', 'slk', 'hun', 'ell'].includes(lang.code)) {
+        groups.western.languages.push(lang);
+      } else if (['chi_sim', 'chi_tra', 'jpn', 'kor', 'tha', 'vie', 'ind', 'msa', 'fil', 'mya'].includes(lang.code)) {
+        groups.asian.languages.push(lang);
+      } else if (['rus', 'ukr', 'bul', 'srp'].includes(lang.code)) {
+        groups.cyrillic.languages.push(lang);
+      } else if (['ara', 'fas', 'heb', 'tur'].includes(lang.code)) {
+        groups.middleEastern.languages.push(lang);
+      } else if (['hin', 'ben', 'tam', 'tel', 'kan', 'mal', 'guj', 'pan'].includes(lang.code)) {
+        groups.indian.languages.push(lang);
+      } else if (['lat', 'swe_old', 'frm', 'enm'].includes(lang.code)) {
+        groups.historical.languages.push(lang);
+      } else {
+        groups.other.languages.push(lang);
+      }
+    });
+
+    // Remove empty groups and sort languages within each group
+    return Object.entries(groups)
+      .filter(([_, group]) => group.languages.length > 0)
+      .map(([key, group]) => ({
+        id: key,
+        name: group.name,
+        languages: [...group.languages].sort((a, b) => a.name.localeCompare(b.name))
+      }));
+  }, [languageSearch]);
 
   const handleOcrResult = useCallback(
     (text: string, results: OCRResult[]) => {
@@ -123,15 +197,45 @@ export const OCRToolComponent: React.FC<{ compact?: boolean }> = ({ compact = fa
     if (file) processFile(file);
   };
 
-  const performCanvasOCR = useCallback(async () => {
+  const performCanvasOCR = useCallback(async (area?: BoundingBox) => {
     if (!canvasRef?.current) return;
-    const canvas = canvasRef.current;
-    const imageData = canvas.toDataURL("image/png");
-    // We can treat the canvas data as an image file for processing
-    const blob = await (await fetch(imageData)).blob();
-    const file = new File([blob], "canvas.png", { type: "image/png" });
-    await processFile(file);
-  }, [canvasRef, processFile]);
+    
+    setIsProcessing(true);
+    setProgress(0);
+    setError(null);
+    setExtractedText("");
+    setOcrResults([]);
+    
+    try {
+      const canvas = canvasRef.current;
+      const imageData = canvas.toDataURL("image/png");
+      
+      // We can treat the canvas data as an image file for processing
+      const response = await fetch(imageData);
+      const blob = await response.blob();
+      const file = new File([blob], "canvas.png", { type: "image/png" });
+      
+      const result = await ocrService.performOCR(
+        file,
+        selectedLanguage,
+        currentPage,
+        state.totalPages,
+        (progress) => setProgress(progress),
+        {
+          area: area || undefined,
+          detectTables: true
+        }
+      );
+      
+      if (result) {
+        handleOcrResult(result.ocrText, result.ocrResults);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred during OCR');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [canvasRef, currentPage, selectedLanguage, state.totalPages, handleOcrResult]);
 
   const addTextToPage = (result: OCRResult) => {
     const toolSettings = state.toolSettings.text;
@@ -168,26 +272,69 @@ export const OCRToolComponent: React.FC<{ compact?: boolean }> = ({ compact = fa
       <div className="flex items-center gap-3">
         {/* Language Selection */}
         <Select value={selectedLanguage} onValueChange={setSelectedLanguage} disabled={isProcessing}>
-          <SelectTrigger className="w-20">
+          <SelectTrigger className="w-32">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
-            {OCR_LANGUAGES.map(lang => (
-              <SelectItem key={lang.code} value={lang.code}>{lang.name}</SelectItem>
-            ))}
+          <SelectContent className="max-h-[400px] overflow-y-auto">
+            <div className="sticky top-0 bg-background z-10 p-2">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search languages..."
+                  className="pl-8 h-9"
+                  value={languageSearch}
+                  onChange={(e) => setLanguageSearch(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            </div>
+            <ScrollArea className="h-[300px] w-full">
+              {languageGroups.length > 0 ? (
+                languageGroups.map((group) => (
+                  <div key={group.id} className="space-y-1">
+                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                      {group.name}
+                    </div>
+                    {group.languages.map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code} className="pl-6">
+                        {lang.name}
+                      </SelectItem>
+                    ))}
+                    {group.id !== languageGroups[languageGroups.length - 1].id && (
+                      <Separator className="my-1" />
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                  No languages found
+                </div>
+              )}
+            </ScrollArea>
           </SelectContent>
         </Select>
         
         {/* Scan Button */}
-        <Button 
-          onClick={performCanvasOCR} 
-          disabled={isProcessing || !canvasRef?.current} 
-          size="sm"
-          variant="outline"
-        >
-          <Zap className="h-3 w-3 mr-1" /> 
-          Scan
-        </Button>
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          <Button
+            onClick={handleFullPageOCR}
+            disabled={isProcessing}
+            variant={!selectedArea ? 'default' : 'outline'}
+            className="w-full"
+          >
+            <Zap className="w-4 h-4 mr-2" />
+            {isProcessing ? 'Processing...' : 'Full Page'}
+          </Button>
+          <Button
+            onClick={handleAreaOCR}
+            disabled={isProcessing || isAreaSelecting}
+            variant={selectedArea ? 'default' : 'outline'}
+            className="w-full"
+          >
+            <PlusSquare className="w-4 h-4 mr-2" />
+            {isAreaSelecting ? 'Select Area...' : 'Select Area'}
+          </Button>
+        </div>
         
         {/* Upload Button */}
         <Button 
@@ -250,18 +397,59 @@ export const OCRToolComponent: React.FC<{ compact?: boolean }> = ({ compact = fa
         </CardContent>
       </Card>
 
+      {/* Area Selection Overlay */}
+      {isAreaSelecting && canvasRef?.current && (
+        <OCRAreaSelector
+          canvasRef={canvasRef}
+          scale={scale}
+          onAreaSelected={handleAreaSelected}
+          onCancel={handleCancelAreaSelection}
+        />
+      )}
+
       {previewUrl && <img src={previewUrl} alt="Preview" className="max-h-40 mx-auto rounded border" />}
 
-      <div className="flex items-center gap-2">
-        <Button onClick={performCanvasOCR} disabled={isProcessing || !canvasRef?.current} className="flex-1">
-          <Zap className="h-4 w-4 mr-2" /> Scan Current View
-        </Button>
+      <div className="flex items-center gap-2 mb-4">
         <Select value={selectedLanguage} onValueChange={setSelectedLanguage} disabled={isProcessing}>
-          <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {OCR_LANGUAGES.map(lang => (
-              <SelectItem key={lang.code} value={lang.code}>{lang.name}</SelectItem>
-            ))}
+          <SelectTrigger className="w-[180px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="max-h-[400px] overflow-y-auto">
+            <div className="sticky top-0 bg-background z-10 p-2">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search languages..."
+                  className="pl-8 h-9"
+                  value={languageSearch}
+                  onChange={(e) => setLanguageSearch(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            </div>
+            <ScrollArea className="h-[300px] w-full">
+              {languageGroups.length > 0 ? (
+                languageGroups.map((group) => (
+                  <div key={group.id} className="space-y-1">
+                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                      {group.name}
+                    </div>
+                    {group.languages.map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code} className="pl-6">
+                        {lang.name}
+                      </SelectItem>
+                    ))}
+                    {group.id !== languageGroups[languageGroups.length - 1].id && (
+                      <Separator className="my-1" />
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                  No languages found
+                </div>
+              )}
+            </ScrollArea>
           </SelectContent>
         </Select>
       </div>

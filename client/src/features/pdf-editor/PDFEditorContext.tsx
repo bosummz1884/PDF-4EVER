@@ -13,6 +13,9 @@ import {
   ToolSettings,
   EditorTool,
   TextRegion,
+  OCRResult,
+  OCRLanguage,
+  OCRSettings,
 } from "../../types/pdf-types"; // Import the unified action type
 // T2.2: Font recognition imports
 import { fontRecognitionService } from "@/services/fontRecognitionService";
@@ -937,7 +940,13 @@ export function PDFEditorProvider({ children }: { children: ReactNode }) {
       ocrEngineMode: state.toolSettings.ocr?.ocrEngineMode ?? 'default',
       pageSegMode: state.toolSettings.ocr?.pageSegMode ?? 'auto',
       whitelist: state.toolSettings.ocr?.whitelist ?? '',
-      blacklist: state.toolSettings.ocr?.blacklist ?? ''
+      blacklist: state.toolSettings.ocr?.blacklist ?? '',
+      scanMode: state.toolSettings.ocr?.scanMode ?? 'auto',
+      selectedArea: state.toolSettings.ocr?.selectedArea ?? null,
+      autoDetectTextRegions: state.toolSettings.ocr?.autoDetectTextRegions ?? true,
+      mergeAdjacentText: state.toolSettings.ocr?.mergeAdjacentText ?? true,
+      minTextConfidence: state.toolSettings.ocr?.minTextConfidence ?? 0,
+      postProcessText: state.toolSettings.ocr?.postProcessText ?? true
     };
   }, [state.ocrConfidenceThreshold, state.toolSettings.ocr]);
   

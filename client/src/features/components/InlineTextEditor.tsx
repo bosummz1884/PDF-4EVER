@@ -372,7 +372,9 @@ export function InlineTextEditor({
         textDecoration: span.formatting.underline ? 'underline' : 'none',
         color: span.formatting.color || formatting.color,
         backgroundColor: span.formatting.backgroundColor,
-        lineHeight: span.formatting.lineHeight ? `${span.formatting.lineHeight}` : '1.2'
+        lineHeight: span.formatting.lineHeight ? `${span.formatting.lineHeight}` : '1.2',
+        unicodeBidi: 'plaintext', // Ensure proper text direction handling
+        direction: 'ltr' // Explicitly set left-to-right direction
       };
       
       // Ensure we have a valid color
@@ -383,6 +385,7 @@ export function InlineTextEditor({
           key={index} 
           style={style}
           data-format={JSON.stringify(span.formatting)}
+          dir="ltr" // Ensure left-to-right direction at the element level
         >
           {span.text}
         </span>
